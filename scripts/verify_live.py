@@ -10,6 +10,8 @@ from pathlib import Path
 
 BASE = os.environ.get("WENYUAN_BASE", "https://wenyuan.online")
 TMP = Path(__file__).resolve().parents[1]
+sys.path.insert(0, str(TMP))
+from app import __version__ as APP_VERSION
 
 
 def fetch(url: str, *, method: str = "GET", data: bytes | None = None) -> tuple[int, str]:
@@ -41,7 +43,7 @@ def main() -> int:
     print("== Health ==")
     code, body = fetch(f"{BASE}/health")
     health = json.loads(body)
-    ok = code == 200 and health.get("status") == "ok" and health.get("version") == "1.9.0"
+    ok = code == 200 and health.get("status") == "ok" and health.get("version") == APP_VERSION
     print(f"  /health: {'PASS' if ok else 'FAIL'} -> {body.strip()}")
     results.append(ok)
 
@@ -49,7 +51,7 @@ def main() -> int:
     pages = {
         "/": (
             TMP / "_tmp_home.html",
-            ["page-home", 'class="hero"', "feature-card", "form-card", "开始排盘", "site-nav-link", "Wenyuan.initIndexPage", "birth_year", "就盘自由追问", "theme.css?v=1.9.0"],
+            ["page-home", 'class="hero"', "feature-card", "form-card", "开始排盘", "site-nav-link", "Wenyuan.initIndexPage", "birth_year", "就盘自由追问", f"theme.css?v={APP_VERSION}"],
             ["btn-analyze-classic", "btn-analyze-modern", "古典解读", "现代解读"],
         ),
         "/chart": (
