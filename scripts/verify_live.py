@@ -40,7 +40,7 @@ def main() -> int:
     print("== Health ==")
     code, body = fetch(f"{BASE}/health")
     health = json.loads(body)
-    ok = code == 200 and health.get("status") == "ok" and health.get("version") == "1.8.3"
+    ok = code == 200 and health.get("status") == "ok" and health.get("version") == "1.8.4"
     print(f"  /health: {'PASS' if ok else 'FAIL'} -> {body.strip()}")
     results.append(ok)
 
@@ -48,7 +48,7 @@ def main() -> int:
     pages = {
         "/": (
             TMP / "_tmp_home.html",
-            ["page-home", 'class="hero"', "feature-card", "form-card", "开始排盘", "site-nav-link", "Wenyuan.initIndexPage", "birth_year", "theme.css?v=1.8.3"],
+            ["page-home", 'class="hero"', "feature-card", "form-card", "开始排盘", "site-nav-link", "Wenyuan.initIndexPage", "birth_year", "就盘自由追问", "theme.css?v=1.8.4"],
             ["btn-analyze-classic", "btn-analyze-modern", "古典解读", "现代解读"],
         ),
         "/chart": (

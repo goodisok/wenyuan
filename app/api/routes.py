@@ -66,9 +66,6 @@ async def analyze_chart(body: AnalyzeRequest, request: Request):
 @router.post("/ask")
 async def ask_chart(body: AskRequest, request: Request):
     try:
-        rounds = len([h for h in body.history if h.get("role") == "user"])
-        if rounds >= 8:
-            return AskResponse(success=False, error="本轮已达上限，请刷新或重新打开命盘")
         insight = body.insight or body.chart.get("insight")
         if _wants_sse(request):
             stream = AIAnalysisService.ask_stream(

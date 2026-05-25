@@ -190,7 +190,7 @@ def test_api_ask_without_key(monkeypatch):
     assert res.json()["success"] is False
 
 
-def test_api_ask_round_limit():
+def test_api_ask_allows_many_rounds():
     chart_res = client.post(
         "/api/chart",
         json={
@@ -212,5 +212,8 @@ def test_api_ask_round_limit():
         json={"chart": chart, "question": "第九问", "history": history, "style": "classic"},
     )
     assert res.status_code == 200
-    assert res.json()["success"] is False
-    assert "上限" in res.json()["error"]
+    body = res.json()
+    if body.get("success"):
+        assert body.get("answer")
+    else:
+        assert "上限" not in (body.get("error") or "")

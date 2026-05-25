@@ -4,7 +4,6 @@ const HISTORY_KEY = "wenyuan_history";
 const INPUT_KEY = "wenyuan_input";
 const CHART_CACHE_KEY = "wenyuan_chart_cache";
 const MAX_HISTORY = 20;
-const L3_MAX_ROUNDS = 8;
 const SHARE_VERSION = 1;
 const CHART_CACHE_TTL = 3600000;
 
@@ -267,18 +266,17 @@ function loadAiCache(input) {
 }
 
 function saveAiCache(input, data) {
-  localStorage.setItem(aiCacheKey(input), JSON.stringify(data));
+  localStorage.setItem(aiCacheKey(input), JSON.stringify({ analysis: data.analysis || "" }));
 }
 
 function normalizeAiCache(cache) {
-  if (!cache) return { analysis: "", history: [] };
+  if (!cache) return { analysis: "" };
   if (typeof cache.analysis === "string") {
-    return { analysis: cache.analysis, history: cache.history || [] };
+    return { analysis: cache.analysis };
   }
   const legacy = cache.analysis || {};
   return {
     analysis: legacy.modern || legacy.classic || "",
-    history: cache.history || [],
   };
 }
 
@@ -904,7 +902,7 @@ function renderChart(data) {
       <header class="ai-panel-head">
         <div class="ai-panel-intro">
           <h2 class="section-title">问 · AI · 子平直断</h2>
-          <p class="ai-panel-desc">锚定本盘规则层解读，非开放闲聊 · 每命盘最多 ${L3_MAX_ROUNDS} 轮追问</p>
+          <p class="ai-panel-desc">锚定本盘规则层解读，非开放闲聊 · 就盘自由追问</p>
         </div>
         <span class="analysis-style-badge style-ziping">子平直断</span>
       </header>
@@ -931,7 +929,6 @@ function renderChart(data) {
       <div class="ai-ask-block">
         <div class="ai-ask-head">
           <h3 class="ai-ask-title">就盘追问</h3>
-          <span id="ask-rounds" class="ask-rounds"></span>
         </div>
         <div id="ask-history" class="ask-history"></div>
         <div class="ask-input-bar">
@@ -1100,7 +1097,7 @@ function wireChartInteractions(state) {
       const text = await API.analyze(state.chart, AI_STYLE, state.chart.insight, streamRender);
       state.analysis = text;
       renderAnalysis(text, false);
-      saveAiCache(state.input, { analysis: state.analysis, history: state.history });
+      saveAiCache(state.input, { analysis: state.analysis });
     } catch (e) {
       showError(err, e.message || "分析失败");
     } finally {
@@ -1114,11 +1111,6 @@ function wireChartInteractions(state) {
   async function runAsk(question) {
     const askInput = document.getElementById("ask-input");
     const askBtn = document.getElementById("btn-ask");
-    const rounds = state.history.filter((h) => h.role === "user").length;
-    if (rounds >= L3_MAX_ROUNDS) {
-      showError(document.getElementById("ai-error"), "本轮已达上限，请刷新或重新打开命盘");
-      return;
-    }
     const q = (question || document.getElementById("ask-input")?.value || "").trim();
     if (!q) return;
     appendAskMessage("user", q);
@@ -1126,7 +1118,6 @@ function wireChartInteractions(state) {
     if (askBtn) askBtn.disabled = true;
     if (askInput) askInput.disabled = true;
     state.history.push({ role: "user", content: q });
-    updateRounds(state);
 
     const err = document.getElementById("ai-error");
     hideError(err);
@@ -1150,7 +1141,7 @@ function wireChartInteractions(state) {
       );
       placeholder.innerHTML = markdownToHtml(answer);
       state.history.push({ role: "assistant", content: answer });
-      saveAiCache(state.input, { analysis: state.analysis, history: state.history });
+      saveAiCache(state.input, { analysis: state.analysis });
     } catch (e) {
       placeholder.remove();
       state.history.pop();
@@ -1159,7 +1150,6 @@ function wireChartInteractions(state) {
       if (askBtn) askBtn.disabled = false;
       if (askInput) askInput.disabled = false;
     }
-    updateRounds(state);
   }
 
   document.getElementById("btn-ask")?.addEventListener("click", () => runAsk());
@@ -1171,11 +1161,6 @@ function wireChartInteractions(state) {
   });
 }
 
-function updateRounds(state) {
-  const n = state.history.filter((h) => h.role === "user").length;
-  const el = document.getElementById("ask-rounds");
-  if (el) el.textContent = `追问 ${n} / ${L3_MAX_ROUNDS}`;
-}
 
 function historyLabel(chart, input) {
   const dm = chart?.meta?.day_master || "";
@@ -1310,20 +1295,13 @@ async function initChartPage() {
     chart,
     input: input || {},
     analysis: normalized.analysis,
-    history: normalized.history,
+    history: [],
   };
 
   root.innerHTML = renderChart(chart);
   wireChartInteractions(state);
 
   if (state.analysis) renderAnalysis(state.analysis);
-
-  state.history.forEach((h) => {
-    appendAskMessage(h.role, h.content);
-  });
-  updateRounds(state);
-
-
 }
 
 window.Wenyuan = {

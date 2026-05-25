@@ -246,7 +246,7 @@ class AIAnalysisService:
             messages: list[dict[str, str]] = [
                 {"role": "system", "content": cls._system_prompt(for_ask=True)},
             ]
-            for h in (history or [])[-8:]:
+            for h in (history or [])[-100:]:
                 messages.append({"role": h["role"], "content": h["content"]})
             messages.append({"role": "user", "content": user_content})
             return messages

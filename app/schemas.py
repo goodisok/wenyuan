@@ -75,7 +75,7 @@ class AskRequest(BaseModel):
     @field_validator("history")
     @classmethod
     def validate_history(cls, v: list[dict[str, str]]) -> list[dict[str, str]]:
-        if len(v) > 16:
+        if len(v) > 200:
             raise ValueError("历史对话过长")
         for item in v:
             if item.get("role") not in ("user", "assistant") or not item.get("content"):
