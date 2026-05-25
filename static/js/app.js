@@ -18,6 +18,102 @@ const DEFAULT_BIRTH = {
 
 const WUXING_MAP = { 木: "wood", 火: "fire", 土: "earth", 金: "metal", 水: "water" };
 
+const TERM_TIPS = {
+  正官: "克我之阴阳异者，主贵气、端方、自律（渊海子平）",
+  七杀: "克我之阴阳同者，主魄力、压力、竞争（渊海子平）",
+  正财: "我克之阴阳异者，主稳定收入、务实（渊海子平）",
+  偏财: "我克之阴阳同者，主机遇、人缘、流动财（渊海子平）",
+  正印: "生我之阴阳异者，主学业、庇护、名誉（渊海子平）",
+  偏印: "生我之阴阳同者，主偏门学识、灵感（三命通会）",
+  食神: "我生之阴阳同者，主食禄、才华、温和（渊海子平）",
+  伤官: "我生之阴阳异者，主表达、创新、锋芒（三命通会）",
+  比肩: "同我之阴阳同者，主自我、同伴、竞争（渊海子平）",
+  劫财: "同我之阴阳异者，主合伙、分担、夺财（渊海子平）",
+  日主: "日干为命主本身，诸般十神皆相对日主而论（子平真诠）",
+  天乙贵人: "逢凶化吉，贵人相助（三命通会）",
+  文昌: "聪明好学，文才出众（三命通会）",
+  驿马: "主动迁移，奔波变动（三命通会）",
+  桃花: "异性缘、才艺人缘（三命通会）",
+  华盖: "孤高学术、宗教艺术（三命通会）",
+};
+
+const NAYIN_TIP = "纳音以干支组合论五行意象，为辅助参考（三命通会）";
+
+function pad2(n) {
+  return String(n).padStart(2, "0");
+}
+
+function daysInMonth(year, month) {
+  return new Date(Number(year), Number(month), 0).getDate();
+}
+
+function readBirthFromForm(form) {
+  const y = form.birth_year?.value;
+  const m = pad2(form.birth_month?.value || 1);
+  const d = pad2(form.birth_day?.value || 1);
+  const h = pad2(form.birth_hour?.value ?? 0);
+  const mi = pad2(form.birth_minute?.value ?? 0);
+  return {
+    date_type: form.date_type?.value || "solar",
+    birth_date: `${y}-${m}-${d}`,
+    birth_time: `${h}:${mi}`,
+    gender: form.querySelector('input[name="gender"]:checked')?.value || "male",
+    is_leap_month: form.is_leap_month?.checked || false,
+  };
+}
+
+function applyBirthToForm(form, input) {
+  if (!form || !input?.birth_date) return;
+  const [y, m, d] = input.birth_date.split("-");
+  const [h, mi] = (input.birth_time || "12:00").split(":");
+  if (form.birth_year) form.birth_year.value = y;
+  if (form.birth_month) form.birth_month.value = String(Number(m));
+  syncBirthDayOptions(form);
+  if (form.birth_day) form.birth_day.value = String(Number(d));
+  if (form.birth_hour) form.birth_hour.value = String(Number(h));
+  if (form.birth_minute) form.birth_minute.value = String(Number(mi || 0));
+  if (form.date_type && input.date_type) form.date_type.value = input.date_type;
+  if (input.gender) {
+    const g = form.querySelector(`input[name="gender"][value="${input.gender}"]`);
+    if (g) g.checked = true;
+  }
+  if (form.is_leap_month) form.is_leap_month.checked = !!input.is_leap_month;
+}
+
+function syncBirthDayOptions(form) {
+  if (!form?.birth_year || !form?.birth_month || !form?.birth_day) return;
+  const max = daysInMonth(form.birth_year.value, form.birth_month.value);
+  const cur = Number(form.birth_day.value) || 1;
+  form.birth_day.innerHTML = Array.from({ length: max }, (_, i) => {
+    const v = i + 1;
+    return `<option value="${v}"${v === cur ? " selected" : ""}>${v} 日</option>`;
+  }).join("");
+  if (cur > max) form.birth_day.value = String(max);
+}
+
+function fillBirthYearOptions(select, from = 1920, to = 2030) {
+  if (!select) return;
+  select.innerHTML = Array.from({ length: to - from + 1 }, (_, i) => {
+    const y = to - i;
+    return `<option value="${y}">${y} 年</option>`;
+  }).join("");
+}
+
+function termTip(label, tip, source) {
+  const text = tip || TERM_TIPS[label] || "";
+  if (!text) return escapeHtml(label);
+  const src = source ? `<span class="term-tip-src">${escapeHtml(source)}</span>` : "";
+  return `<span class="term-tip" tabindex="0" role="note"><span class="term-tip-label">${escapeHtml(label)}</span><span class="term-tip-pop">${escapeHtml(text)}${src}</span></span>`;
+}
+
+function shishenTip(name) {
+  return termTip(name, TERM_TIPS[name], "渊海子平");
+}
+
+function shenshaNote(name, insight) {
+  return (insight?.shensha?.items || []).find((i) => i.name === name)?.note || TERM_TIPS[name] || "";
+}
+
 function escapeHtml(text) {
   return String(text)
     .replace(/&/g, "&amp;")
@@ -119,7 +215,7 @@ function closeModal(modal) {
 function setupNavObserver() {
   const nav = document.getElementById("chart-nav");
   if (!nav) return;
-  const sections = ["sec-meta", "sec-di", "sec-tian", "sec-ren", "sec-ai"]
+  const sections = ["sec-meta", "sec-di", "sec-tian", "sec-ai"]
     .map((id) => document.getElementById(id))
     .filter(Boolean);
   if (!sections.length) return;
@@ -434,6 +530,58 @@ function renderWuxingChart(wx) {
     .join("")}</div>`;
 }
 
+function renderCangganCell(p) {
+  return (p.dizhi.canggan || [])
+    .map((c) => {
+      const ss = c.shishen ? `<span class="cg-ss">${escapeHtml(c.shishen)}</span>` : "";
+      return `<span class="cg-item ${wuxingClass(c.color)}">${escapeHtml(c.name)}${ss}</span>`;
+    })
+    .join("");
+}
+
+function renderPillarGrid(pillars, insight) {
+  if (!pillars?.length) return "";
+  const byPillar = insight?.shensha?.by_pillar || {};
+  const colClass = (p) => (p.key === "day" ? "day-col" : "");
+  const header = pillars
+    .map((p) => `<th class="col-head ${colClass(p)}">${escapeHtml(p.label)}</th>`)
+    .join("");
+  const cells = (fn) =>
+    pillars.map((p) => `<td class="${colClass(p)}">${fn(p)}</td>`).join("");
+  const rows = [
+    ["十神", (p) => (p.shishen && p.shishen !== "—" ? shishenTip(p.shishen) : escapeHtml(p.shishen || "—"))],
+    [
+      "天干",
+      (p) =>
+        `<span class="gan-cell ${wuxingClass(p.tiangan.color)}">${escapeHtml(p.tiangan.name)}</span>`,
+    ],
+    [
+      "地支",
+      (p) =>
+        `<span class="zhi-cell ${wuxingClass(p.dizhi.color)}">${escapeHtml(p.dizhi.name)}</span>`,
+    ],
+    ["藏干", (p) => `<div class="canggan-cell">${renderCangganCell(p) || "—"}</div>`],
+    ["纳音", (p) => termTip(p.nayin || "—", NAYIN_TIP, "三命通会")],
+    ["空亡", (p) => escapeHtml(p.xunkong || "—")],
+    ["星运", (p) => escapeHtml(p.changsheng || "—")],
+    [
+      "神煞",
+      (p) => {
+        const names = byPillar[p.key] || [];
+        if (!names.length) return "—";
+        return names.map((n) => termTip(n, shenshaNote(n, insight), "三命通会")).join(" ");
+      },
+    ],
+  ];
+  const body = rows
+    .map(
+      ([label, fn]) =>
+        `<tr><th class="row-label" scope="row">${label}</th>${cells(fn)}</tr>`
+    )
+    .join("");
+  return `<div class="table-wrap bazi-grid-wrap"><table class="bazi-grid"><thead><tr><th class="row-label"></th>${header}</tr></thead><tbody>${body}</tbody></table></div>`;
+}
+
 function renderPillar(p) {
   const cg = (p.dizhi.canggan || [])
     .map((c) => {
@@ -456,11 +604,75 @@ function renderPillar(p) {
     </div>`;
 }
 
-function renderDayunTable(dayun) {
+function renderDayunStrip(dayun, insight) {
+  if (!dayun?.length) return "";
+  const cd = insight?.current_dayun;
+  const cy = insight?.current_year_liunian;
+  const nowYear = new Date().getFullYear();
+  const items = dayun
+    .map((d, i) => {
+      const isCurrent = cd?.ganzhi === d.ganzhi;
+      return `<button type="button" class="dayun-strip-item${isCurrent ? " is-current" : ""}" data-idx="${i}" aria-pressed="${isCurrent ? "true" : "false"}">
+        <span class="dayun-strip-gz">${escapeHtml(d.ganzhi)}</span>
+        <span class="dayun-strip-yrs">${d.start_year}—${d.end_year}</span>
+        <span class="dayun-strip-age">${d.start_age}—${d.end_age}岁</span>
+      </button>`;
+    })
+    .join("");
+  const defaultIdx = Math.max(
+    0,
+    dayun.findIndex((d) => d.start_year <= nowYear && d.end_year >= nowYear)
+  );
+  const defaultDy = dayun[defaultIdx];
+  const liuInit = (defaultDy?.liunian || [])
+    .map((ln) => {
+      const isCur = cy?.year === ln.year || ln.year === nowYear;
+      return `<span class="liunian-chip${isCur ? " is-current" : ""}">${escapeHtml(ln.ganzhi)}<small>${ln.year}</small></span>`;
+    })
+    .join("");
+  const banner = cd
+    ? `<p class="yun-now-banner">当前大运 <strong>${escapeHtml(cd.ganzhi)}</strong>（${cd.start_year}—${cd.end_year}）${
+        cy ? ` · 今年流年 <strong>${escapeHtml(cy.ganzhi)}</strong>（${cy.year}）` : ""
+      }</p>`
+    : "";
+  return `${banner}<div class="dayun-strip-wrap"><p class="dayun-strip-label">大运</p><div class="dayun-strip" id="dayun-strip" data-default-idx="${defaultIdx}">${items}</div><p class="dayun-strip-label">流年</p><div class="liunian-strip" id="liunian-strip">${liuInit}</div></div>`;
+}
+
+function wireDayunStrip(dayun, insight) {
+  const strip = document.getElementById("dayun-strip");
+  const liuBox = document.getElementById("liunian-strip");
+  if (!strip || !liuBox || !dayun?.length) return;
+  const cy = insight?.current_year_liunian;
+  const nowYear = new Date().getFullYear();
+  const showLiunian = (idx) => {
+    const d = dayun[idx];
+    if (!d) return;
+    strip.querySelectorAll(".dayun-strip-item").forEach((btn, i) => {
+      const sel = i === idx;
+      btn.classList.toggle("is-selected", sel);
+      btn.setAttribute("aria-pressed", sel ? "true" : "false");
+    });
+    liuBox.innerHTML = (d.liunian || [])
+      .map((ln) => {
+        const isCur = cy?.year === ln.year || ln.year === nowYear;
+        return `<span class="liunian-chip${isCur ? " is-current" : ""}">${escapeHtml(ln.ganzhi)}<small>${ln.year}</small></span>`;
+      })
+      .join("");
+  };
+  strip.querySelectorAll(".dayun-strip-item").forEach((btn) => {
+    btn.addEventListener("click", () => showLiunian(Number(btn.dataset.idx)));
+  });
+  const defaultIdx = Number(strip.dataset.defaultIdx) || 0;
+  showLiunian(defaultIdx);
+  strip.querySelector(".is-current")?.scrollIntoView({ inline: "center", block: "nearest", behavior: "smooth" });
+}
+
+function renderDayunTable(dayun, insight) {
+  const cd = insight?.current_dayun;
   const rows = (dayun || [])
     .map(
       (d, i) => `
-      <tr class="dayun-row" data-idx="${i}">
+      <tr class="dayun-row${cd?.ganzhi === d.ganzhi ? " is-current" : ""}" data-idx="${i}">
         <td><strong>${d.ganzhi}</strong></td>
         <td>${d.start_year} — ${d.end_year}</td>
         <td>${d.start_age} — ${d.end_age} 岁</td>
@@ -634,68 +846,58 @@ function renderChart(data) {
       </div>
     </header>
     <nav class="chart-nav" id="chart-nav" role="tablist" aria-label="命盘分区">
-      <button type="button" class="chart-nav-btn active" role="tab" aria-selected="true" data-target="sec-meta">概览</button>
-      <button type="button" class="chart-nav-btn" role="tab" aria-selected="false" data-target="sec-di">四柱</button>
-      <button type="button" class="chart-nav-btn" role="tab" aria-selected="false" data-target="sec-tian">运势</button>
-      <button type="button" class="chart-nav-btn" role="tab" aria-selected="false" data-target="sec-ren">本命</button>
+      <button type="button" class="chart-nav-btn active" role="tab" aria-selected="true" data-target="sec-meta">基本</button>
+      <button type="button" class="chart-nav-btn" role="tab" aria-selected="false" data-target="sec-di">命盘</button>
+      <button type="button" class="chart-nav-btn" role="tab" aria-selected="false" data-target="sec-tian">细盘</button>
       <button type="button" class="chart-nav-btn" role="tab" aria-selected="false" data-target="sec-ai">问 AI</button>
     </nav>
-    <div id="chart-sticky-summary" class="chart-sticky-summary">
+    <div id="chart-sticky-summary" class="chart-sticky-summary chart-info-strip">
       <span class="sticky-ganzhi">${(data.pillars || []).map((p) => p.ganzhi).join(" ")}</span>
-      <span class="sticky-dm">日主 ${m.day_master} · ${insight.geju?.type || insight.day_master_strength || ""}</span>
+      <span class="sticky-dm">${escapeHtml(m.gender_label || "")} · 日主 ${escapeHtml(m.day_master || "")} · ${escapeHtml(insight.geju?.type || insight.day_master_strength || "")}</span>
+      <span class="sticky-birth">${escapeHtml(m.birth_time?.solar || "")}</span>
     </div>
 
     <section class="section-block section-card" id="sec-meta">
-      <h2 class="section-title">命主概览</h2>
-      <div class="meta-grid">
+      <h2 class="section-title">基本信息</h2>
+      <div class="meta-grid meta-grid-dense">
         <div class="meta-item"><div class="label">性别</div><div class="value">${escapeHtml(m.gender_label || "")}</div></div>
         <div class="meta-item"><div class="label">生肖</div><div class="value">${escapeHtml(m.zodiac || "")}</div></div>
         <div class="meta-item"><div class="label">虚岁</div><div class="value">${escapeHtml(String(m.age ?? ""))} 岁</div></div>
         <div class="meta-item"><div class="label">日主</div><div class="value">${escapeHtml(m.day_master || "")}（${escapeHtml(m.day_master_wuxing || "")}）</div></div>
+        <div class="meta-item"><div class="label">胎元</div><div class="value">${escapeHtml(m.tai_yuan || "—")}</div></div>
+        <div class="meta-item"><div class="label">命宫</div><div class="value">${escapeHtml(m.ming_gong || "—")}</div></div>
+        <div class="meta-item"><div class="label">身宫</div><div class="value">${escapeHtml(m.shen_gong || "—")}</div></div>
         <div class="meta-item"><div class="label">十二长生</div><div class="value">${escapeHtml(m.day_dishi || "—")}</div></div>
       </div>
-      <p class="birth-time-note">阳历 ${escapeHtml(m.birth_time?.solar || "")}<br>农历 ${escapeHtml(m.birth_time?.lunar || "")}</p>
+      <p class="birth-time-note">阳历 ${escapeHtml(m.birth_time?.solar || "")} · 农历 ${escapeHtml(m.birth_time?.lunar || "")}</p>
       <div class="insight-panel">
-        <p>日主 <strong>${m.day_master}</strong> 强弱 <strong>${insight.day_master_strength || "—"}</strong>
-        （评分 ${insight.strength_score ?? "—"}）
-        ${insight.geju?.type ? ` · 格局 <strong>${insight.geju.type}</strong>` : ""}</p>
-        ${insight.yongshen?.summary ? `<p class="yongshen-line">喜用倾向：${escapeHtml(insight.yongshen.summary)}</p>` : ""}
-        ${insight.current_dayun ? `<p>当前大运 ${insight.current_dayun.ganzhi}（${insight.current_dayun.start_year}-${insight.current_dayun.end_year}）</p>` : ""}
+        <p>强弱 <strong>${insight.day_master_strength || "—"}</strong>（${insight.strength_score ?? "—"}）
+        ${insight.geju?.type ? ` · 格局 <strong>${insight.geju.type}</strong>` : ""}
+        ${insight.current_dayun ? ` · 当前大运 <strong>${insight.current_dayun.ganzhi}</strong>` : ""}</p>
+        ${insight.yongshen?.summary ? `<p class="yongshen-line">喜用：${escapeHtml(insight.yongshen.summary)}</p>` : ""}
       </div>
+      <h3 class="subsection-title">五行分析</h3>
+      <div class="wuxing-chart">${renderWuxingChart(wx)}</div>
       ${renderHighlightsPanel(insight)}
     </section>
 
     <section class="section-block section-card" id="sec-di">
-      <h2 class="section-title">地 · 四柱根基</h2>
-      <div class="bazi-board">${(data.pillars || []).map(renderPillar).join("")}</div>
+      <h2 class="section-title">基本命盘</h2>
+      ${renderPillarGrid(data.pillars || [], insight)}
       ${rel ? `<div class="relation-tags">${rel}</div>` : ""}
-      <h3 class="subsection-title">五行分布</h3>
-      <div class="wuxing-chart">${renderWuxingChart(wx)}</div>
+      <details class="bazi-cards-toggle">
+        <summary>卡片视图</summary>
+        <div class="bazi-board">${(data.pillars || []).map(renderPillar).join("")}</div>
+      </details>
     </section>
 
-    <section class="section-block section-card collapsible" id="sec-tian">
-      <button type="button" class="section-header" data-target="sec-tian-body">
-        <h2 class="section-title">天 · 运势节律</h2><span class="section-chevron">▼</span>
-      </button>
-      <div class="section-body" id="sec-tian-body">
-        <p class="qiyun-desc">${escapeHtml(qy.description || "")}</p>
-        ${renderDayunTable(data.dayun)}
-        <div class="dayun-cards">${renderDayunCards(data.dayun)}</div>
-        ${xyBlock}
-      </div>
-    </section>
-
-    <section class="section-block section-card collapsible" id="sec-ren">
-      <button type="button" class="section-header" data-target="sec-ren-body">
-        <h2 class="section-title">人 · 本命特质</h2><span class="section-chevron">▼</span>
-      </button>
-      <div class="section-body" id="sec-ren-body">
-        <div class="meta-grid">
-          <div class="meta-item"><p class="label">胎元</p><p class="value">${m.tai_yuan || "—"}</p></div>
-          <div class="meta-item"><p class="label">命宫</p><p class="value">${m.ming_gong || "—"}</p></div>
-          <div class="meta-item"><p class="label">身宫</p><p class="value">${m.shen_gong || "—"}</p></div>
-        </div>
-      </div>
+    <section class="section-block section-card" id="sec-tian">
+      <h2 class="section-title">专业细盘</h2>
+      <p class="qiyun-desc">${escapeHtml(qy.description || "")}</p>
+      ${renderDayunStrip(data.dayun, insight)}
+      ${renderDayunTable(data.dayun, insight)}
+      <div class="dayun-cards">${renderDayunCards(data.dayun)}</div>
+      ${xyBlock}
     </section>
 
     <section class="section-block section-card section-ai ai-panel" id="sec-ai">
@@ -814,6 +1016,8 @@ function buildMarkdownExport(chart, insight, analysis, history) {
 
 function wireChartInteractions(state) {
   setupNavObserver();
+
+  wireDayunStrip(state.chart.dayun, state.chart.insight);
 
   document.querySelectorAll(".chart-nav-btn").forEach((btn) => {
     btn.addEventListener("click", () => {
@@ -994,12 +1198,30 @@ function initIndexPage() {
   const dateType = document.getElementById("date_type");
   const lunarHint = document.getElementById("lunar-hint");
   const leapGroup = document.getElementById("leap-month-group");
+  const leapBanner = document.getElementById("leap-month-banner");
 
-  document.getElementById("birth_date").value = DEFAULT_BIRTH.birth_date;
-  document.getElementById("birth_time").value = DEFAULT_BIRTH.birth_time;
-  if (dateType) dateType.value = DEFAULT_BIRTH.date_type;
-  const genderInput = form?.querySelector(`input[name="gender"][value="${DEFAULT_BIRTH.gender}"]`);
-  if (genderInput) genderInput.checked = true;
+  fillBirthYearOptions(form?.birth_year);
+  if (form?.birth_month) {
+    form.birth_month.innerHTML = Array.from({ length: 12 }, (_, i) => {
+      const v = i + 1;
+      return `<option value="${v}">${v} 月</option>`;
+    }).join("");
+  }
+  if (form?.birth_hour) {
+    form.birth_hour.innerHTML = Array.from({ length: 24 }, (_, i) =>
+      `<option value="${i}">${pad2(i)} 时</option>`
+    ).join("");
+  }
+  if (form?.birth_minute) {
+    form.birth_minute.innerHTML = [0, 15, 30, 45].map((m) =>
+      `<option value="${m}">${pad2(m)} 分</option>`
+    ).join("");
+  }
+  applyBirthToForm(form, DEFAULT_BIRTH);
+  syncBirthDayOptions(form);
+
+  form?.birth_year?.addEventListener("change", () => syncBirthDayOptions(form));
+  form?.birth_month?.addEventListener("change", () => syncBirthDayOptions(form));
 
   const renderHist = () => {
     const list = loadHistory();
@@ -1016,24 +1238,20 @@ function initIndexPage() {
   };
   renderHist();
 
-  dateType?.addEventListener("change", () => {
-    const lunar = dateType.value === "lunar";
+  const syncLunarUi = () => {
+    const lunar = dateType?.value === "lunar";
     lunarHint?.classList.toggle("hidden", !lunar);
     leapGroup?.classList.toggle("hidden", !lunar);
-  });
+    leapBanner?.classList.toggle("hidden", !lunar);
+  };
+  dateType?.addEventListener("change", syncLunarUi);
+  syncLunarUi();
 
   form?.addEventListener("submit", async (e) => {
     e.preventDefault();
     hideError(errEl);
     setBtnLoading(btn, true, "开始排盘");
-    const fd = new FormData(form);
-    const payload = {
-      date_type: fd.get("date_type"),
-      birth_date: fd.get("birth_date"),
-      birth_time: fd.get("birth_time"),
-      gender: fd.get("gender"),
-      is_leap_month: fd.get("is_leap_month") === "on",
-    };
+    const payload = readBirthFromForm(form);
     try {
       const res = await API.chart(payload);
       if (!res.success) {
@@ -1105,12 +1323,7 @@ async function initChartPage() {
   });
   updateRounds(state);
 
-  if (window.matchMedia("(max-width: 768px)").matches) {
-    document.querySelectorAll("#sec-tian, #sec-ren").forEach((sec) => {
-      sec.classList.add("is-collapsed");
-      sec.querySelector(".section-body")?.classList.add("collapsed");
-    });
-  }
+
 }
 
 window.Wenyuan = {

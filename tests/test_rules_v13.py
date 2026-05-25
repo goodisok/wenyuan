@@ -41,6 +41,10 @@ def test_shensha_structure(ref_chart):
     assert sh.get("kernel") == "三命通会"
     assert "items" in sh
     assert sh.get("summary")
+    assert "by_pillar" in sh
+    assert set(sh["by_pillar"].keys()) == {"year", "month", "day", "hour"}
+    for names in sh["by_pillar"].values():
+        assert isinstance(names, list)
 
 
 def test_insight_has_geju_yongshen(ref_chart):

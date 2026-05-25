@@ -1,6 +1,7 @@
 import pytest
 from fastapi.testclient import TestClient
 
+from app import __version__
 from app.main import app
 
 client = TestClient(app)
@@ -11,7 +12,7 @@ def test_health():
     assert res.status_code == 200
     body = res.json()
     assert body["status"] == "ok"
-    assert body["version"] == "1.8.2"
+    assert body["version"] == __version__
 
 
 def test_index_page():
@@ -25,7 +26,8 @@ def test_index_page():
     assert "feature-card" in text
     assert "page-home" in text
     assert "site-nav-link" in text
-    assert "theme.css?v=1.8.2" in text
+    assert "birth_year" in text
+    assert f"theme.css?v={__version__}" in text
 
 
 def test_chart_page():

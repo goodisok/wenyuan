@@ -123,9 +123,17 @@ def analyze(chart: dict[str, Any]) -> dict[str, Any]:
         unique.append(it)
 
     summary = "、".join(i["name"] for i in unique) if unique else "未显常用神煞"
+    by_pillar: dict[str, list[str]] = {k: [] for k in ("year", "month", "day", "hour")}
+    label_to_key = {"年柱": "year", "月柱": "month", "日柱": "day", "时柱": "hour"}
+    for it in unique:
+        pos = it.get("position", "")
+        for label, key in label_to_key.items():
+            if label in pos and it["name"] not in by_pillar[key]:
+                by_pillar[key].append(it["name"])
     return {
         "kernel": KERNEL,
         "items": unique,
+        "by_pillar": by_pillar,
         "summary": summary,
         "note": "神煞为辅助，须配合格局旺衰综合判断（协纪辨方书）",
     }
