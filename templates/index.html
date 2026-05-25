@@ -1,4 +1,4 @@
-{% extends "base.html" %}
+﻿{% extends "base.html" %}
 {% block title %}排盘{% endblock %}
 {% block content %}
 <div class="card">
@@ -24,6 +24,11 @@
         <input type="time" id="birth_time" name="birth_time" required>
       </div>
     </div>
+    <div class="form-group hidden" id="leap-month-group">
+      <label class="checkbox-label">
+        <input type="checkbox" id="is_leap_month" name="is_leap_month"> 闰月
+      </label>
+    </div>
     <div class="form-group">
       <label>性别</label>
       <div class="radio-group">
@@ -34,53 +39,17 @@
     <button type="submit" class="btn btn-primary" id="submit-btn">开始排盘</button>
   </form>
 </div>
+
+<div class="card hidden" id="history-card">
+  <h2 class="card-title">最近排盘</h2>
+  <ul id="history-list" class="history-list"></ul>
+</div>
 {% endblock %}
 {% block scripts %}
 <script src="/static/js/app.js"></script>
 <script>
 (function () {
-  const form = document.getElementById("chart-form");
-  const errEl = document.getElementById("form-error");
-  const btn = document.getElementById("submit-btn");
-  const dateType = document.getElementById("date_type");
-  const lunarHint = document.getElementById("lunar-hint");
-
-  document.getElementById("birth_date").value = "1990-05-15";
-  document.getElementById("birth_time").value = "12:00";
-
-  dateType.addEventListener("change", () => {
-    lunarHint.classList.toggle("hidden", dateType.value !== "lunar");
-  });
-
-  form.addEventListener("submit", async (e) => {
-    e.preventDefault();
-    Wenyuan.hideError(errEl);
-    btn.disabled = true;
-    btn.textContent = "排盘中…";
-
-    const fd = new FormData(form);
-    const payload = {
-      date_type: fd.get("date_type"),
-      birth_date: fd.get("birth_date"),
-      birth_time: fd.get("birth_time"),
-      gender: fd.get("gender"),
-    };
-
-    try {
-      const res = await Wenyuan.API.chart(payload);
-      if (!res.success) {
-        Wenyuan.showError(errEl, res.error || "排盘失败");
-        return;
-      }
-      sessionStorage.setItem(Wenyuan.STORAGE_KEY, JSON.stringify(res.data));
-      location.href = "/chart";
-    } catch (err) {
-      Wenyuan.showError(errEl, err.message || "网络错误，请稍后重试");
-    } finally {
-      btn.disabled = false;
-      btn.textContent = "开始排盘";
-    }
-  });
+  Wenyuan.initIndexPage();
 })();
 </script>
 {% endblock %}

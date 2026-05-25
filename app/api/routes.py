@@ -1,13 +1,33 @@
 import logging
 
-from fastapi import APIRouter
+from fastapi import APIRouter, Request
+from fastapi.responses import JSONResponse, StreamingResponse
 
 from app.core.bazi import BaziService
-from app.schemas import AnalyzeRequest, AnalyzeResponse, ChartRequest, ChartResponse
+from app.schemas import (
+    AnalyzeRequest,
+    AnalyzeResponse,
+    AskRequest,
+    AskResponse,
+    ChartRequest,
+    ChartResponse,
+)
 from app.services.ai import AIAnalysisService
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
+
+
+def _wants_sse(request: Request) -> bool:
+    accept = request.headers.get("accept", "")
+    return "text/event-stream" in accept
+
+
+def _ai_disabled_response():
+    return JSONResponse(
+        status_code=503,
+        content={"success": False, "error": "AI 解读暂时关闭，请稍后再试"},
+    )
 
 
 @router.post("/chart", response_model=ChartResponse)
@@ -22,13 +42,59 @@ async def create_chart(body: ChartRequest) -> ChartResponse:
         return ChartResponse(success=False, error="排盘失败，请检查输入")
 
 
-@router.post("/analyze", response_model=AnalyzeResponse)
-async def analyze_chart(body: AnalyzeRequest) -> AnalyzeResponse:
+@router.post("/analyze")
+async def analyze_chart(body: AnalyzeRequest, request: Request):
     try:
-        text = await AIAnalysisService.analyze(body.chart, body.style)
+        insight = body.insight or body.chart.get("insight")
+        if _wants_sse(request):
+            stream = AIAnalysisService.analyze_stream(body.chart, body.style, insight)
+            gen = AIAnalysisService.sse_events(stream)
+            return StreamingResponse(gen, media_type="text/event-stream")
+        text = await AIAnalysisService.analyze(body.chart, body.style, insight)
         return AnalyzeResponse(success=True, analysis=text)
     except ValueError as e:
-        return AnalyzeResponse(success=False, error=str(e))
+        msg = str(e)
+        status = 503 if "暂时关闭" in msg else 200
+        if status == 503:
+            return _ai_disabled_response()
+        return AnalyzeResponse(success=False, error=msg)
     except Exception:
         logger.exception("AI 分析失败")
         return AnalyzeResponse(success=False, error="分析失败，请稍后重试")
+
+
+@router.post("/ask")
+async def ask_chart(body: AskRequest, request: Request):
+    try:
+        rounds = len([h for h in body.history if h.get("role") == "user"])
+        if rounds >= 8:
+            return AskResponse(success=False, error="本轮已达上限，请刷新或重新打开命盘")
+        insight = body.insight or body.chart.get("insight")
+        if _wants_sse(request):
+            stream = AIAnalysisService.ask_stream(
+                body.chart,
+                body.question,
+                body.style,
+                insight,
+                body.analysis,
+                body.history,
+            )
+            gen = AIAnalysisService.sse_events_ask(stream)
+            return StreamingResponse(gen, media_type="text/event-stream")
+        answer = await AIAnalysisService.ask(
+            body.chart,
+            body.question,
+            body.style,
+            insight,
+            body.analysis,
+            body.history,
+        )
+        return AskResponse(success=True, answer=answer)
+    except ValueError as e:
+        msg = str(e)
+        if "暂时关闭" in msg:
+            return _ai_disabled_response()
+        return AskResponse(success=False, error=msg)
+    except Exception:
+        logger.exception("AI 问答失败")
+        return AskResponse(success=False, error="问答失败，请稍后重试")

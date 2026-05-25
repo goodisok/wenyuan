@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+{% block title %}隐私说明{% endblock %}
+{% block content %}
+<div class="card">
+  <h2 class="card-title">隐私说明</h2>
+  <div class="privacy-content">
+    <p>问元（Wenyuan）尊重您的隐私。使用本服务前，请了解以下要点：</p>
+    <h3>我们收集什么</h3>
+    <ul>
+      <li>您输入的出生日期、时间与性别，仅用于八字排盘与 AI 解读。</li>
+      <li>分享链接（<code>/chart?s=…</code>）中<strong>编码包含上述生辰信息</strong>，请勿向不信任的人分享。</li>
+    </ul>
+    <h3>我们如何存储</h3>
+    <ul>
+      <li><strong>服务端不持久化</strong>您的生辰或命盘结果，无用户账号与云端命盘库。</li>
+      <li>最近排盘记录与 AI 缓存保存在您<strong>本机浏览器</strong>（localStorage），可随时清除浏览器数据删除。</li>
+      <li>AI 解读请求会发送至 DeepSeek API 处理，请同时参阅 DeepSeek 的隐私政策。</li>
+    </ul>
+    <h3>日志</h3>
+    <ul>
+      <li>服务器日志不记录完整生辰或命盘 JSON；AI 错误仅记录状态码。</li>
+    </ul>
+    <h3>免责声明</h3>
+    <p>问元输出仅供文化参考与自我觉察，不构成医疗、投资或人生决策依据。</p>
+  </div>
+  <p class="privacy-back"><a href="/">返回首页</a></p>
+</div>
+{% endblock %}

@@ -36,6 +36,11 @@ async def chart_page(request: Request):
     return templates.TemplateResponse(request, "chart.html")
 
 
+@app.get("/privacy", response_class=HTMLResponse)
+async def privacy(request: Request):
+    return templates.TemplateResponse(request, "privacy.html")
+
+
 @app.get("/health")
 async def health():
     return {"status": "ok", "version": __version__}

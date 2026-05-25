@@ -6,7 +6,7 @@
 
 **Demo：** [http://119.91.54.153/](http://119.91.54.153/)
 
-输入公历或农历生辰即可排盘；配置 AI Key 后可使用古典 / 现代解读（当前为 v0.2.0 基线，v1.0 功能见下方路线图）。
+输入公历或农历生辰即可排盘；支持 URL 分享、L1 流式解读、L2/L3 就盘问答（**v1.0**）。
 
 ## 产品定位
 
@@ -31,15 +31,9 @@
 | 分享 | URL 编码生辰，本地最近 20 条历史 |
 | API | `/api/chart` · `/api/analyze` · `/api/ask` |
 
-## 路线图
+## 版本
 
-基线 **v0.2.0** → 目标 **v1.0**（见 PRODUCT.md 验收清单）：
-
-1. Phase 1 — URL 分享、localStorage、隐私页  
-2. Phase 2 — 闰月、规则层、刑冲合害、起运等  
-3. Phase 3 — 三元分区 UI（响应式）  
-4. Phase 4 — L2/L3、SSE、AI 缓存  
-5. Phase 5 — 公网部署、多用户验收  
+当前 **v1.0.0** — 完整交付 PRD v2.0 必交付项（URL 分享、三元 UI、BaziInsight、L1/L2/L3 SSE、隐私页等）。
 
 ## 技术栈
 
@@ -68,9 +62,9 @@ python run.py
 - 主页：http://localhost:8000  
 - API 文档：http://localhost:8000/docs  
 
-**公网 Demo：** [http://119.91.54.153/](http://119.91.54.153/)（腾讯云部署，v0.2.0）
+**公网 Demo：** [http://119.91.54.153/](http://119.91.54.153/)（腾讯云，v1.0.0）
 
-部署说明见 PRODUCT.md Phase 5（`DEPLOY.md` 待编写）。
+部署说明见 **[DEPLOY.md](DEPLOY.md)**。
 
 ## 项目结构
 
@@ -81,6 +75,7 @@ wenyuan/
 ├── static/        # 前端资源
 ├── tests/
 ├── PRODUCT.md     # 产品需求定稿（PRD v2.0）
+├── DEPLOY.md      # 云服务器部署
 └── run.py
 ```
 

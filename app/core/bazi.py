@@ -8,30 +8,14 @@ from typing import Any, Literal
 
 from lunar_python import Lunar, Solar
 
+from app.core.constants import DIZHI_CANGGAN, DIZHI_WUXING, TIANGAN_WUXING, WUXING_COLOR
+from app.core.relations import compute_pillar_relations
+
 Gender = Literal["male", "female"]
 DateType = Literal["solar", "lunar"]
 
 PILLAR_NAMES = ("year", "month", "day", "hour")
 PILLAR_LABELS = {"year": "年柱", "month": "月柱", "day": "日柱", "hour": "时柱"}
-
-TIANGAN_WUXING: dict[str, str] = {
-    "甲": "木", "乙": "木", "丙": "火", "丁": "火", "戊": "土",
-    "己": "土", "庚": "金", "辛": "金", "壬": "水", "癸": "水",
-}
-DIZHI_WUXING: dict[str, str] = {
-    "寅": "木", "卯": "木", "巳": "火", "午": "火",
-    "辰": "土", "戌": "土", "丑": "土", "未": "土",
-    "申": "金", "酉": "金", "亥": "水", "子": "水",
-}
-DIZHI_CANGGAN: dict[str, list[str]] = {
-    "子": ["癸"], "丑": ["己", "癸", "辛"], "寅": ["甲", "丙", "戊"],
-    "卯": ["乙"], "辰": ["戊", "乙", "癸"], "巳": ["丙", "戊", "庚"],
-    "午": ["丁", "己"], "未": ["己", "丁", "乙"], "申": ["庚", "壬", "戊"],
-    "酉": ["辛"], "戌": ["戊", "辛", "丁"], "亥": ["壬", "甲"],
-}
-WUXING_COLOR: dict[str, str] = {
-    "木": "wood", "火": "fire", "土": "earth", "金": "metal", "水": "water",
-}
 
 
 @dataclass
@@ -43,6 +27,7 @@ class BirthInput:
     hour: int
     minute: int
     gender: Gender
+    is_leap_month: bool = False
 
 
 class BaziService:
@@ -57,9 +42,10 @@ class BaziService:
             return False
 
     @staticmethod
-    def validate_lunar(year: int, month: int, day: int) -> bool:
+    def validate_lunar(year: int, month: int, day: int, is_leap_month: bool = False) -> bool:
         try:
-            Lunar.fromYmd(year, month, day)
+            lunar_month = -month if is_leap_month else month
+            Lunar.fromYmd(year, lunar_month, day)
             return True
         except Exception:
             return False
@@ -67,9 +53,10 @@ class BaziService:
     @classmethod
     def resolve_solar(cls, data: BirthInput) -> tuple[Solar, Lunar]:
         if data.date_type == "lunar":
-            if not cls.validate_lunar(data.year, data.month, data.day):
+            if not cls.validate_lunar(data.year, data.month, data.day, data.is_leap_month):
                 raise ValueError("无效的农历日期")
-            solar_obj = Lunar.fromYmd(data.year, data.month, data.day).getSolar()
+            lunar_month = -data.month if data.is_leap_month else data.month
+            solar_obj = Lunar.fromYmd(data.year, lunar_month, data.day).getSolar()
             solar = Solar.fromYmdHms(
                 solar_obj.getYear(), solar_obj.getMonth(), solar_obj.getDay(),
                 data.hour, data.minute, 0,
@@ -85,15 +72,19 @@ class BaziService:
         return ganzhi[0], ganzhi[1] if len(ganzhi) > 1 else ""
 
     @classmethod
-    def _canggan_list(cls, dizhi: str) -> list[dict[str, str]]:
-        return [
-            {
+    def _canggan_list(cls, dizhi: str, shishen_list: list[str] | None = None) -> list[dict[str, str]]:
+        stems = DIZHI_CANGGAN.get(dizhi, [])
+        result = []
+        for i, g in enumerate(stems):
+            item: dict[str, str] = {
                 "name": g,
                 "wuxing": TIANGAN_WUXING.get(g, ""),
                 "color": WUXING_COLOR.get(TIANGAN_WUXING.get(g, ""), ""),
             }
-            for g in DIZHI_CANGGAN.get(dizhi, [])
-        ]
+            if shishen_list and i < len(shishen_list):
+                item["shishen"] = shishen_list[i]
+            result.append(item)
+        return result
 
     @classmethod
     def _build_pillar(
@@ -103,6 +94,7 @@ class BaziService:
         shishen: str,
         nayin: str,
         xunkong: str = "",
+        hide_shishen: list[str] | None = None,
     ) -> dict[str, Any]:
         tg, dz = cls._stem_branch(ganzhi)
         tg_wx = TIANGAN_WUXING.get(tg, "")
@@ -119,8 +111,31 @@ class BaziService:
                 "name": dz,
                 "wuxing": dz_wx,
                 "color": WUXING_COLOR.get(dz_wx, ""),
-                "canggan": cls._canggan_list(dz),
+                "canggan": cls._canggan_list(dz, hide_shishen),
             },
+        }
+
+    @classmethod
+    def _lunar_age(cls, birth_lunar: Lunar) -> int:
+        now_lunar = Solar.fromDate(datetime.now()).getLunar()
+        return now_lunar.getYear() - birth_lunar.getYear() + 1
+
+    @classmethod
+    def _qiyun_info(cls, yun: Any) -> dict[str, Any]:
+        start_solar = yun.getStartSolar()
+        years = yun.getStartYear()
+        months = yun.getStartMonth()
+        days = yun.getStartDay()
+        direction = "顺行" if yun.isForward() else "逆行"
+        desc = f"{direction}，{years}年{months}月{days}天起运，交运约 {start_solar.toYmd()}"
+        return {
+            "direction": direction,
+            "start_years": years,
+            "start_months": months,
+            "start_days": days,
+            "start_solar_date": start_solar.toYmd(),
+            "start_year": start_solar.getYear(),
+            "description": desc,
         }
 
     @classmethod
@@ -130,11 +145,15 @@ class BaziService:
         gender_num = 1 if data.gender == "male" else 0
         yun = ec.getYun(gender_num)
 
+        pillar_specs = [
+            ("year", ec.getYear(), ec.getYearShiShenGan(), ec.getYearNaYin(), ec.getYearXunKong(), ec.getYearShiShenZhi()),
+            ("month", ec.getMonth(), ec.getMonthShiShenGan(), ec.getMonthNaYin(), ec.getMonthXunKong(), ec.getMonthShiShenZhi()),
+            ("day", ec.getDay(), "日主", ec.getDayNaYin(), ec.getDayXunKong(), ec.getDayShiShenZhi()),
+            ("hour", ec.getTime(), ec.getTimeShiShenGan(), ec.getTimeNaYin(), ec.getTimeXunKong(), ec.getTimeShiShenZhi()),
+        ]
         pillars = [
-            cls._build_pillar("year", ec.getYear(), ec.getYearShiShenGan(), ec.getYearNaYin()),
-            cls._build_pillar("month", ec.getMonth(), ec.getMonthShiShenGan(), ec.getMonthNaYin()),
-            cls._build_pillar("day", ec.getDay(), "日主", ec.getDayNaYin()),
-            cls._build_pillar("hour", ec.getTime(), ec.getTimeShiShenGan(), ec.getTimeNaYin()),
+            cls._build_pillar(key, gz, ss, ny, xk, list(hs))
+            for key, gz, ss, ny, xk, hs in pillar_specs
         ]
 
         dayun_list: list[dict[str, Any]] = []
@@ -173,8 +192,6 @@ class BaziService:
                 })
             break
 
-        birth_year = solar.getYear()
-        current_year = datetime.now().year
         solar_str = (
             f"{solar.getYear()}年{solar.getMonth()}月{solar.getDay()}日 "
             f"{solar.getHour()}时{solar.getMinute()}分"
@@ -184,13 +201,14 @@ class BaziService:
             f"{lunar.getDayInChinese()} {lunar.getTimeZhi()}时"
         )
 
-        return {
+        chart: dict[str, Any] = {
             "meta": {
                 "gender": data.gender,
                 "gender_label": "男" if data.gender == "male" else "女",
                 "date_type": data.date_type,
+                "is_leap_month": data.is_leap_month,
                 "zodiac": lunar.getYearShengXiao(),
-                "age": current_year - birth_year + 1,
+                "age": cls._lunar_age(lunar),
                 "birth_time": {"solar": solar_str, "lunar": lunar_str},
                 "day_master": ec.getDayGan(),
                 "day_master_wuxing": TIANGAN_WUXING.get(ec.getDayGan(), ""),
@@ -203,7 +221,13 @@ class BaziService:
             "dayun": dayun_list,
             "xiaoyun": xiaoyun_list,
             "wuxing_stats": cls._wuxing_stats(pillars),
+            "qiyun": cls._qiyun_info(yun),
         }
+        chart["pillars_relations"] = compute_pillar_relations(pillars)
+        from app.core.insight import build_insight
+
+        chart["insight"] = build_insight(chart)
+        return chart
 
     @classmethod
     def _pillar_wuxing_summary(cls, ganzhi: str) -> str:
@@ -216,8 +240,8 @@ class BaziService:
         return "-".join(parts)
 
     @classmethod
-    def _wuxing_stats(cls, pillars: list[dict[str, Any]]) -> dict[str, int]:
-        stats = {"木": 0, "火": 0, "土": 0, "金": 0, "水": 0}
+    def _wuxing_stats(cls, pillars: list[dict[str, Any]]) -> dict[str, int | float]:
+        stats: dict[str, float] = {"木": 0, "火": 0, "土": 0, "金": 0, "水": 0}
         for p in pillars:
             for wx in (p["tiangan"]["wuxing"], p["dizhi"]["wuxing"]):
                 if wx in stats:

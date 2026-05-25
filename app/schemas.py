@@ -8,6 +8,7 @@ class ChartRequest(BaseModel):
     birth_date: str = Field(..., description="YYYY-MM-DD")
     birth_time: str = Field(..., description="HH:mm")
     gender: Literal["male", "female"] = "male"
+    is_leap_month: bool = False
 
     @field_validator("birth_date")
     @classmethod
@@ -41,6 +42,7 @@ class ChartRequest(BaseModel):
             year=y, month=m, day=d,
             hour=h, minute=mi,
             gender=self.gender,
+            is_leap_month=self.is_leap_month,
         )
 
 
@@ -51,11 +53,37 @@ class ChartResponse(BaseModel):
 
 
 class AnalyzeRequest(BaseModel):
-    chart: dict = Field(..., description="完整排盘结果，用于 AI 分析")
+    chart: dict = Field(..., description="完整排盘结果")
+    insight: dict | None = None
     style: Literal["classic", "modern"] = "classic"
 
 
 class AnalyzeResponse(BaseModel):
     success: bool
     analysis: str | None = None
+    error: str | None = None
+
+
+class AskRequest(BaseModel):
+    chart: dict = Field(..., description="完整排盘结果")
+    insight: dict | None = None
+    analysis: str = ""
+    question: str = Field(..., min_length=1, max_length=500)
+    history: list[dict[str, str]] = Field(default_factory=list)
+    style: Literal["classic", "modern"] = "classic"
+
+    @field_validator("history")
+    @classmethod
+    def validate_history(cls, v: list[dict[str, str]]) -> list[dict[str, str]]:
+        if len(v) > 16:
+            raise ValueError("历史对话过长")
+        for item in v:
+            if item.get("role") not in ("user", "assistant") or not item.get("content"):
+                raise ValueError("history 格式无效")
+        return v
+
+
+class AskResponse(BaseModel):
+    success: bool
+    answer: str | None = None
     error: str | None = None

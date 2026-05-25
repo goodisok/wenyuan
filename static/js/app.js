@@ -1,17 +1,133 @@
-/** 问元 · 前端工具 */
+/** 问元 · 前端 v1.0 */
 const STORAGE_KEY = "wenyuan_chart";
+const HISTORY_KEY = "wenyuan_history";
+const INPUT_KEY = "wenyuan_input";
+const MAX_HISTORY = 20;
+const L3_MAX_ROUNDS = 8;
+const SHARE_VERSION = 1;
+
+const L2_FIXED = ["当前大运对我意味着什么？", "我的五行平衡吗？"];
+
+const WUXING_MAP = { 木: "wood", 火: "fire", 土: "earth", 金: "metal", 水: "water" };
+
+function escapeHtml(text) {
+  return String(text)
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;");
+}
+
+function hashInput(input) {
+  const s = JSON.stringify(input);
+  let h = 0;
+  for (let i = 0; i < s.length; i += 1) {
+    h = (Math.imul(31, h) + s.charCodeAt(i)) | 0;
+  }
+  return `h${Math.abs(h)}`;
+}
+
+function encodeSharePayload(input) {
+  const json = JSON.stringify({ v: SHARE_VERSION, ...input });
+  const b64 = btoa(unescape(encodeURIComponent(json)));
+  return b64.replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+}
+
+function decodeSharePayload(raw) {
+  let b64 = raw.replace(/-/g, "+").replace(/_/g, "/");
+  while (b64.length % 4) b64 += "=";
+  const json = decodeURIComponent(escape(atob(b64)));
+  const data = JSON.parse(json);
+  if (data.v !== SHARE_VERSION) throw new Error("链接版本不兼容");
+  return data;
+}
+
+function getShareUrl(input) {
+  const q = encodeSharePayload(input);
+  return `${location.origin}/chart?s=${q}`;
+}
+
+function loadHistory() {
+  try {
+    return JSON.parse(localStorage.getItem(HISTORY_KEY) || "[]");
+  } catch {
+    return [];
+  }
+}
+
+function saveHistory(input, label) {
+  const list = loadHistory().filter((h) => JSON.stringify(h.input) !== JSON.stringify(input));
+  list.unshift({ input, label, ts: Date.now() });
+  localStorage.setItem(HISTORY_KEY, JSON.stringify(list.slice(0, MAX_HISTORY)));
+}
+
+function aiCacheKey(input) {
+  return `wenyuan_ai_${hashInput(input)}`;
+}
+
+function loadAiCache(input) {
+  try {
+    return JSON.parse(localStorage.getItem(aiCacheKey(input)) || "null");
+  } catch {
+    return null;
+  }
+}
+
+function saveAiCache(input, data) {
+  localStorage.setItem(aiCacheKey(input), JSON.stringify(data));
+}
 
 async function parseJsonResponse(res) {
   const body = await res.json();
   if (!res.ok) {
     const detail = body.detail;
     if (Array.isArray(detail)) {
-      const msg = detail.map((d) => d.msg || d.message || String(d)).join("；");
-      throw new Error(msg || `请求失败 (${res.status})`);
+      throw new Error(detail.map((d) => d.msg || d.message || String(d)).join("；") || `请求失败 (${res.status})`);
     }
     throw new Error(body.error || body.message || `请求失败 (${res.status})`);
   }
   return body;
+}
+
+async function consumeSSE(res, onChunk) {
+  const reader = res.body.getReader();
+  const decoder = new TextDecoder();
+  let buffer = "";
+  let full = "";
+  let error = null;
+
+  while (true) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    buffer += decoder.decode(value, { stream: true });
+    const parts = buffer.split("\n\n");
+    buffer = parts.pop() || "";
+    for (const block of parts) {
+      const lines = block.split("\n");
+      let event = "message";
+      let data = "";
+      for (const line of lines) {
+        if (line.startsWith("event: ")) event = line.slice(7).trim();
+        if (line.startsWith("data: ")) data = line.slice(6);
+      }
+      if (!data) continue;
+      try {
+        const parsed = JSON.parse(data);
+        if (event === "chunk" && parsed.text) {
+          full += parsed.text;
+          onChunk(full, parsed.text);
+        } else if (event === "done") {
+          full = parsed.analysis || parsed.answer || full;
+        } else if (event === "error") {
+          error = parsed.error || "流式请求失败";
+        }
+      } catch {
+        /* ignore */
+      }
+    }
+  }
+  if (error) throw new Error(error);
+  return full;
 }
 
 const API = {
@@ -23,13 +139,62 @@ const API = {
     });
     return parseJsonResponse(res);
   },
-  async analyze(chart, style = "classic") {
+  async analyze(chart, style, insight, onChunk) {
+    const body = { chart, insight: insight || chart.insight, style };
+    if (onChunk) {
+      const res = await fetch("/api/analyze", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Accept: "text/event-stream" },
+        body: JSON.stringify(body),
+      });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.error || `请求失败 (${res.status})`);
+      }
+      return consumeSSE(res, onChunk);
+    }
     const res = await fetch("/api/analyze", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ chart, style }),
+      body: JSON.stringify(body),
     });
-    return parseJsonResponse(res);
+    const data = await parseJsonResponse(res);
+    if (!data.success) throw new Error(data.error || "分析失败");
+    return data.analysis;
+  },
+  async ask(chart, question, style, insight, analysis, history, onChunk) {
+    const body = {
+      chart,
+      insight: insight || chart.insight,
+      question,
+      style,
+      analysis: analysis || "",
+      history: history || [],
+    };
+    if (onChunk) {
+      const res = await fetch("/api/ask", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Accept: "text/event-stream" },
+        body: JSON.stringify(body),
+      });
+      if (res.status === 503) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.error || "AI 暂时关闭");
+      }
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.error || `请求失败 (${res.status})`);
+      }
+      return consumeSSE(res, onChunk);
+    }
+    const res = await fetch("/api/ask", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body),
+    });
+    const data = await parseJsonResponse(res);
+    if (!data.success) throw new Error(data.error || "问答失败");
+    return data.answer;
   },
 };
 
@@ -44,12 +209,17 @@ function hideError(el) {
   el.classList.add("hidden");
 }
 
-function escapeHtml(text) {
-  return String(text)
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;");
+function showToast(msg) {
+  let t = document.getElementById("copy-toast");
+  if (!t) {
+    t = document.createElement("div");
+    t.id = "copy-toast";
+    t.className = "copy-toast";
+    document.body.appendChild(t);
+  }
+  t.textContent = msg;
+  t.classList.add("show");
+  setTimeout(() => t.classList.remove("show"), 2000);
 }
 
 function inlineMarkdown(text) {
@@ -60,41 +230,33 @@ function formatMarkdownBody(body) {
   const lines = body.split("\n");
   const parts = [];
   let listType = null;
-
   const closeList = () => {
     if (listType) {
       parts.push(`</${listType}>`);
       listType = null;
     }
   };
-
   for (const rawLine of lines) {
-    const line = rawLine.trimEnd();
-    const trimmed = line.trim();
-
+    const trimmed = rawLine.trimEnd().trim();
     if (!trimmed) {
       closeList();
       continue;
     }
-
     if (/^---+$/.test(trimmed)) {
       closeList();
       parts.push('<hr class="analysis-divider">');
       continue;
     }
-
     if (trimmed.startsWith("### ")) {
       closeList();
       parts.push(`<h4 class="analysis-subtitle">${inlineMarkdown(trimmed.slice(4))}</h4>`);
       continue;
     }
-
     if (trimmed.startsWith("> ")) {
       closeList();
       parts.push(`<blockquote class="analysis-quote">${inlineMarkdown(trimmed.slice(2))}</blockquote>`);
       continue;
     }
-
     if (/^[-*]\s+/.test(trimmed)) {
       if (listType !== "ul") {
         closeList();
@@ -104,7 +266,6 @@ function formatMarkdownBody(body) {
       parts.push(`<li>${inlineMarkdown(trimmed.replace(/^[-*]\s+/, ""))}</li>`);
       continue;
     }
-
     if (/^\d+\.\s+/.test(trimmed)) {
       if (listType !== "ol") {
         closeList();
@@ -114,11 +275,9 @@ function formatMarkdownBody(body) {
       parts.push(`<li>${inlineMarkdown(trimmed.replace(/^\d+\.\s+/, ""))}</li>`);
       continue;
     }
-
     closeList();
     parts.push(`<p class="analysis-paragraph">${inlineMarkdown(trimmed)}</p>`);
   }
-
   closeList();
   return parts.join("");
 }
@@ -126,19 +285,16 @@ function formatMarkdownBody(body) {
 function markdownToHtml(markdown) {
   const escaped = escapeHtml(String(markdown || "").trim());
   if (!escaped) return "";
-
-  const blocks = escaped.split(/\n(?=## )/);
-  return blocks
+  return escaped
+    .split(/\n(?=## )/)
     .map((block) => {
       const lines = block.split("\n");
       let title = "";
       let body = block;
-
       if (lines[0].startsWith("## ")) {
         title = lines[0].replace(/^#+\s*/, "");
         body = lines.slice(1).join("\n");
       }
-
       const inner = formatMarkdownBody(body);
       if (title) {
         return `<section class="analysis-block"><h3 class="analysis-block-title">${title}</h3>${inner}</section>`;
@@ -148,43 +304,32 @@ function markdownToHtml(markdown) {
     .join("");
 }
 
-function renderAnalysis(text, style) {
-  const wrap = document.getElementById("ai-result-wrap");
-  const empty = document.getElementById("ai-empty");
-  const badge = document.getElementById("ai-style-badge");
-  const timeEl = document.getElementById("ai-time");
-  const result = document.getElementById("ai-result");
-
-  if (!result) return;
-
-  const label = style === "classic" ? "古典风格" : "现代风格";
-  if (badge) {
-    badge.textContent = label;
-    badge.className = `analysis-style-badge style-${style}`;
-  }
-  if (timeEl) {
-    timeEl.textContent = new Date().toLocaleString("zh-CN", { hour12: false });
-  }
-
-  result.innerHTML = markdownToHtml(text);
-  wrap?.classList.remove("hidden");
-  empty?.classList.add("hidden");
-
-  document.querySelectorAll(".ai-style-btn").forEach((btn) => {
-    btn.classList.toggle("active", btn.dataset.style === style);
-  });
-
-  wrap?.scrollIntoView({ behavior: "smooth", block: "nearest" });
-}
-
 function wuxingClass(color) {
   return color ? `wuxing-${color}` : "";
 }
 
+function renderWuxingChart(wx) {
+  const max = Math.max(...Object.values(wx || {}), 1);
+  return Object.entries(wx || {})
+    .map(([k, v]) => {
+      const pct = Math.round((Number(v) / max) * 100);
+      return `<div class="wuxing-bar-row">
+        <span class="wuxing-bar-label wuxing-${WUXING_MAP[k] || ""}">${k}</span>
+        <div class="wuxing-bar-track"><div class="wuxing-bar-fill wuxing-${WUXING_MAP[k] || ""}" style="width:${pct}%"></div></div>
+        <span class="wuxing-bar-val">${v}</span>
+      </div>`;
+    })
+    .join("");
+}
+
 function renderPillar(p) {
   const cg = (p.dizhi.canggan || [])
-    .map((c) => `<span class="canggan-tag ${wuxingClass(c.color)}">${c.name}</span>`)
+    .map((c) => {
+      const ss = c.shishen ? `·${c.shishen}` : "";
+      return `<span class="canggan-tag ${wuxingClass(c.color)}">${c.name}${ss}</span>`;
+    })
     .join("");
+  const xk = p.xunkong ? `<div class="pillar-xunkong">旬空 ${escapeHtml(p.xunkong)}</div>` : "";
   return `
     <div class="pillar">
       <div class="pillar-label">${p.label}</div>
@@ -192,22 +337,16 @@ function renderPillar(p) {
       <div class="stem ${wuxingClass(p.tiangan.color)}">${p.tiangan.name} · ${p.tiangan.wuxing}</div>
       <div class="branch ${wuxingClass(p.dizhi.color)}">${p.dizhi.name} · ${p.dizhi.wuxing}</div>
       <div class="canggan-list">${cg}</div>
+      ${xk}
       <div class="pillar-meta">${p.shishen}<br>${p.nayin}</div>
     </div>`;
 }
 
-function renderChart(data) {
-  const m = data.meta;
-  const wx = data.wuxing_stats || {};
-  const wxMap = { 木: "wood", 火: "fire", 土: "earth", 金: "metal", 水: "water" };
-  const wxChips = Object.entries(wx)
-    .map(([k, v]) => `<span class="wuxing-chip wuxing-${wxMap[k] || ""}">${k} ${v}</span>`)
-    .join("");
-
-  const dayunRows = (data.dayun || [])
+function renderDayunTable(dayun) {
+  const rows = (dayun || [])
     .map(
-      (d) => `
-      <tr>
+      (d, i) => `
+      <tr class="dayun-row" data-idx="${i}">
         <td><strong>${d.ganzhi}</strong></td>
         <td>${d.start_year} — ${d.end_year}</td>
         <td>${d.start_age} — ${d.end_age} 岁</td>
@@ -215,86 +354,130 @@ function renderChart(data) {
       </tr>`
     )
     .join("");
+  return `<div class="table-wrap dayun-table-desktop"><table><thead><tr><th>干支</th><th>年份</th><th>年龄</th><th>流年</th></tr></thead><tbody>${rows}</tbody></table></div>`;
+}
 
-  const xyRows = (data.xiaoyun || [])
-    .slice(0, 12)
+function renderDayunCards(dayun) {
+  return (dayun || [])
     .map(
-      (x) => `
-      <tr>
-        <td>${x.year}</td>
-        <td>${x.ganzhi}</td>
-        <td>${x.age} 岁</td>
-        <td>${x.liunian?.ganzhi || ""} (${x.liunian?.year || ""})</td>
-      </tr>`
+      (d, i) => `
+      <div class="dayun-card" data-idx="${i}">
+        <button type="button" class="dayun-card-head">
+          <strong>${d.ganzhi}</strong>
+          <span>${d.start_year}—${d.end_year} · ${d.start_age}—${d.end_age}岁</span>
+        </button>
+        <div class="liunian-badges hidden">${(d.liunian || []).map((l) => `<span class="badge">${l.ganzhi} ${l.year}</span>`).join("")}</div>
+      </div>`
     )
+    .join("");
+}
+
+function suggestL2Questions(insight) {
+  const dynamic = [];
+  const strongest = insight?.wuxing_strongest || [];
+  if (strongest.length) dynamic.push(`命局${strongest[0]}偏旺，日常宜如何调适？`);
+  const weakest = insight?.wuxing_weakest || [];
+  if (weakest.length && !strongest.includes(weakest[0])) {
+    dynamic.push(`五行${weakest[0]}较弱，可留意哪些方面？`);
+  }
+  const cd = insight?.current_dayun;
+  if (cd?.ganzhi) dynamic.push(`大运${cd.ganzhi}阶段的重点是什么？`);
+  if (insight?.day_master_strength && insight.day_master_strength !== "平衡") {
+    dynamic.push(`日主${insight.day_master_strength}，行事风格有何特点？`);
+  }
+  const rel = insight?.pillars_relations || [];
+  if (rel.length) dynamic.push(`盘中有「${rel[0]}」，如何理解？`);
+  return [...L2_FIXED, ...dynamic.slice(0, 4)].slice(0, 6);
+}
+
+function renderChart(data) {
+  const m = data.meta || {};
+  const wx = data.wuxing_stats || {};
+  const insight = data.insight || {};
+  const rel = (data.pillars_relations || [])
+    .map((r) => `<span class="relation-tag">${escapeHtml(r)}</span>`)
+    .join("");
+  const qy = data.qiyun || {};
+
+  const xyBlock = (data.xiaoyun || []).length
+    ? `<div class="table-wrap"><table><thead><tr><th>年份</th><th>小运</th><th>年龄</th><th>流年</th></tr></thead><tbody>${data.xiaoyun
+        .slice(0, 12)
+        .map(
+          (x) =>
+            `<tr><td>${x.year}</td><td>${x.ganzhi}</td><td>${x.age} 岁</td><td>${x.liunian?.ganzhi || ""} (${x.liunian?.year || ""})</td></tr>`
+        )
+        .join("")}</tbody></table></div>`
+    : "";
+
+  const chips = suggestL2Questions(insight)
+    .map((q) => `<button type="button" class="chip-btn" data-q="${escapeHtml(q)}">${escapeHtml(q)}</button>`)
     .join("");
 
   return `
-    <div class="card">
-      <h2 class="card-title">命主信息</h2>
+    <section class="section-block" id="sec-meta">
+      <h2 class="section-title">命主概览</h2>
       <div class="meta-grid">
         <div class="meta-item"><div class="label">性别</div><div class="value">${m.gender_label}</div></div>
         <div class="meta-item"><div class="label">生肖</div><div class="value">${m.zodiac}</div></div>
         <div class="meta-item"><div class="label">虚岁</div><div class="value">${m.age} 岁</div></div>
         <div class="meta-item"><div class="label">日主</div><div class="value">${m.day_master}（${m.day_master_wuxing}）</div></div>
         <div class="meta-item"><div class="label">十二长生</div><div class="value">${m.day_dishi || "—"}</div></div>
-        <div class="meta-item"><div class="label">胎元</div><div class="value">${m.tai_yuan || "—"}</div></div>
-        <div class="meta-item"><div class="label">命宫</div><div class="value">${m.ming_gong || "—"}</div></div>
-        <div class="meta-item"><div class="label">身宫</div><div class="value">${m.shen_gong || "—"}</div></div>
       </div>
-      <p class="birth-time-note">
-        阳历 ${m.birth_time?.solar || ""}<br>
-        农历 ${m.birth_time?.lunar || ""}
-      </p>
-      <div class="wuxing-bar">${wxChips}</div>
-    </div>
-
-    <div class="card">
-      <h2 class="card-title">四柱八字</h2>
-      <div class="bazi-board">${data.pillars.map(renderPillar).join("")}</div>
-    </div>
-
-    <div class="card">
-      <h2 class="card-title">大运</h2>
-      <div class="table-wrap">
-        <table>
-          <thead><tr><th>干支</th><th>年份</th><th>年龄</th><th>流年</th></tr></thead>
-          <tbody>${dayunRows || "<tr><td colspan='4'>暂无</td></tr>"}</tbody>
-        </table>
+      <p class="birth-time-note">阳历 ${m.birth_time?.solar || ""}<br>农历 ${m.birth_time?.lunar || ""}</p>
+      <div class="meta-actions">
+        <button type="button" class="btn btn-secondary" id="btn-copy-link">复制链接</button>
       </div>
-    </div>
-
-    ${
-      data.xiaoyun?.length
-        ? `<div class="card">
-      <h2 class="card-title">小运</h2>
-      <div class="table-wrap">
-        <table>
-          <thead><tr><th>年份</th><th>小运</th><th>年龄</th><th>流年</th></tr></thead>
-          <tbody>${xyRows}</tbody>
-        </table>
+      <div class="insight-panel">
+        <p>日主倾向 <strong>${insight.day_master_strength || "—"}</strong>
+        <span class="insight-note">${insight.day_master_strength_note || ""}</span></p>
+        ${insight.current_dayun ? `<p>当前大运 ${insight.current_dayun.ganzhi}（${insight.current_dayun.start_year}-${insight.current_dayun.end_year}）</p>` : ""}
       </div>
-    </div>`
-        : ""
-    }
-    <div class="card" id="ai-section">
-      <h2 class="card-title">AI 命理解读</h2>
-      <p class="ai-hint">
-        以 DeepSeek 结合本盘四柱、十神与大运生成解读。手动触发，不自动消耗额度。
-      </p>
+    </section>
+
+    <section class="section-block" id="sec-di">
+      <h2 class="section-title">地 · 四柱根基</h2>
+      <div class="bazi-board">${(data.pillars || []).map(renderPillar).join("")}</div>
+      ${rel ? `<div class="relation-tags">${rel}</div>` : ""}
+      <h3 class="subsection-title">五行分布</h3>
+      <div class="wuxing-chart">${renderWuxingChart(wx)}</div>
+    </section>
+
+    <section class="section-block collapsible" id="sec-tian">
+      <button type="button" class="section-header" data-target="sec-tian-body">
+        <h2 class="section-title">天 · 运势节律</h2><span class="section-chevron">▼</span>
+      </button>
+      <div class="section-body" id="sec-tian-body">
+        <p class="qiyun-desc">${escapeHtml(qy.description || "")}</p>
+        ${renderDayunTable(data.dayun)}
+        <div class="dayun-cards">${renderDayunCards(data.dayun)}</div>
+        ${xyBlock}
+      </div>
+    </section>
+
+    <section class="section-block collapsible" id="sec-ren">
+      <button type="button" class="section-header" data-target="sec-ren-body">
+        <h2 class="section-title">人 · 本命特质</h2><span class="section-chevron">▼</span>
+      </button>
+      <div class="section-body" id="sec-ren-body">
+        <div class="meta-grid">
+          <div class="meta-item"><p class="label">胎元</p><p class="value">${m.tai_yuan || "—"}</p></div>
+          <div class="meta-item"><p class="label">命宫</p><p class="value">${m.ming_gong || "—"}</p></div>
+          <div class="meta-item"><p class="label">身宫</p><p class="value">${m.shen_gong || "—"}</p></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="section-block" id="sec-ai">
+      <h2 class="section-title">问 · AI</h2>
+      <p class="ai-hint">锚定本盘解读与追问，非开放闲聊。L3 每命盘每标签页最多 ${L3_MAX_ROUNDS} 轮。</p>
       <div class="ai-toolbar">
         <button type="button" class="btn btn-secondary ai-style-btn" data-style="classic" id="btn-analyze-classic">古典风格</button>
         <button type="button" class="btn btn-secondary ai-style-btn" data-style="modern" id="btn-analyze-modern">现代风格</button>
+        <button type="button" class="btn btn-secondary hidden" id="btn-copy-analysis">复制解读</button>
       </div>
-      <div id="ai-loading" class="ai-loading hidden">
-        <div class="spinner"></div>
-        <p class="ai-loading-title">问元解读中</p>
-        <p class="ai-loading-desc">正在结合天地人三元梳理命盘…</p>
-      </div>
+      <div id="ai-loading" class="ai-loading hidden"><div class="spinner"></div><p class="ai-loading-title">问元解读中</p></div>
       <div id="ai-error" class="alert alert-error hidden"></div>
-      <div id="ai-empty" class="ai-empty">
-        <p>选择解读风格后，AI 将按八个章节输出结构化分析。</p>
-      </div>
+      <div id="ai-empty" class="ai-empty"><p>选择风格后，AI 将按八个章节流式输出 L1 解读。</p></div>
       <div id="ai-result-wrap" class="analysis-panel hidden">
         <div class="analysis-header">
           <span id="ai-style-badge" class="analysis-style-badge style-classic">古典风格</span>
@@ -302,8 +485,324 @@ function renderChart(data) {
         </div>
         <div id="ai-result" class="analysis-content"></div>
       </div>
-    </div>
-  `;
+      <div class="l2-chips">${chips}</div>
+      <div class="ask-panel">
+        <div id="ask-history" class="ask-history"></div>
+        <div class="ask-input-bar">
+          <input type="text" id="ask-input" placeholder="就本盘提问…" maxlength="500">
+          <button type="button" class="btn btn-primary" id="btn-ask">提问</button>
+        </div>
+        <p id="ask-rounds" class="ask-rounds"></p>
+      </div>
+    </section>`;
 }
 
-window.Wenyuan = { API, renderChart, renderAnalysis, showError, hideError, STORAGE_KEY };
+function renderAnalysis(text, style) {
+  const wrap = document.getElementById("ai-result-wrap");
+  const empty = document.getElementById("ai-empty");
+  const badge = document.getElementById("ai-style-badge");
+  const timeEl = document.getElementById("ai-time");
+  const result = document.getElementById("ai-result");
+  const copyBtn = document.getElementById("btn-copy-analysis");
+  if (!result) return;
+  const label = style === "classic" ? "古典风格" : "现代风格";
+  if (badge) {
+    badge.textContent = label;
+    badge.className = `analysis-style-badge style-${style}`;
+  }
+  if (timeEl) timeEl.textContent = new Date().toLocaleString("zh-CN", { hour12: false });
+  result.innerHTML = markdownToHtml(text);
+  wrap?.classList.remove("hidden");
+  empty?.classList.add("hidden");
+  copyBtn?.classList.remove("hidden");
+  document.querySelectorAll(".ai-style-btn").forEach((btn) => {
+    btn.classList.toggle("active", btn.dataset.style === style);
+  });
+}
+
+function appendAskMessage(role, content) {
+  const box = document.getElementById("ask-history");
+  if (!box) return;
+  const div = document.createElement("div");
+  div.className = `ask-msg ask-${role}`;
+  if (role === "assistant") {
+    div.innerHTML = markdownToHtml(content);
+  } else {
+    div.textContent = content;
+  }
+  box.appendChild(div);
+  div.scrollIntoView({ behavior: "smooth", block: "nearest" });
+}
+
+function wireChartInteractions(state) {
+  document.querySelectorAll(".section-header").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      const id = btn.dataset.target;
+      const body = document.getElementById(id);
+      body?.classList.toggle("collapsed");
+      btn.closest(".collapsible")?.classList.toggle("is-collapsed");
+    });
+  });
+
+  document.querySelectorAll(".dayun-card-head").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      const card = btn.closest(".dayun-card");
+      card?.classList.toggle("expanded");
+      card?.querySelector(".liunian-badges")?.classList.toggle("hidden");
+    });
+  });
+
+  document.getElementById("btn-copy-link")?.addEventListener("click", () => {
+    const modal = document.getElementById("privacy-modal");
+    modal?.classList.remove("hidden");
+    const confirm = () => {
+      navigator.clipboard.writeText(getShareUrl(state.input)).then(() => showToast("链接已复制"));
+      modal?.classList.add("hidden");
+    };
+    document.getElementById("modal-confirm").onclick = confirm;
+    document.getElementById("modal-cancel").onclick = () => modal?.classList.add("hidden");
+    modal?.querySelector(".modal-backdrop")?.addEventListener("click", () => modal?.classList.add("hidden"), { once: true });
+  });
+
+  document.getElementById("btn-copy-analysis")?.addEventListener("click", () => {
+    const text = state.analysis[state.style] || "";
+    if (text) navigator.clipboard.writeText(text).then(() => showToast("解读已复制"));
+  });
+
+  async function runAnalyze(style) {
+    const loading = document.getElementById("ai-loading");
+    const err = document.getElementById("ai-error");
+    hideError(err);
+    loading?.classList.remove("hidden");
+    document.getElementById("ai-empty")?.classList.add("hidden");
+    document.querySelectorAll(".ai-style-btn").forEach((b) => { b.disabled = true; });
+    const result = document.getElementById("ai-result");
+    if (result) result.innerHTML = "";
+    document.getElementById("ai-result-wrap")?.classList.remove("hidden");
+
+    try {
+      const text = await API.analyze(state.chart, style, state.chart.insight, (full) => {
+        renderAnalysis(full, style);
+      });
+      state.analysis[style] = text;
+      renderAnalysis(text, style);
+      saveAiCache(state.input, { analysis: state.analysis, history: state.history, style: state.style });
+    } catch (e) {
+      showError(err, e.message || "分析失败");
+    } finally {
+      loading?.classList.add("hidden");
+      document.querySelectorAll(".ai-style-btn").forEach((b) => { b.disabled = false; });
+    }
+  }
+
+  document.getElementById("btn-analyze-classic")?.addEventListener("click", () => runAnalyze("classic"));
+  document.getElementById("btn-analyze-modern")?.addEventListener("click", () => runAnalyze("modern"));
+
+  document.querySelectorAll(".chip-btn").forEach((btn) => {
+    btn.addEventListener("click", () => runAsk(btn.dataset.q));
+  });
+
+  async function runAsk(question) {
+    const rounds = state.history.filter((h) => h.role === "user").length;
+    if (rounds >= L3_MAX_ROUNDS) {
+      showError(document.getElementById("ai-error"), "本轮已达上限，请刷新或重新打开命盘");
+      return;
+    }
+    const q = (question || document.getElementById("ask-input")?.value || "").trim();
+    if (!q) return;
+    appendAskMessage("user", q);
+    document.getElementById("ask-input").value = "";
+    state.history.push({ role: "user", content: q });
+    updateRounds(state);
+
+    const err = document.getElementById("ai-error");
+    hideError(err);
+    const placeholder = document.createElement("div");
+    placeholder.className = "ask-msg ask-assistant";
+    placeholder.textContent = "思考中…";
+    document.getElementById("ask-history")?.appendChild(placeholder);
+
+    try {
+      let answer = "";
+      answer = await API.ask(
+        state.chart,
+        q,
+        state.style,
+        state.chart.insight,
+        state.analysis[state.style] || "",
+        state.history.slice(0, -1),
+        (full) => {
+          placeholder.innerHTML = markdownToHtml(full);
+        }
+      );
+      placeholder.innerHTML = markdownToHtml(answer);
+      state.history.push({ role: "assistant", content: answer });
+      saveAiCache(state.input, { analysis: state.analysis, history: state.history, style: state.style });
+    } catch (e) {
+      placeholder.remove();
+      state.history.pop();
+      showError(err, e.message || "问答失败");
+    }
+    updateRounds(state);
+  }
+
+  document.getElementById("btn-ask")?.addEventListener("click", () => runAsk());
+  document.getElementById("ask-input")?.addEventListener("keydown", (e) => {
+    if (e.key === "Enter") runAsk();
+  });
+}
+
+function updateRounds(state) {
+  const n = state.history.filter((h) => h.role === "user").length;
+  const el = document.getElementById("ask-rounds");
+  if (el) el.textContent = `已问 ${n} / ${L3_MAX_ROUNDS} 轮`;
+}
+
+function historyLabel(chart, input) {
+  const dm = chart?.meta?.day_master || "";
+  const g = input?.gender === "female" ? "女" : "男";
+  return `${input?.birth_date || ""} ${g} · ${dm}`;
+}
+
+async function navigateWithChart(input, chart) {
+  sessionStorage.setItem(STORAGE_KEY, JSON.stringify(chart));
+  sessionStorage.setItem(INPUT_KEY, JSON.stringify(input));
+  saveHistory(input, historyLabel(chart, input));
+  const url = getShareUrl(input);
+  location.href = url;
+}
+
+function initIndexPage() {
+  const form = document.getElementById("chart-form");
+  const errEl = document.getElementById("form-error");
+  const btn = document.getElementById("submit-btn");
+  const dateType = document.getElementById("date_type");
+  const lunarHint = document.getElementById("lunar-hint");
+  const leapGroup = document.getElementById("leap-month-group");
+
+  document.getElementById("birth_date").value = "1990-05-15";
+  document.getElementById("birth_time").value = "12:00";
+
+  const renderHist = () => {
+    const list = loadHistory();
+    const card = document.getElementById("history-card");
+    const ul = document.getElementById("history-list");
+    if (!list.length || !ul) return;
+    card?.classList.remove("hidden");
+    ul.innerHTML = list
+      .map(
+        (h) =>
+          `<li class="history-item"><a href="${getShareUrl(h.input)}">${escapeHtml(h.label || h.input.birth_date)}</a></li>`
+      )
+      .join("");
+  };
+  renderHist();
+
+  dateType?.addEventListener("change", () => {
+    const lunar = dateType.value === "lunar";
+    lunarHint?.classList.toggle("hidden", !lunar);
+    leapGroup?.classList.toggle("hidden", !lunar);
+  });
+
+  form?.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    hideError(errEl);
+    btn.disabled = true;
+    btn.textContent = "排盘中…";
+    const fd = new FormData(form);
+    const payload = {
+      date_type: fd.get("date_type"),
+      birth_date: fd.get("birth_date"),
+      birth_time: fd.get("birth_time"),
+      gender: fd.get("gender"),
+      is_leap_month: fd.get("is_leap_month") === "on",
+    };
+    try {
+      const res = await API.chart(payload);
+      if (!res.success) {
+        showError(errEl, res.error || "排盘失败");
+        return;
+      }
+      await navigateWithChart(payload, res.data);
+    } catch (err) {
+      showError(errEl, err.message || "网络错误");
+    } finally {
+      btn.disabled = false;
+      btn.textContent = "开始排盘";
+    }
+  });
+}
+
+async function initChartPage() {
+  const root = document.getElementById("chart-root");
+  const loading = document.getElementById("chart-loading");
+  const params = new URLSearchParams(location.search);
+  const share = params.get("s");
+
+  let input = null;
+  let chart = null;
+
+  try {
+    if (share) {
+      input = decodeSharePayload(share);
+      loading?.classList.remove("hidden");
+      const res = await API.chart(input);
+      if (!res.success) throw new Error(res.error || "排盘失败");
+      chart = res.data;
+    } else {
+      const raw = sessionStorage.getItem(STORAGE_KEY);
+      if (!raw) throw new Error("暂无命盘数据");
+      chart = JSON.parse(raw);
+      input = JSON.parse(sessionStorage.getItem(INPUT_KEY) || "null");
+    }
+  } catch (e) {
+    loading?.classList.add("hidden");
+    root.innerHTML = `<div class="alert alert-error">${escapeHtml(e.message)}，请先 <a href="/">排盘</a></div>`;
+    return;
+  }
+
+  loading?.classList.add("hidden");
+  sessionStorage.setItem(STORAGE_KEY, JSON.stringify(chart));
+  if (input) sessionStorage.setItem(INPUT_KEY, JSON.stringify(input));
+
+  const cache = input ? loadAiCache(input) : null;
+  const state = {
+    chart,
+    input: input || {},
+    analysis: cache?.analysis || { classic: "", modern: "" },
+    history: cache?.history || [],
+    style: cache?.style || "classic",
+  };
+
+  root.innerHTML = renderChart(chart);
+  wireChartInteractions(state);
+
+  if (state.analysis.classic) renderAnalysis(state.analysis.classic, "classic");
+  else if (state.analysis.modern) renderAnalysis(state.analysis.modern, "modern");
+
+  state.history.forEach((h) => {
+    appendAskMessage(h.role, h.content);
+  });
+  updateRounds(state);
+
+  if (window.matchMedia("(max-width: 768px)").matches) {
+    document.querySelectorAll("#sec-tian, #sec-ren").forEach((sec) => {
+      sec.classList.add("is-collapsed");
+      sec.querySelector(".section-body")?.classList.add("collapsed");
+    });
+  }
+}
+
+window.Wenyuan = {
+  API,
+  renderChart,
+  renderAnalysis,
+  showError,
+  hideError,
+  initIndexPage,
+  initChartPage,
+  encodeSharePayload,
+  decodeSharePayload,
+  getShareUrl,
+  STORAGE_KEY,
+};
