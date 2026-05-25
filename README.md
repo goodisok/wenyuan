@@ -6,7 +6,7 @@
 
 ## 在线试用
 
-**Demo：** [https://wenyuan.online/](https://wenyuan.online/)（v1.8.4）
+**Demo：** [https://wenyuan.online/](https://wenyuan.online/)（v1.9.0）
 
 备用 IP：[http://119.91.54.153/](http://119.91.54.153/)
 
@@ -45,7 +45,7 @@
 
 ### 知识库 · 典籍语料
 
-182+ 条结构化语料（穷通 120 + 滴天髓 / 子平真诠 / 渊海子平 / 三命通会 / 千里命稿），打分检索后注入 AI，要求标注出处。见 `knowledge/corpus/`。
+182+ 条结构化语料 + **bazi-wiki** 概念/命例页（见 [goodisok/bazi-wiki](https://github.com/goodisok/bazi-wiki)），混合检索后注入 AI，要求标注出处。见 `knowledge/ATTRIBUTION.md`。
 
 ### AI · 问
 
@@ -66,10 +66,11 @@
 
 ## 版本
 
-当前 **v1.8.4**
+当前 **v1.9.0**
 
 | 版本 | 要点 |
 |------|------|
+| v1.9.0 | 接入 bazi-wiki 知识库，替代 bazi-skill 外部参考 |
 | v1.8.4 | 就盘追问不再恢复历史、取消 8 轮上限 |
 | v1.8.3 | 年月日时分离输入、四柱表格神煞、大运横滑与词条 tooltip |
 | v1.8 | 产品化 UI（Hero、能力卡、命盘顶栏）+ 设计规范 + 样式/缓存修复 |
@@ -151,4 +152,4 @@ GitHub：[github.com/goodisok/wenyuan](https://github.com/goodisok/wenyuan)
 
 MIT
 
-知识库语料部分参考 [bazi-skill](https://github.com/jinchenma94/bazi-skill)，详见 [knowledge/ATTRIBUTION.md](knowledge/ATTRIBUTION.md)。
+知识库采用自研 [bazi-wiki](https://github.com/goodisok/bazi-wiki) + JSON 典籍语料，详见 [knowledge/ATTRIBUTION.md](knowledge/ATTRIBUTION.md)。更新 wiki：`python scripts/sync_wiki.py`。

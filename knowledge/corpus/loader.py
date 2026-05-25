@@ -7,6 +7,8 @@ from functools import lru_cache
 from pathlib import Path
 from typing import Any
 
+from knowledge.corpus.wiki_loader import load_wiki_entries
+
 CORPUS_DIR = Path(__file__).resolve().parent / "data"
 
 MONTH_NAMES = {
@@ -55,6 +57,7 @@ def load_all() -> list[dict[str, Any]]:
         "qianli_cases.json",
     ):
         entries.extend(_load_json(fname))
+    entries.extend(load_wiki_entries())
     return entries
 
 

@@ -1,0 +1,478 @@
+{
+  "name": "八字命理知识库",
+  "description": "中国传统八字命理学（子平法）知识体系",
+  "version": "1.0.0",
+  "updated": "2026-05-25",
+  "pages": [
+    {
+      "path": "README.md",
+      "title": "README",
+      "type": "unknown",
+      "tags": [],
+      "confidence": "unknown",
+      "chinese_chars": 512,
+      "total_chars": 1521
+    },
+    {
+      "path": "SCHEMA.md",
+      "title": "SCHEMA",
+      "type": "unknown",
+      "tags": [],
+      "confidence": "unknown",
+      "chinese_chars": 503,
+      "total_chars": 1591
+    },
+    {
+      "path": "cases/case-01-ren-tie-qiao.md",
+      "title": "任铁樵自评命造",
+      "type": "case",
+      "tags": [
+        "[jing-dian",
+        "di-tian",
+        "duan-ming]"
+      ],
+      "confidence": "medium",
+      "chinese_chars": 428,
+      "total_chars": 1104
+    },
+    {
+      "path": "cases/case-02-cai-ge-fu-gui.md",
+      "title": "正财格富贵命",
+      "type": "case",
+      "tags": [
+        "[jing-dian",
+        "di-tian",
+        "ge-ju]"
+      ],
+      "confidence": "medium",
+      "chinese_chars": 389,
+      "total_chars": 1045
+    },
+    {
+      "path": "cases/case-03-cai-ge-pin-jian.md",
+      "title": "偏财格破格—贫贱命",
+      "type": "case",
+      "tags": [
+        "[jing-dian",
+        "di-tian",
+        "ge-ju]"
+      ],
+      "confidence": "medium",
+      "chinese_chars": 430,
+      "total_chars": 1064
+    },
+    {
+      "path": "cases/case-04-sha-yin-xiang-sheng.md",
+      "title": "杀印相生—武贵命",
+      "type": "case",
+      "tags": [
+        "[jing-dian",
+        "di-tian",
+        "ge-ju]"
+      ],
+      "confidence": "medium",
+      "chinese_chars": 391,
+      "total_chars": 1032
+    },
+    {
+      "path": "cases/case-05-shi-shen-zhi-sha.md",
+      "title": "食神制杀—武贵命",
+      "type": "case",
+      "tags": [
+        "[jing-dian",
+        "di-tian",
+        "ge-ju]"
+      ],
+      "confidence": "medium",
+      "chinese_chars": 430,
+      "total_chars": 1095
+    },
+    {
+      "path": "cases/case-06-cong-ge.md",
+      "title": "从革格—从旺命",
+      "type": "case",
+      "tags": [
+        "[jing-dian",
+        "di-tian",
+        "ge-ju]"
+      ],
+      "confidence": "medium",
+      "chinese_chars": 490,
+      "total_chars": 1199
+    },
+    {
+      "path": "cases/case-07-guan-sha-hun-za.md",
+      "title": "官杀混杂—一生动荡",
+      "type": "case",
+      "tags": [
+        "[jing-dian",
+        "di-tian",
+        "ge-ju]"
+      ],
+      "confidence": "medium",
+      "chinese_chars": 416,
+      "total_chars": 1054
+    },
+    {
+      "path": "cases/case-08-tiao-hou.md",
+      "title": "调候命例—冬金寒木",
+      "type": "case",
+      "tags": [
+        "[jing-dian",
+        "di-tian",
+        "qiong-tong]"
+      ],
+      "confidence": "medium",
+      "chinese_chars": 529,
+      "total_chars": 1318
+    },
+    {
+      "path": "cases/case-09-shang-guan-pei-yin.md",
+      "title": "伤官佩印—文贵命",
+      "type": "case",
+      "tags": [
+        "[jing-dian",
+        "di-tian",
+        "ge-ju]"
+      ],
+      "confidence": "medium",
+      "chinese_chars": 451,
+      "total_chars": 1091
+    },
+    {
+      "path": "cases/case-10-zheng-yin-ge.md",
+      "title": "正印格—师儒之命",
+      "type": "case",
+      "tags": [
+        "[jing-dian",
+        "di-tian",
+        "ge-ju]"
+      ],
+      "confidence": "medium",
+      "chinese_chars": 390,
+      "total_chars": 1038
+    },
+    {
+      "path": "cases/case-11-shang-guan-jian-guan.md",
+      "title": "伤官见官—灾祸不断",
+      "type": "case",
+      "tags": [
+        "[jing-dian",
+        "di-tian",
+        "ge-ju]"
+      ],
+      "confidence": "medium",
+      "chinese_chars": 458,
+      "total_chars": 1158
+    },
+    {
+      "path": "cases/case-12-hua-qi-ge.md",
+      "title": "化气格—甲己化土",
+      "type": "case",
+      "tags": [
+        "[jing-dian",
+        "di-tian",
+        "ge-ju]"
+      ],
+      "confidence": "medium",
+      "chinese_chars": 512,
+      "total_chars": 1249
+    },
+    {
+      "path": "cases/case-13-nu-ming-guan-xing.md",
+      "title": "女命—官星透而夫贵",
+      "type": "case",
+      "tags": [
+        "[jing-dian",
+        "di-tian",
+        "duan-ming]"
+      ],
+      "confidence": "medium",
+      "chinese_chars": 388,
+      "total_chars": 1015
+    },
+    {
+      "path": "cases/case-14-bi-jie-duo-cai.md",
+      "title": "比劫夺财—一生破败",
+      "type": "case",
+      "tags": [
+        "[jing-dian",
+        "di-tian",
+        "ge-ju]"
+      ],
+      "confidence": "medium",
+      "chinese_chars": 443,
+      "total_chars": 1095
+    },
+    {
+      "path": "cases/case-15-cong-sha-ge.md",
+      "title": "从杀格—弃命从杀",
+      "type": "case",
+      "tags": [
+        "[jing-dian",
+        "di-tian",
+        "ge-ju]"
+      ],
+      "confidence": "medium",
+      "chinese_chars": 515,
+      "total_chars": 1207
+    },
+    {
+      "path": "cases/case-16-liang-qi-cheng-xiang.md",
+      "title": "两气成象—金木相战",
+      "type": "case",
+      "tags": [
+        "[jing-dian",
+        "di-tian",
+        "ge-ju]"
+      ],
+      "confidence": "medium",
+      "chinese_chars": 539,
+      "total_chars": 1292
+    },
+    {
+      "path": "cases/index.md",
+      "title": "滴天髓阐微命例目录",
+      "type": "summary",
+      "tags": [
+        "[jing-dian",
+        "di-tian",
+        "duan-ming]"
+      ],
+      "confidence": "medium",
+      "chinese_chars": 469,
+      "total_chars": 1535
+    },
+    {
+      "path": "concepts/da-yun-liu-nian.md",
+      "title": "da-yun-liu-nian",
+      "type": "unknown",
+      "tags": [],
+      "confidence": "unknown",
+      "chinese_chars": 618,
+      "total_chars": 1936
+    },
+    {
+      "path": "concepts/di-tian-sui.md",
+      "title": "di-tian-sui",
+      "type": "unknown",
+      "tags": [],
+      "confidence": "unknown",
+      "chinese_chars": 811,
+      "total_chars": 2103
+    },
+    {
+      "path": "concepts/guo-lao-xing-zong.md",
+      "title": "guo-lao-xing-zong",
+      "type": "unknown",
+      "tags": [],
+      "confidence": "unknown",
+      "chinese_chars": 421,
+      "total_chars": 1254
+    },
+    {
+      "path": "concepts/qian-li-ming-gao.md",
+      "title": "qian-li-ming-gao",
+      "type": "unknown",
+      "tags": [],
+      "confidence": "unknown",
+      "chinese_chars": 587,
+      "total_chars": 1660
+    },
+    {
+      "path": "concepts/qiong-tong-bao-jian.md",
+      "title": "qiong-tong-bao-jian",
+      "type": "unknown",
+      "tags": [],
+      "confidence": "unknown",
+      "chinese_chars": 647,
+      "total_chars": 1617
+    },
+    {
+      "path": "concepts/san-ming-tong-hui.md",
+      "title": "san-ming-tong-hui",
+      "type": "unknown",
+      "tags": [],
+      "confidence": "unknown",
+      "chinese_chars": 697,
+      "total_chars": 1885
+    },
+    {
+      "path": "concepts/shen-feng-tong-kao.md",
+      "title": "shen-feng-tong-kao",
+      "type": "unknown",
+      "tags": [],
+      "confidence": "unknown",
+      "chinese_chars": 605,
+      "total_chars": 1512
+    },
+    {
+      "path": "concepts/shi-shen.md",
+      "title": "shi-shen",
+      "type": "unknown",
+      "tags": [],
+      "confidence": "unknown",
+      "chinese_chars": 732,
+      "total_chars": 2215
+    },
+    {
+      "path": "concepts/si-zhu.md",
+      "title": "si-zhu",
+      "type": "unknown",
+      "tags": [],
+      "confidence": "unknown",
+      "chinese_chars": 565,
+      "total_chars": 1724
+    },
+    {
+      "path": "concepts/tian-gan-di-zhi.md",
+      "title": "tian-gan-di-zhi",
+      "type": "unknown",
+      "tags": [],
+      "confidence": "unknown",
+      "chinese_chars": 735,
+      "total_chars": 2893
+    },
+    {
+      "path": "concepts/wu-xing.md",
+      "title": "wu-xing",
+      "type": "unknown",
+      "tags": [],
+      "confidence": "unknown",
+      "chinese_chars": 400,
+      "total_chars": 1612
+    },
+    {
+      "path": "concepts/xie-ji-bian-fang-shu.md",
+      "title": "xie-ji-bian-fang-shu",
+      "type": "unknown",
+      "tags": [],
+      "confidence": "unknown",
+      "chinese_chars": 522,
+      "total_chars": 1485
+    },
+    {
+      "path": "concepts/yuan-hai-zi-ping.md",
+      "title": "yuan-hai-zi-ping",
+      "type": "unknown",
+      "tags": [],
+      "confidence": "unknown",
+      "chinese_chars": 764,
+      "total_chars": 2222
+    },
+    {
+      "path": "concepts/zi-ping-zhen-quan.md",
+      "title": "zi-ping-zhen-quan",
+      "type": "unknown",
+      "tags": [],
+      "confidence": "unknown",
+      "chinese_chars": 722,
+      "total_chars": 2037
+    },
+    {
+      "path": "entities/ge-ju.md",
+      "title": "ge-ju",
+      "type": "unknown",
+      "tags": [],
+      "confidence": "unknown",
+      "chinese_chars": 585,
+      "total_chars": 1588
+    },
+    {
+      "path": "entities/shi-er-chang-sheng.md",
+      "title": "shi-er-chang-sheng",
+      "type": "unknown",
+      "tags": [],
+      "confidence": "unknown",
+      "chinese_chars": 550,
+      "total_chars": 2031
+    },
+    {
+      "path": "entities/shi-er-sheng-xiao.md",
+      "title": "shi-er-sheng-xiao",
+      "type": "unknown",
+      "tags": [],
+      "confidence": "unknown",
+      "chinese_chars": 280,
+      "total_chars": 1270
+    },
+    {
+      "path": "index.md",
+      "title": "index",
+      "type": "unknown",
+      "tags": [],
+      "confidence": "unknown",
+      "chinese_chars": 717,
+      "total_chars": 2095
+    },
+    {
+      "path": "log.md",
+      "title": "log",
+      "type": "unknown",
+      "tags": [],
+      "confidence": "unknown",
+      "chinese_chars": 559,
+      "total_chars": 2429
+    },
+    {
+      "path": "methods/pai-pan-bu-zhou.md",
+      "title": "pai-pan-bu-zhou",
+      "type": "unknown",
+      "tags": [],
+      "confidence": "unknown",
+      "chinese_chars": 733,
+      "total_chars": 2242
+    },
+    {
+      "path": "raw/classics/di-tian-sui-chan-wei.md",
+      "title": "滴天髓阐微（原典）",
+      "type": "source",
+      "tags": [
+        "[jing-dian",
+        "di-tian",
+        "raw-source]"
+      ],
+      "confidence": "unknown",
+      "chinese_chars": 110345,
+      "total_chars": 140734
+    },
+    {
+      "path": "raw/classics/san-ming-tong-hui.md",
+      "title": "三命通会（原典）",
+      "type": "source",
+      "tags": [
+        "[jing-dian",
+        "san-ming",
+        "raw-source]"
+      ],
+      "confidence": "unknown",
+      "chinese_chars": 271105,
+      "total_chars": 357006
+    },
+    {
+      "path": "raw/classics/shen-feng-tong-kao.md",
+      "title": "神峰通考（原典）",
+      "type": "source",
+      "tags": [
+        "[jing-dian",
+        "raw-source]"
+      ],
+      "confidence": "unknown",
+      "chinese_chars": 28609,
+      "total_chars": 35780
+    },
+    {
+      "path": "raw/classics/yuan-hai-zi-ping.md",
+      "title": "渊海子平（原典）",
+      "type": "source",
+      "tags": [
+        "[jing-dian",
+        "raw-source]"
+      ],
+      "confidence": "unknown",
+      "chinese_chars": 57841,
+      "total_chars": 73494
+    }
+  ],
+  "total_words": 488833
+}

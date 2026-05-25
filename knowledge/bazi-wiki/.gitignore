@@ -1,0 +1,12 @@
+# Wiki
+*.md.orig
+*.html
+
+# Temp files
+/tmp/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db

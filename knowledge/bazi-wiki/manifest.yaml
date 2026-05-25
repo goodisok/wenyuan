@@ -1,0 +1,199 @@
+# 八字命理知识库 Manifest
+version: 1.0.0
+updated: 2026-05-25
+total_chinese_chars: 488833
+
+pages:
+  - path: README.md
+    title: README
+    type: unknown
+    chinese_chars: 512
+  - path: SCHEMA.md
+    title: SCHEMA
+    type: unknown
+    chinese_chars: 503
+  - path: cases/case-01-ren-tie-qiao.md
+    title: 任铁樵自评命造
+    type: case
+    tags: [[jing-dian, di-tian, duan-ming]]
+    chinese_chars: 428
+  - path: cases/case-02-cai-ge-fu-gui.md
+    title: 正财格富贵命
+    type: case
+    tags: [[jing-dian, di-tian, ge-ju]]
+    chinese_chars: 389
+  - path: cases/case-03-cai-ge-pin-jian.md
+    title: 偏财格破格—贫贱命
+    type: case
+    tags: [[jing-dian, di-tian, ge-ju]]
+    chinese_chars: 430
+  - path: cases/case-04-sha-yin-xiang-sheng.md
+    title: 杀印相生—武贵命
+    type: case
+    tags: [[jing-dian, di-tian, ge-ju]]
+    chinese_chars: 391
+  - path: cases/case-05-shi-shen-zhi-sha.md
+    title: 食神制杀—武贵命
+    type: case
+    tags: [[jing-dian, di-tian, ge-ju]]
+    chinese_chars: 430
+  - path: cases/case-06-cong-ge.md
+    title: 从革格—从旺命
+    type: case
+    tags: [[jing-dian, di-tian, ge-ju]]
+    chinese_chars: 490
+  - path: cases/case-07-guan-sha-hun-za.md
+    title: 官杀混杂—一生动荡
+    type: case
+    tags: [[jing-dian, di-tian, ge-ju]]
+    chinese_chars: 416
+  - path: cases/case-08-tiao-hou.md
+    title: 调候命例—冬金寒木
+    type: case
+    tags: [[jing-dian, di-tian, qiong-tong]]
+    chinese_chars: 529
+  - path: cases/case-09-shang-guan-pei-yin.md
+    title: 伤官佩印—文贵命
+    type: case
+    tags: [[jing-dian, di-tian, ge-ju]]
+    chinese_chars: 451
+  - path: cases/case-10-zheng-yin-ge.md
+    title: 正印格—师儒之命
+    type: case
+    tags: [[jing-dian, di-tian, ge-ju]]
+    chinese_chars: 390
+  - path: cases/case-11-shang-guan-jian-guan.md
+    title: 伤官见官—灾祸不断
+    type: case
+    tags: [[jing-dian, di-tian, ge-ju]]
+    chinese_chars: 458
+  - path: cases/case-12-hua-qi-ge.md
+    title: 化气格—甲己化土
+    type: case
+    tags: [[jing-dian, di-tian, ge-ju]]
+    chinese_chars: 512
+  - path: cases/case-13-nu-ming-guan-xing.md
+    title: 女命—官星透而夫贵
+    type: case
+    tags: [[jing-dian, di-tian, duan-ming]]
+    chinese_chars: 388
+  - path: cases/case-14-bi-jie-duo-cai.md
+    title: 比劫夺财—一生破败
+    type: case
+    tags: [[jing-dian, di-tian, ge-ju]]
+    chinese_chars: 443
+  - path: cases/case-15-cong-sha-ge.md
+    title: 从杀格—弃命从杀
+    type: case
+    tags: [[jing-dian, di-tian, ge-ju]]
+    chinese_chars: 515
+  - path: cases/case-16-liang-qi-cheng-xiang.md
+    title: 两气成象—金木相战
+    type: case
+    tags: [[jing-dian, di-tian, ge-ju]]
+    chinese_chars: 539
+  - path: cases/index.md
+    title: 滴天髓阐微命例目录
+    type: summary
+    tags: [[jing-dian, di-tian, duan-ming]]
+    chinese_chars: 469
+  - path: concepts/da-yun-liu-nian.md
+    title: da-yun-liu-nian
+    type: unknown
+    chinese_chars: 618
+  - path: concepts/di-tian-sui.md
+    title: di-tian-sui
+    type: unknown
+    chinese_chars: 811
+  - path: concepts/guo-lao-xing-zong.md
+    title: guo-lao-xing-zong
+    type: unknown
+    chinese_chars: 421
+  - path: concepts/qian-li-ming-gao.md
+    title: qian-li-ming-gao
+    type: unknown
+    chinese_chars: 587
+  - path: concepts/qiong-tong-bao-jian.md
+    title: qiong-tong-bao-jian
+    type: unknown
+    chinese_chars: 647
+  - path: concepts/san-ming-tong-hui.md
+    title: san-ming-tong-hui
+    type: unknown
+    chinese_chars: 697
+  - path: concepts/shen-feng-tong-kao.md
+    title: shen-feng-tong-kao
+    type: unknown
+    chinese_chars: 605
+  - path: concepts/shi-shen.md
+    title: shi-shen
+    type: unknown
+    chinese_chars: 732
+  - path: concepts/si-zhu.md
+    title: si-zhu
+    type: unknown
+    chinese_chars: 565
+  - path: concepts/tian-gan-di-zhi.md
+    title: tian-gan-di-zhi
+    type: unknown
+    chinese_chars: 735
+  - path: concepts/wu-xing.md
+    title: wu-xing
+    type: unknown
+    chinese_chars: 400
+  - path: concepts/xie-ji-bian-fang-shu.md
+    title: xie-ji-bian-fang-shu
+    type: unknown
+    chinese_chars: 522
+  - path: concepts/yuan-hai-zi-ping.md
+    title: yuan-hai-zi-ping
+    type: unknown
+    chinese_chars: 764
+  - path: concepts/zi-ping-zhen-quan.md
+    title: zi-ping-zhen-quan
+    type: unknown
+    chinese_chars: 722
+  - path: entities/ge-ju.md
+    title: ge-ju
+    type: unknown
+    chinese_chars: 585
+  - path: entities/shi-er-chang-sheng.md
+    title: shi-er-chang-sheng
+    type: unknown
+    chinese_chars: 550
+  - path: entities/shi-er-sheng-xiao.md
+    title: shi-er-sheng-xiao
+    type: unknown
+    chinese_chars: 280
+  - path: index.md
+    title: index
+    type: unknown
+    chinese_chars: 717
+  - path: log.md
+    title: log
+    type: unknown
+    chinese_chars: 559
+  - path: methods/pai-pan-bu-zhou.md
+    title: pai-pan-bu-zhou
+    type: unknown
+    chinese_chars: 733
+  - path: raw/classics/di-tian-sui-chan-wei.md
+    title: 滴天髓阐微（原典）
+    type: source
+    tags: [[jing-dian, di-tian, raw-source]]
+    chinese_chars: 110345
+  - path: raw/classics/san-ming-tong-hui.md
+    title: 三命通会（原典）
+    type: source
+    tags: [[jing-dian, san-ming, raw-source]]
+    chinese_chars: 271105
+  - path: raw/classics/shen-feng-tong-kao.md
+    title: 神峰通考（原典）
+    type: source
+    tags: [[jing-dian, raw-source]]
+    chinese_chars: 28609
+  - path: raw/classics/yuan-hai-zi-ping.md
+    title: 渊海子平（原典）
+    type: source
+    tags: [[jing-dian, raw-source]]
+    chinese_chars: 57841

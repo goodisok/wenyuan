@@ -29,8 +29,10 @@ def _build_tags(insight: dict[str, Any], chart: dict[str, Any], pillars: list[di
     tags: set[str] = {"always"}
     if insight.get("tiao_hou") or (insight.get("qiongtong") or {}).get("hint"):
         tags.add("tiao_hou")
+        tags.add("qiong-tong")
     if insight.get("day_master_strength") or insight.get("strength_score") is not None:
         tags.add("strength")
+        tags.add("wang-shuai")
     if chart.get("pillars_relations") or insight.get("pillars_relations"):
         tags.add("relations")
         tags.add("wuxing")
@@ -38,6 +40,7 @@ def _build_tags(insight: dict[str, Any], chart: dict[str, Any], pillars: list[di
     if geju.get("type"):
         tags.add("geju")
         tags.add("pattern")
+        tags.add("ge-ju")
         tags.add(f"geju:{geju['type']}")
     body_pat = insight.get("pattern") or {}
     if body_pat.get("type"):
@@ -47,12 +50,15 @@ def _build_tags(insight: dict[str, Any], chart: dict[str, Any], pillars: list[di
     shensha = insight.get("shensha") or {}
     if shensha.get("items"):
         tags.add("shensha")
+        tags.add("shen-sha")
     dom = _dominant_shishen(pillars)
     if dom:
         tags.add("shishen")
+        tags.add("shi-shen")
         tags.add(f"ss:{dom}")
     if chart.get("dayun"):
         tags.add("dayun")
+        tags.add("da-yun")
     if insight.get("duanshi"):
         tags.add("duanshi")
     sg = insight.get("sanguan") or {}

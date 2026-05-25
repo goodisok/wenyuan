@@ -16,7 +16,8 @@ def test_retrieve_returns_citations(ref_chart):
     cites = retrieve(ref_chart, ins)
     assert cites
     assert all("source" in c and "text" in c for c in cites)
-    assert any(c["source"] == "滴天髓" for c in cites)
+    assert any("滴天髓" in c["source"] for c in cites)
+    assert any(c["id"].startswith("wiki_") for c in cites)
 
 
 def test_insight_has_citations(ref_chart):
