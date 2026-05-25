@@ -1,4 +1,4 @@
-const CACHE = "wenyuan-v1";
+const CACHE = "wenyuan-v2";
 const ASSETS = ["/", "/static/css/theme.css", "/static/js/app.js", "/static/manifest.json"];
 
 self.addEventListener("install", (e) => {

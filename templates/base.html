@@ -2,7 +2,8 @@
 <html lang="zh-CN">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="description" content="问元 — 自研八字排盘与 AI 解读，子平综参、断事、过三关多维验证">
   <title>{% block title %}问元{% endblock %} · 八字排盘</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -13,11 +14,12 @@
   {% block head %}{% endblock %}
 </head>
 <body>
+  <a href="#main-content" class="skip-link">跳到主要内容</a>
   <header class="site-header">
-    <h1><a href="/" style="color:inherit;text-decoration:none">问元</a></h1>
-    <p>探问天地人三元 · 子平综参排盘 · AI 就盘解读</p>
+    <h1><a href="/" class="site-logo">问元</a></h1>
+    <p class="site-tagline">探问天地人三元 · 子平综参排盘 · AI 就盘解读</p>
   </header>
-  <main class="container">
+  <main id="main-content" class="container">
     {% block content %}{% endblock %}
   </main>
   <footer class="footer">

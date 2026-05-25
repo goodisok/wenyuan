@@ -1,10 +1,12 @@
-/** 问元 · 前端 v1.2 · 子平综参 */
+/** 问元 · 前端 v2.0 */
 const STORAGE_KEY = "wenyuan_chart";
 const HISTORY_KEY = "wenyuan_history";
 const INPUT_KEY = "wenyuan_input";
+const CHART_CACHE_KEY = "wenyuan_chart_cache";
 const MAX_HISTORY = 20;
 const L3_MAX_ROUNDS = 8;
 const SHARE_VERSION = 1;
+const CHART_CACHE_TTL = 3600000;
 
 const L2_FIXED = ["当前大运对我意味着什么？", "我的五行平衡吗？"];
 
@@ -45,6 +47,95 @@ function decodeSharePayload(raw) {
 function getShareUrl(input) {
   const q = encodeSharePayload(input);
   return `${location.origin}/chart?s=${q}`;
+}
+
+function throttle(fn, wait) {
+  let timer = null;
+  let pending = null;
+  return (...args) => {
+    pending = args;
+    if (timer) return;
+    fn(...args);
+    timer = setTimeout(() => {
+      timer = null;
+      if (pending && pending !== args) fn(...pending);
+      pending = null;
+    }, wait);
+  };
+}
+
+function loadCachedChart(shareKey) {
+  try {
+    const cache = JSON.parse(sessionStorage.getItem(CHART_CACHE_KEY) || "{}");
+    const entry = cache[shareKey];
+    if (entry && Date.now() - entry.ts < CHART_CACHE_TTL) return entry.chart;
+  } catch {
+    /* ignore */
+  }
+  return null;
+}
+
+function cacheChartPayload(shareKey, chart) {
+  try {
+    const cache = JSON.parse(sessionStorage.getItem(CHART_CACHE_KEY) || "{}");
+    cache[shareKey] = { chart, ts: Date.now() };
+    sessionStorage.setItem(CHART_CACHE_KEY, JSON.stringify(cache));
+  } catch {
+    /* ignore */
+  }
+}
+
+function setBtnLoading(btn, loading, idleLabel) {
+  if (!btn) return;
+  btn.disabled = loading;
+  btn.classList.toggle("is-loading", loading);
+  const label = btn.querySelector(".btn-label");
+  if (label) label.textContent = loading ? "排盘中…" : idleLabel;
+  else if (!loading) btn.textContent = idleLabel;
+}
+
+function openModal(modal, trigger) {
+  if (!modal) return;
+  modal.classList.remove("hidden");
+  modal.setAttribute("aria-hidden", "false");
+  modal.dataset.trigger = trigger?.id || "";
+  modal.querySelector("#modal-confirm, .btn-primary, button")?.focus();
+}
+
+function closeModal(modal) {
+  if (!modal) return;
+  modal.classList.add("hidden");
+  modal.setAttribute("aria-hidden", "true");
+  const triggerId = modal.dataset.trigger;
+  if (triggerId) document.getElementById(triggerId)?.focus();
+}
+
+function setupNavObserver() {
+  const nav = document.getElementById("chart-nav");
+  if (!nav) return;
+  const sections = ["sec-meta", "sec-di", "sec-tian", "sec-ren", "sec-ai"]
+    .map((id) => document.getElementById(id))
+    .filter(Boolean);
+  if (!sections.length) return;
+
+  const setActive = (id) => {
+    nav.querySelectorAll(".chart-nav-btn").forEach((btn) => {
+      const active = btn.dataset.target === id;
+      btn.classList.toggle("active", active);
+      btn.setAttribute("aria-selected", active ? "true" : "false");
+    });
+  };
+
+  const observer = new IntersectionObserver(
+    (entries) => {
+      const visible = entries
+        .filter((e) => e.isIntersecting)
+        .sort((a, b) => b.intersectionRatio - a.intersectionRatio);
+      if (visible[0]?.target?.id) setActive(visible[0].target.id);
+    },
+    { rootMargin: "-20% 0px -55% 0px", threshold: [0, 0.25, 0.5] }
+  );
+  sections.forEach((sec) => observer.observe(sec));
 }
 
 function loadHistory() {
@@ -309,38 +400,41 @@ function wuxingClass(color) {
 }
 
 function renderWuxingChart(wx) {
-  const max = Math.max(...Object.values(wx || {}), 1);
-  return Object.entries(wx || {})
+  const entries = Object.entries(wx || {});
+  const total = Math.max(entries.reduce((s, [, v]) => s + Number(v), 0), 1);
+  const summary = entries.map(([k, v]) => `${k}${v}`).join(" ");
+  return `<div class="wuxing-chart" role="img" aria-label="五行分布 ${escapeHtml(summary)}">${entries
     .map(([k, v]) => {
-      const pct = Math.round((Number(v) / max) * 100);
+      const n = Number(v);
+      const pct = Math.round((n / total) * 100);
       return `<div class="wuxing-bar-row">
-        <span class="wuxing-bar-label wuxing-${WUXING_MAP[k] || ""}">${k}</span>
+        <span class="wuxing-bar-label wuxing-${WUXING_MAP[k] || ""}">${escapeHtml(k)}</span>
         <div class="wuxing-bar-track"><div class="wuxing-bar-fill wuxing-${WUXING_MAP[k] || ""}" style="width:${pct}%"></div></div>
-        <span class="wuxing-bar-val">${v}</span>
+        <span class="wuxing-bar-val">${n}<span class="wuxing-bar-pct"> ${pct}%</span></span>
       </div>`;
     })
-    .join("");
+    .join("")}</div>`;
 }
 
 function renderPillar(p) {
   const cg = (p.dizhi.canggan || [])
     .map((c) => {
-      const ss = c.shishen ? `·${c.shishen}` : "";
-      return `<span class="canggan-tag ${wuxingClass(c.color)}">${c.name}${ss}</span>`;
+      const ss = c.shishen ? `·${escapeHtml(c.shishen)}` : "";
+      return `<span class="canggan-tag ${wuxingClass(c.color)}">${escapeHtml(c.name)}${ss}</span>`;
     })
     .join("");
   const cs = p.changsheng ? `<div class="pillar-changsheng">${escapeHtml(p.changsheng)}</div>` : "";
   const xk = p.xunkong ? `<div class="pillar-xunkong">旬空 ${escapeHtml(p.xunkong)}</div>` : "";
   return `
     <div class="pillar">
-      <div class="pillar-label">${p.label}</div>
-      <div class="pillar-ganzhi">${p.ganzhi}</div>
-      <div class="stem ${wuxingClass(p.tiangan.color)}">${p.tiangan.name} · ${p.tiangan.wuxing}</div>
-      <div class="branch ${wuxingClass(p.dizhi.color)}">${p.dizhi.name} · ${p.dizhi.wuxing}</div>
+      <div class="pillar-label">${escapeHtml(p.label)}</div>
+      <div class="pillar-ganzhi">${escapeHtml(p.ganzhi)}</div>
+      <div class="stem ${wuxingClass(p.tiangan.color)}">${escapeHtml(p.tiangan.name)} · ${escapeHtml(p.tiangan.wuxing)}</div>
+      <div class="branch ${wuxingClass(p.dizhi.color)}">${escapeHtml(p.dizhi.name)} · ${escapeHtml(p.dizhi.wuxing)}</div>
       <div class="canggan-list">${cg}</div>
       ${cs}
       ${xk}
-      <div class="pillar-meta">${p.shishen}<br>${p.nayin}</div>
+      <div class="pillar-meta">${escapeHtml(p.shishen)}<br>${escapeHtml(p.nayin)}</div>
     </div>`;
 }
 
@@ -381,15 +475,18 @@ function renderDuanshi(duanshi) {
     const windows = (item.windows || []).map(
       (w) => `<li>大运 ${escapeHtml(w.dayun || "")}（${escapeHtml(w.years || "")} / ${escapeHtml(w.ages || "")}）${escapeHtml(w.note || "")}</li>`
     ).join("");
-    return `<div class="duanshi-item duanshi-level-${escapeHtml(item.level || "")}">
-      <p><strong>断·${escapeHtml(item.topic || "")}</strong>
+    const level = escapeHtml(item.level || "");
+    return `<div class="duanshi-item duanshi-level-${level}">
+      <div class="duanshi-head">
+        <span class="topic-badge">断·${escapeHtml(item.topic || "")}</span>
+        <span class="conf-badge conf-badge-${level}">${level}</span>
         <span class="duanshi-verdict">${escapeHtml(item.verdict || "")}</span>
-        <span class="duanshi-level">[${escapeHtml(item.level || "")}]</span></p>
+      </div>
       ${reasons ? `<ul class="duanshi-reasons">${reasons}</ul>` : ""}
       ${windows ? `<p class="duanshi-windows-title">应期</p><ul class="duanshi-windows">${windows}</ul>` : ""}
     </div>`;
   }).join("");
-  return `<div class="duanshi-panel"><h4 class="subsection-title">断事</h4>${blocks}</div>`;
+  return `<div class="panel-card duanshi-panel"><div class="panel-card-header"><h4 class="panel-card-title">断事</h4></div><div class="panel-card-body">${blocks}</div></div>`;
 }
 
 function renderSanguan(sanguan) {
@@ -404,16 +501,19 @@ function renderSanguan(sanguan) {
     const windows = (g.windows || []).map(
       (w) => `<li>大运 ${escapeHtml(w.dayun || "")}（${escapeHtml(w.years || "")}）${escapeHtml(w.note || "")}</li>`
     ).join("");
-    return `<div class="sanguan-gate sanguan-conf-${escapeHtml(g.confidence || "")}">
-      <p><strong>${escapeHtml(g.name || "")}</strong>
+    const conf = escapeHtml(g.confidence || "");
+    return `<div class="sanguan-gate sanguan-conf-${conf}">
+      <div class="sanguan-head">
+        <span class="topic-badge">${escapeHtml(g.name || "")}</span>
+        <span class="conf-badge conf-badge-${conf}">${conf} · ${g.schools_agree || 0}家</span>
         <span class="sanguan-verdict">${escapeHtml(g.verdict || "")}</span>
-        <span class="sanguan-meta">[${escapeHtml(g.confidence || "")} · ${g.schools_agree || 0}家印证]</span></p>
+      </div>
       ${signals ? `<ul class="sanguan-signals">${signals}</ul>` : ""}
       ${windows ? `<p class="sanguan-windows-title">应期</p><ul class="sanguan-windows">${windows}</ul>` : ""}
     </div>`;
   }).join("");
   const summary = sanguan.summary ? `<p class="sanguan-summary">${escapeHtml(sanguan.summary)}</p>` : "";
-  return `<div class="sanguan-panel"><h4 class="subsection-title">过三关 · 多维验证</h4>${summary}${chuan}${blocks}</div>`;
+  return `<div class="panel-card sanguan-panel"><div class="panel-card-header"><h4 class="panel-card-title">过三关 · 多维验证</h4></div><div class="panel-card-body">${summary}${chuan}${blocks}</div></div>`;
 }
 
 function renderRuleDetails(insight) {
@@ -433,7 +533,7 @@ function renderRuleDetails(insight) {
     ${geju.type ? `<p><strong>格局</strong> ${escapeHtml(geju.type)}（${escapeHtml(geju.origin || "")}）清纯${escapeHtml(purity.level || "—")} — ${escapeHtml(geju.note || "")}</p>` : ""}
     ${bodyPat.type ? `<p><strong>体用</strong> ${escapeHtml(bodyPat.type)} — ${escapeHtml(bodyPat.note || "")}</p>` : ""}
     ${ys.summary ? `<p><strong>喜用倾向</strong> ${escapeHtml(ys.summary)}</p>` : ""}
-    <p class="ditiansui-verse">${escapeHtml(sn.verse || "")}</p>
+    ${sn.verse ? `<div class="ditiansui-panel"><p class="ditiansui-panel-title">滴天髓</p><p class="ditiansui-verse">${escapeHtml(sn.verse)}</p></div>` : ""}
     <p><strong>调候</strong> ${escapeHtml(insight.tiao_hou || "")}</p>
     ${shenshaItems ? `<ul class="shensha-list">${shenshaItems}</ul>` : ""}
     <p class="insight-note">${escapeHtml(insight.day_master_strength_note || "")}</p>
@@ -469,17 +569,21 @@ function renderHighlightsPanel(insight) {
   const corpusTotal = insight.corpus_meta?.total;
   const corpusNote = corpusTotal ? `<p class="corpus-meta">语料库 ${corpusTotal} 条 · 本次召回 ${(insight.citations || []).length} 条</p>` : "";
   return `
-    <div class="highlights-panel">
-      <h3 class="subsection-title">命局要点</h3>
-      <p class="highlights-source">综参 ${escapeHtml(sources)}</p>
-      ${corpusNote}
-      <ul class="highlights-list">${items || "<li>暂无摘要</li>"}</ul>
+    <div class="insight-stack">
+      <div class="panel-card highlights-panel">
+        <div class="panel-card-header"><h3 class="panel-card-title">命局要点</h3></div>
+        <div class="panel-card-body">
+          <p class="highlights-source">综参 ${escapeHtml(sources)}</p>
+          ${corpusNote}
+          <ul class="highlights-list">${items || "<li class=\"highlight-item\">暂无摘要</li>"}</ul>
+          <details class="details-more sub-panel-details">
+            <summary>查看规则明细</summary>
+            <div class="details-body">${renderRuleDetails(insight)}</div>
+          </details>
+        </div>
+      </div>
       ${renderDuanshi(insight.duanshi)}
       ${renderSanguan(insight.sanguan)}
-      <details class="details-more">
-        <summary>查看规则明细</summary>
-        <div class="details-body">${renderRuleDetails(insight)}</div>
-      </details>
     </div>`;
 }
 
@@ -527,12 +631,12 @@ function renderChart(data) {
     .join("");
 
   return `
-    <nav class="chart-nav" id="chart-nav" aria-label="命盘分区">
-      <button type="button" class="chart-nav-btn active" data-target="sec-meta">概览</button>
-      <button type="button" class="chart-nav-btn" data-target="sec-di">四柱</button>
-      <button type="button" class="chart-nav-btn" data-target="sec-tian">运势</button>
-      <button type="button" class="chart-nav-btn" data-target="sec-ren">本命</button>
-      <button type="button" class="chart-nav-btn" data-target="sec-ai">问 AI</button>
+    <nav class="chart-nav" id="chart-nav" role="tablist" aria-label="命盘分区">
+      <button type="button" class="chart-nav-btn active" role="tab" aria-selected="true" data-target="sec-meta">概览</button>
+      <button type="button" class="chart-nav-btn" role="tab" aria-selected="false" data-target="sec-di">四柱</button>
+      <button type="button" class="chart-nav-btn" role="tab" aria-selected="false" data-target="sec-tian">运势</button>
+      <button type="button" class="chart-nav-btn" role="tab" aria-selected="false" data-target="sec-ren">本命</button>
+      <button type="button" class="chart-nav-btn" role="tab" aria-selected="false" data-target="sec-ai">问 AI</button>
     </nav>
     <div id="chart-sticky-summary" class="chart-sticky-summary">
       <span class="sticky-ganzhi">${(data.pillars || []).map((p) => p.ganzhi).join(" ")}</span>
@@ -681,6 +785,16 @@ function buildMarkdownExport(chart, insight, analysis, history) {
   md += `- 调候：${insight?.tiao_hou || ""}\n`;
   md += `- 体用：${insight?.pattern?.type || ""}\n`;
   (insight?.highlights || []).forEach((h) => { md += `- ${h}\n`; });
+  const ds = insight?.duanshi?.items || [];
+  if (ds.length) {
+    md += `\n## 断事\n\n`;
+    ds.forEach((item) => { md += `- **${item.topic}** [${item.level}] ${item.verdict}\n`; });
+  }
+  const sg = insight?.sanguan?.gates || [];
+  if (sg.length) {
+    md += `\n## 过三关\n\n`;
+    sg.forEach((g) => { md += `- **${g.name}** [${g.confidence}] ${g.verdict}\n`; });
+  }
   const cites = insight?.citations || [];
   if (cites.length) {
     md += `\n### 典籍参考\n\n`;
@@ -697,21 +811,31 @@ function buildMarkdownExport(chart, insight, analysis, history) {
 }
 
 function wireChartInteractions(state) {
+  setupNavObserver();
+
   document.querySelectorAll(".chart-nav-btn").forEach((btn) => {
     btn.addEventListener("click", () => {
       const id = btn.dataset.target;
       document.getElementById(id)?.scrollIntoView({ behavior: "smooth", block: "start" });
-      document.querySelectorAll(".chart-nav-btn").forEach((b) => b.classList.toggle("active", b === btn));
+      document.querySelectorAll(".chart-nav-btn").forEach((b) => {
+        const active = b === btn;
+        b.classList.toggle("active", active);
+        b.setAttribute("aria-selected", active ? "true" : "false");
+      });
     });
   });
 
 
   document.querySelectorAll(".section-header").forEach((btn) => {
+    const bodyId = btn.dataset.target;
+    const body = document.getElementById(bodyId);
+    const collapsed = body?.classList.contains("collapsed");
+    btn.setAttribute("aria-expanded", collapsed ? "false" : "true");
     btn.addEventListener("click", () => {
-      const id = btn.dataset.target;
-      const body = document.getElementById(id);
       body?.classList.toggle("collapsed");
-      btn.closest(".collapsible")?.classList.toggle("is-collapsed");
+      const sec = btn.closest(".collapsible");
+      sec?.classList.toggle("is-collapsed");
+      btn.setAttribute("aria-expanded", body?.classList.contains("collapsed") ? "false" : "true");
     });
   });
 
@@ -733,16 +857,19 @@ function wireChartInteractions(state) {
     showToast("Markdown 已导出");
   });
 
-  document.getElementById("btn-copy-link")?.addEventListener("click", () => {
-    const modal = document.getElementById("privacy-modal");
-    modal?.classList.remove("hidden");
-    const confirm = () => {
-      navigator.clipboard.writeText(getShareUrl(state.input)).then(() => showToast("链接已复制"));
-      modal?.classList.add("hidden");
-    };
-    document.getElementById("modal-confirm").onclick = confirm;
-    document.getElementById("modal-cancel").onclick = () => modal?.classList.add("hidden");
-    modal?.querySelector(".modal-backdrop")?.addEventListener("click", () => modal?.classList.add("hidden"), { once: true });
+  const copyLinkBtn = document.getElementById("btn-copy-link");
+  const modal = document.getElementById("privacy-modal");
+  copyLinkBtn?.addEventListener("click", () => {
+    openModal(modal, copyLinkBtn);
+  });
+  document.getElementById("modal-confirm")?.addEventListener("click", () => {
+    navigator.clipboard.writeText(getShareUrl(state.input)).then(() => showToast("链接已复制"));
+    closeModal(modal);
+  });
+  document.getElementById("modal-cancel")?.addEventListener("click", () => closeModal(modal));
+  modal?.querySelector(".modal-backdrop")?.addEventListener("click", () => closeModal(modal));
+  document.addEventListener("keydown", (e) => {
+    if (e.key === "Escape" && modal && !modal.classList.contains("hidden")) closeModal(modal);
   });
 
   document.getElementById("btn-copy-analysis")?.addEventListener("click", () => {
@@ -762,9 +889,8 @@ function wireChartInteractions(state) {
     document.getElementById("ai-result-wrap")?.classList.remove("hidden");
 
     try {
-      const text = await API.analyze(state.chart, style, state.chart.insight, (full) => {
-        renderAnalysis(full, style, true);
-      });
+      const streamRender = throttle((full) => renderAnalysis(full, style, true), 80);
+      const text = await API.analyze(state.chart, style, state.chart.insight, streamRender);
       state.analysis[style] = text;
       renderAnalysis(text, style, false);
       saveAiCache(state.input, { analysis: state.analysis, history: state.history, style: state.style });
@@ -784,6 +910,8 @@ function wireChartInteractions(state) {
   });
 
   async function runAsk(question) {
+    const askInput = document.getElementById("ask-input");
+    const askBtn = document.getElementById("btn-ask");
     const rounds = state.history.filter((h) => h.role === "user").length;
     if (rounds >= L3_MAX_ROUNDS) {
       showError(document.getElementById("ai-error"), "本轮已达上限，请刷新或重新打开命盘");
@@ -792,15 +920,17 @@ function wireChartInteractions(state) {
     const q = (question || document.getElementById("ask-input")?.value || "").trim();
     if (!q) return;
     appendAskMessage("user", q);
-    document.getElementById("ask-input").value = "";
+    if (askInput) askInput.value = "";
+    if (askBtn) askBtn.disabled = true;
+    if (askInput) askInput.disabled = true;
     state.history.push({ role: "user", content: q });
     updateRounds(state);
 
     const err = document.getElementById("ai-error");
     hideError(err);
-    const placeholder = document.createElement("div");
-    placeholder.className = "ask-msg ask-assistant";
-    placeholder.textContent = "思考中…";
+    const placeholder = document.createElement("di" + "v");
+    placeholder.className = "ask-msg ask-assistant is-pending";
+    placeholder.innerHTML = '<span class="mini-spinner"></span><span>思考中…</span>';
     document.getElementById("ask-history")?.appendChild(placeholder);
 
     try {
@@ -823,6 +953,9 @@ function wireChartInteractions(state) {
       placeholder.remove();
       state.history.pop();
       showError(err, e.message || "问答失败");
+    } finally {
+      if (askBtn) askBtn.disabled = false;
+      if (askInput) askInput.disabled = false;
     }
     updateRounds(state);
   }
@@ -873,7 +1006,7 @@ function initIndexPage() {
     ul.innerHTML = list
       .map(
         (h) =>
-          `<li class="history-item"><a href="${getShareUrl(h.input)}">${escapeHtml(h.label || h.input.birth_date)}</a></li>`
+          `<li class="history-item"><a href="${getShareUrl(h.input)}" class="history-link"><span class="history-label">${escapeHtml(h.label || h.input.birth_date)}</span><span class="history-meta">${new Date(h.ts).toLocaleDateString("zh-CN")}</span></a></li>`
       )
       .join("");
   };
@@ -888,8 +1021,7 @@ function initIndexPage() {
   form?.addEventListener("submit", async (e) => {
     e.preventDefault();
     hideError(errEl);
-    btn.disabled = true;
-    btn.textContent = "排盘中…";
+    setBtnLoading(btn, true, "开始排盘");
     const fd = new FormData(form);
     const payload = {
       date_type: fd.get("date_type"),
@@ -908,8 +1040,7 @@ function initIndexPage() {
     } catch (err) {
       showError(errEl, err.message || "网络错误");
     } finally {
-      btn.disabled = false;
-      btn.textContent = "开始排盘";
+      setBtnLoading(btn, false, "开始排盘");
     }
   });
 }
@@ -926,10 +1057,14 @@ async function initChartPage() {
   try {
     if (share) {
       input = decodeSharePayload(share);
-      loading?.classList.remove("hidden");
-      const res = await API.chart(input);
-      if (!res.success) throw new Error(res.error || "排盘失败");
-      chart = res.data;
+      chart = loadCachedChart(share);
+      if (!chart) {
+        loading?.setAttribute("aria-busy", "true");
+        const res = await API.chart(input);
+        if (!res.success) throw new Error(res.error || "排盘失败");
+        chart = res.data;
+        cacheChartPayload(share, chart);
+      }
     } else {
       const raw = sessionStorage.getItem(STORAGE_KEY);
       if (!raw) throw new Error("暂无命盘数据");
@@ -943,6 +1078,7 @@ async function initChartPage() {
   }
 
   loading?.classList.add("hidden");
+  loading?.setAttribute("aria-busy", "false");
   sessionStorage.setItem(STORAGE_KEY, JSON.stringify(chart));
   if (input) sessionStorage.setItem(INPUT_KEY, JSON.stringify(input));
 
