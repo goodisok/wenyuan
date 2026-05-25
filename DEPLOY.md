@@ -9,7 +9,9 @@ sudo apt update
 sudo apt install -y python3 python3-venv python3-pip nginx git
 ```
 
-安全组放行 **22**、**80**（HTTPS 另开 **443**）。
+安全组放行 **22**、**80**、**443**（HTTPS 必须）。
+
+> 若 `https://wenyuan.online` 超时但 HTTP 正常，请在 [轻量/云服务器防火墙](https://console.cloud.tencent.com/lighthouse) 添加入站规则：**TCP 443**，来源 `0.0.0.0/0`。
 
 ## 1.1 域名解析（wenyuan.online）
 
@@ -27,7 +29,16 @@ ping wenyuan.online
 curl -sS http://wenyuan.online/health
 ```
 
-HTTPS 可在解析生效后，于腾讯云 **SSL 证书** 申请免费 DV 证书，或使用 `certbot` 配置 Let's Encrypt。
+## 1.2 HTTPS（Let's Encrypt）
+
+DNS 生效且 **443 已放行** 后：
+
+```bash
+cd scripts
+python setup_https.py 119.91.54.153 YOUR_PASSWORD admin@wenyuan.online
+```
+
+证书自动续期由 `certbot.timer` 负责。后续 `deploy_remote.py` 会检测证书并保留 HTTPS 配置。
 
 ## 2. 部署代码
 

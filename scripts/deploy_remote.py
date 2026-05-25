@@ -8,8 +8,9 @@ import textwrap
 
 import paramiko
 
+from nginx_config import DOMAIN, nginx_config
+
 HOST = sys.argv[1] if len(sys.argv) > 1 else "119.91.54.153"
-DOMAIN = "wenyuan.online"
 USER = "ubuntu"
 PASSWORD = sys.argv[2] if len(sys.argv) > 2 else ""
 ROOT = pathlib.Path(__file__).resolve().parents[1]
@@ -73,6 +74,12 @@ def main() -> None:
         return out
 
     run("sudo mkdir -p /opt/wenyuan && sudo chown -R ubuntu:ubuntu /opt/wenyuan")
+    run("sudo mkdir -p /var/www/certbot")
+
+    cert_check = run(
+        f"test -f /etc/letsencrypt/live/{DOMAIN}/fullchain.pem && echo yes || echo no"
+    ).strip()
+    use_ssl = cert_check.endswith("yes")
 
     sftp = client.open_sftp()
     upload_tree(sftp, ROOT, REMOTE)
@@ -108,30 +115,7 @@ def main() -> None:
         """
     ).strip()
 
-    nginx = textwrap.dedent(
-        """
-        server {
-            listen 80 default_server;
-            listen [::]:80 default_server;
-            server_name wenyuan.online www.wenyuan.online _;
-            client_max_body_size 2m;
-            location / {
-                proxy_pass http://127.0.0.1:8000;
-                proxy_http_version 1.1;
-                proxy_set_header Host $host;
-                proxy_set_header X-Real-IP $remote_addr;
-                proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-                proxy_set_header X-Forwarded-Proto $scheme;
-                proxy_read_timeout 300s;
-                proxy_buffering off;
-            }
-            location /static/ {
-                alias /opt/wenyuan/static/;
-                expires 7d;
-            }
-        }
-        """
-    ).strip()
+    nginx = nginx_config(ssl=use_ssl, host=HOST)
 
     run(f"cat > /tmp/wenyuan.service <<'EOF'\n{service}\nEOF")
     run("sudo mv /tmp/wenyuan.service /etc/systemd/system/wenyuan.service")
@@ -147,7 +131,8 @@ def main() -> None:
     run("sleep 2 && curl -sS http://127.0.0.1:8000/health")
     print(run("curl -sS -o /dev/null -w '%{http_code}' http://127.0.0.1/"))
     client.close()
-    print(f"Deployed: http://{DOMAIN}/ (IP: http://{HOST}/)")
+    scheme = "https" if use_ssl else "http"
+    print(f"Deployed: {scheme}://{DOMAIN}/ (IP: http://{HOST}/)")
 
 
 if __name__ == "__main__":
