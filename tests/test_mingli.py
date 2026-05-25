@@ -20,7 +20,11 @@ def test_mingli_kernel(ref_chart):
     assert ml["kernel"] == "子平综参"
     assert "子平" in ml["sources"]
     assert "穷通宝鉴" in ml["sources"]
-    assert len(ml["highlights"]) >= 2
+    assert "子平真诠" in ml["sources"]
+    assert ml.get("geju")
+    assert ml.get("yongshen")
+    assert ml.get("shensha")
+    assert len(ml["highlights"]) >= 3
     assert ml["qiongtong"]["hint"]
 
 

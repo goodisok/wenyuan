@@ -766,6 +766,12 @@ th { color: var(--text-muted); font-weight: 500; }
 .details-more { margin-top: 0.75rem; font-size: 0.85rem; color: var(--text-muted); }
 .details-more summary { cursor: pointer; color: var(--accent); padding: 0.35rem 0; }
 .details-body { margin-top: 0.5rem; padding: 0.75rem; background: var(--bg); border-radius: 8px; font-size: 0.85rem; }
+.citations-block { margin-top: 0.85rem; padding-top: 0.75rem; border-top: 1px solid var(--border); }
+.citations-title { font-size: 0.82rem; color: var(--text-muted); margin: 0 0 0.5rem; font-weight: 600; }
+.citations-list { margin: 0; padding-left: 1.1rem; display: flex; flex-direction: column; gap: 0.45rem; }
+.citation-source { color: var(--accent); font-weight: 500; margin-right: 0.25rem; }
+.shensha-list { margin: 0.5rem 0 0; padding-left: 1.1rem; font-size: 0.82rem; color: var(--text-muted); }
+.yongshen-line { font-size: 0.88rem; color: var(--accent-dim); margin: 0.35rem 0; }
 .chart-skeleton { text-align: center; padding: 3rem 1rem; color: var(--text-muted); }
 .skeleton-bar {
   height: 4px;

@@ -5,6 +5,7 @@ from __future__ import annotations
 from datetime import datetime
 from typing import Any
 
+from app.core.knowledge import retrieve as knowledge_retrieve
 from app.core.mingli import analyze as mingli_analyze
 
 WUXING_ORDER = ("木", "火", "土", "金", "水")
@@ -43,9 +44,9 @@ def build_insight(chart: dict[str, Any]) -> dict[str, Any]:
     relations = chart.get("pillars_relations") or []
     ml = mingli_analyze(chart)
 
-    return {
+    insight: dict[str, Any] = {
         "kernel": ml.get("kernel", "子平综参"),
-        "sources": ml.get("sources", []),
+        "sources": list(ml.get("sources", [])),
         "highlights": ml.get("highlights", []),
         "day_master": meta.get("day_master", ""),
         "day_master_wuxing": meta.get("day_master_wuxing", ""),
@@ -62,6 +63,9 @@ def build_insight(chart: dict[str, Any]) -> dict[str, Any]:
         "climate": ml.get("climate"),
         "tiao_hou": ml.get("tiao_hou"),
         "qiongtong": ml.get("qiongtong"),
+        "geju": ml.get("geju"),
+        "yongshen": ml.get("yongshen"),
+        "shensha": ml.get("shensha"),
         "shishen_summary": ml.get("shishen_summary"),
         "changsheng_map": ml.get("changsheng_map"),
         "pattern": ml.get("pattern"),
@@ -70,15 +74,21 @@ def build_insight(chart: dict[str, Any]) -> dict[str, Any]:
         "current_year_liunian": _current_liunian(chart.get("dayun", [])),
         "pillars_relations": relations,
     }
+    citations = knowledge_retrieve(chart, insight)
+    insight["citations"] = citations
+    return insight
 
 
 def suggest_l2_questions(insight: dict[str, Any]) -> list[str]:
     questions: list[str] = []
+    geju = insight.get("geju") or {}
+    if geju.get("type"):
+        questions.append(f"「{geju['type']}」对我事业与人事有何倾向？")
     if insight.get("tiao_hou"):
         questions.append("此盘寒暖调候上，日常宜注意什么？")
-    pat = insight.get("pattern") or {}
-    if pat.get("type") and pat["type"] != "正格":
-        questions.append(f"格局倾向「{pat['type']}」，对我意味着什么？")
+    ys = insight.get("yongshen") or {}
+    if ys.get("summary"):
+        questions.append("喜用倾向与当前大运是否相合？")
     cd = insight.get("current_dayun") or {}
     if cd.get("ganzhi"):
         questions.append(f"大运{cd['ganzhi']}阶段的重点是什么？")
@@ -88,4 +98,4 @@ def suggest_l2_questions(insight: dict[str, Any]) -> list[str]:
     strongest = insight.get("wuxing_strongest") or []
     if strongest:
         questions.append(f"命局{strongest[0]}偏旺，如何调适？")
-    return questions[:4]
+    return questions[:5]

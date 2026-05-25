@@ -377,13 +377,37 @@ function renderDayunCards(dayun) {
 function renderRuleDetails(insight) {
   const de = insight.de_ling || {};
   const tg = insight.tong_gen || {};
-  const pat = insight.pattern || {};
+  const geju = insight.geju || {};
+  const purity = geju.purity || {};
+  const ys = insight.yongshen || {};
+  const sh = insight.shensha || {};
+  const bodyPat = insight.pattern || {};
   const sn = insight.stem_nature || {};
+  const shenshaItems = (sh.items || []).map(
+    (i) => `<li><strong>${escapeHtml(i.name)}</strong> ${escapeHtml(i.position || "")} — ${escapeHtml(i.note || "")}</li>`
+  ).join("");
   return `
-    <p>得令：${escapeHtml(de.status || "—")} · 通根：${escapeHtml(tg.summary || "—")} · 格局：${escapeHtml(pat.type || "—")}</p>
+    <p>得令：${escapeHtml(de.status || "—")} · 通根：${escapeHtml(tg.summary || "—")}</p>
+    ${geju.type ? `<p><strong>格局</strong> ${escapeHtml(geju.type)}（${escapeHtml(geju.origin || "")}）清纯${escapeHtml(purity.level || "—")} — ${escapeHtml(geju.note || "")}</p>` : ""}
+    ${bodyPat.type ? `<p><strong>体用</strong> ${escapeHtml(bodyPat.type)} — ${escapeHtml(bodyPat.note || "")}</p>` : ""}
+    ${ys.summary ? `<p><strong>喜用倾向</strong> ${escapeHtml(ys.summary)}</p>` : ""}
     <p class="ditiansui-verse">${escapeHtml(sn.verse || "")}</p>
     <p><strong>调候</strong> ${escapeHtml(insight.tiao_hou || "")}</p>
-    <p class="insight-note">${escapeHtml(insight.day_master_strength_note || "")}</p>`;
+    ${shenshaItems ? `<ul class="shensha-list">${shenshaItems}</ul>` : ""}
+    <p class="insight-note">${escapeHtml(insight.day_master_strength_note || "")}</p>
+    ${renderCitations(insight.citations)}`;
+}
+
+function renderCitations(citations) {
+  if (!citations?.length) return "";
+  const items = citations.map(
+    (c) => `<li><span class="citation-source">${escapeHtml(c.source || "")}</span> ${escapeHtml(c.text || "")}</li>`
+  ).join("");
+  return `
+    <div class="citations-block">
+      <h4 class="citations-title">典籍参考</h4>
+      <ul class="citations-list">${items}</ul>
+    </div>`;
 }
 
 function renderHighlightsPanel(insight) {
@@ -405,9 +429,10 @@ function renderHighlightsPanel(insight) {
 
 function suggestL2Questions(insight) {
   const dynamic = [];
+  const geju = insight?.geju || {};
+  if (geju.type) dynamic.push(`「${geju.type}」对我事业与人事有何倾向？`);
   if (insight?.tiao_hou) dynamic.push("此盘寒暖调候上，日常宜注意什么？");
-  const pat = insight?.pattern || {};
-  if (pat.type && pat.type !== "正格") dynamic.push(`格局倾向「${pat.type}」，对我意味着什么？`);
+  if (insight?.yongshen?.summary) dynamic.push("喜用倾向与当前大运是否相合？");
   const cd = insight?.current_dayun;
   if (cd?.ganzhi) dynamic.push(`大运${cd.ganzhi}阶段的重点是什么？`);
   if ((insight?.tong_gen || {}).summary === "无根") dynamic.push("日主根气较弱，行事风格有何特点？");
@@ -449,7 +474,7 @@ function renderChart(data) {
     </nav>
     <div id="chart-sticky-summary" class="chart-sticky-summary">
       <span class="sticky-ganzhi">${(data.pillars || []).map((p) => p.ganzhi).join(" ")}</span>
-      <span class="sticky-dm">日主 ${m.day_master} · ${insight.day_master_strength || ""}</span>
+      <span class="sticky-dm">日主 ${m.day_master} · ${insight.geju?.type || insight.day_master_strength || ""}</span>
     </div>
 
     <section class="section-block" id="sec-meta">
@@ -468,7 +493,9 @@ function renderChart(data) {
       </div>
       <div class="insight-panel">
         <p>日主 <strong>${m.day_master}</strong> 强弱 <strong>${insight.day_master_strength || "—"}</strong>
-        （评分 ${insight.strength_score ?? "—"}）</p>
+        （评分 ${insight.strength_score ?? "—"}）
+        ${insight.geju?.type ? ` · 格局 <strong>${insight.geju.type}</strong>` : ""}</p>
+        ${insight.yongshen?.summary ? `<p class="yongshen-line">喜用倾向：${escapeHtml(insight.yongshen.summary)}</p>` : ""}
         ${insight.current_dayun ? `<p>当前大运 ${insight.current_dayun.ganzhi}（${insight.current_dayun.start_year}-${insight.current_dayun.end_year}）</p>` : ""}
       </div>
       ${renderHighlightsPanel(insight)}
@@ -587,8 +614,17 @@ function buildMarkdownExport(chart, insight, analysis, history) {
   });
   md += `\n## 命局要点（子平综参）\n\n`;
   md += `- 强弱：${insight?.day_master_strength}\n`;
+  md += `- 格局：${insight?.geju?.type || ""}（${insight?.geju?.note || ""}）\n`;
+  md += `- 喜用倾向：${insight?.yongshen?.summary || ""}\n`;
   md += `- 调候：${insight?.tiao_hou || ""}\n`;
-  md += `- 格局：${insight?.pattern?.type || ""}\n\n`;
+  md += `- 体用：${insight?.pattern?.type || ""}\n`;
+  (insight?.highlights || []).forEach((h) => { md += `- ${h}\n`; });
+  const cites = insight?.citations || [];
+  if (cites.length) {
+    md += `\n### 典籍参考\n\n`;
+    cites.forEach((c) => { md += `- 《${c.source}》${c.text}\n`; });
+  }
+  md += `\n`;
   if (analysis) md += `## AI 解读\n\n${analysis}\n\n`;
   if (history?.length) {
     md += `## 问答\n\n`;

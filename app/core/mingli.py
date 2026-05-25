@@ -2,8 +2,8 @@
 """
 子平综参 · 命理规则层
 
-综合子平排盘、滴天髓体用、穷通宝鉴调候等各家要义，
-输出程序可验证的结构化摘要，供 UI 与 AI 锚定。
+综合子平排盘、滴天髓体用、穷通宝鉴调候、子平真诠格局、
+三命通会神煞、渊海子平喜用倾向等各家要义。
 """
 from __future__ import annotations
 
@@ -11,9 +11,19 @@ from typing import Any
 
 from app.core.ditiansui import analyze as ditiansui_analyze
 from app.core.qiongtong import lookup as qiongtong_lookup
+from app.core.shensha import analyze as shensha_analyze
+from app.core.yongshen import analyze as yongshen_analyze
+from app.core.ziping import analyze as ziping_analyze
 
 KERNEL = "子平综参"
-METHOD_NOTE = "综合子平、滴天髓、穷通宝鉴等典籍要义，倾向判断，非唯一流派结论"
+METHOD_NOTE = (
+    "综合子平、滴天髓、穷通宝鉴、子平真诠、三命通会、渊海子平等典籍要义，"
+    "倾向判断，非唯一流派结论"
+)
+SOURCES = [
+    "子平", "滴天髓", "穷通宝鉴", "子平真诠", "渊海子平",
+    "三命通会", "千里命稿", "神峰通考", "协纪辨方书",
+]
 
 
 def _shishen_summary(pillars: list[dict]) -> dict[str, int]:
@@ -33,30 +43,41 @@ def _plain_highlights(
     meta: dict[str, Any],
     dts: dict[str, Any],
     qt: dict[str, str],
+    geju: dict[str, Any],
+    yongshen: dict[str, Any],
+    shensha: dict[str, Any],
     relations: list[str],
 ) -> list[str]:
-    """面向用户的白话要点。"""
     lines: list[str] = []
     dm = meta.get("day_master", "")
     wx = meta.get("day_master_wuxing", "")
     de = dts.get("de_ling", {})
     tg = dts.get("tong_gen", {})
     cl = dts.get("climate", {})
-    pat = dts.get("pattern", {})
+    body_pat = dts.get("pattern", {})
 
     lines.append(
         f"日主{dm}（{wx}），月令{de.get('month_branch', '')}，"
-        f"时令{de.get('status', '')}，根气{tg.get('summary', '')}。"
+        f"时令{de.get('status', '')}，根气{tg.get('summary', '')}，"
+        f"强弱{dts.get('day_master_strength', '平衡')}。"
     )
-    if cl.get("note"):
-        lines.append(f"季节气候：{cl.get('season', '')}{cl.get('climate', '')}，{cl.get('note')}。")
+    if geju.get("type"):
+        purity = geju.get("purity", {})
+        lines.append(
+            f"格局：{geju['type']}（{geju.get('origin', '')}），"
+            f"清纯度{purity.get('level', '平')} — {geju.get('note', '')[:60]}"
+        )
+    if yongshen.get("summary"):
+        lines.append(f"喜用倾向：{yongshen['summary']}。")
     if qt.get("hint"):
         lines.append(f"穷通宝鉴：{qt['hint']}。")
-    sn = dts.get("stem_nature", {})
-    if sn.get("image"):
-        lines.append(f"滴天髓体象：{sn['image']}。")
-    if pat.get("type"):
-        lines.append(f"格局倾向：{pat['type']} — {pat.get('note', '')}")
+    if cl.get("note"):
+        lines.append(f"季节气候：{cl.get('season', '')}{cl.get('climate', '')}，{cl.get('note')}。")
+    if body_pat.get("type") and body_pat["type"] != "正格":
+        lines.append(f"体用倾向：{body_pat['type']} — {body_pat.get('note', '')}")
+    if shensha.get("items"):
+        names = "、".join(i["name"] for i in shensha["items"][:4])
+        lines.append(f"神煞辅助：{names}（须合格局参看）。")
     if relations:
         lines.append(f"四柱关系：{'、'.join(relations[:5])}" + ("…" if len(relations) > 5 else ""))
     return lines
@@ -70,16 +91,23 @@ def analyze(chart: dict[str, Any]) -> dict[str, Any]:
 
     dts = ditiansui_analyze(chart)
     qt = qiongtong_lookup(day_stem, month_branch)
+    geju = ziping_analyze(chart)
+    shensha = shensha_analyze(chart)
+    yongshen = yongshen_analyze(
+        chart,
+        strength=dts.get("day_master_strength", "平衡"),
+        tiao_hou=qt.get("hint", ""),
+        geju=geju,
+    )
     relations = chart.get("pillars_relations") or []
     shishen = _shishen_summary(pillars)
 
-    # 调候：穷通为主，滴天髓互参
     tiao_hou = qt["hint"]
     dts_tiao = dts.get("tiao_hou", "")
-    if dts_tiao and dts_tiao != tiao_hou and "酌取" not in tiao_hou:
+    if dts_tiao and dts_tiao != tiao_hou:
         tiao_hou = f"{tiao_hou}；滴天髓：{dts_tiao}"
 
-    highlights = _plain_highlights(meta, dts, qt, relations)
+    highlights = _plain_highlights(meta, dts, qt, geju, yongshen, shensha, relations)
 
     return {
         "kernel": KERNEL,
@@ -94,9 +122,12 @@ def analyze(chart: dict[str, Any]) -> dict[str, Any]:
         "tiao_hou": tiao_hou,
         "qiongtong": qt,
         "ditiansui": dts,
+        "geju": geju,
+        "yongshen": yongshen,
+        "shensha": shensha,
         "shishen_summary": shishen,
         "pattern": dts.get("pattern"),
         "changsheng_map": dts.get("changsheng_map"),
         "highlights": highlights,
-        "sources": ["子平", "滴天髓", "穷通宝鉴"],
+        "sources": list(SOURCES),
     }

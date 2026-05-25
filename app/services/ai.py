@@ -14,24 +14,26 @@ from app.config import settings
 Style = Literal["classic", "modern"]
 
 OUTPUT_FORMAT = """
-请以子平为基础，综参滴天髓、穷通宝鉴等典籍要义解读（不作单一派系独断），Markdown 格式，按以下章节（保留 ## 标题，每节 3-5 句）：
+请以子平为基础，综参滴天髓、穷通宝鉴、子平真诠、渊海子平、三命通会、千里命稿、神峰通考等典籍要义解读（不作单一派系独断）。
+规则层已给出格局、喜用倾向、神煞与典籍摘要——须以之为锚，重要论断请标注出处（如「据《穷通宝鉴》……」）。
+若用户消息中含「典籍参考摘要」，优先参此，勿与规则层结论矛盾。Markdown 格式，按以下章节（保留 ## 标题，每节 3-5 句）：
 
 ## 一、三元总览（天地人）
 - 天：格局气势、大运节律
 - 地：五行流通、刑冲合害
 - 人：性情才能、行事风格
 
-## 二、体用与格局
-据得令、通根、得助与格局倾向，综参各家论体用（勿断唯一格局）。
+## 二、格局与体用
+据规则层「格局」（子平真诠/三命通会）与「体用倾向」（滴天髓）综参，述清纯/破格倾向，勿断唯一格局。
 
 ## 三、十神性情
-结合四柱十神、藏干，述性格倾向。
+结合四柱十神、藏干与六亲（渊海子平），述性格倾向。
 
-## 四、寒暖调候
-综参穷通宝鉴与季节气候，论调适方向（倾向参考）。
+## 四、寒暖调候与喜用
+综参穷通宝鉴调候与喜用倾向（扶抑/调候/通关），强调倾向参考、非唯一用神。
 
 ## 五、事业财运
-结合大运，述方向性节奏（不作绝对预测）。
+结合大运与格局，述方向性节奏（不作绝对预测）。
 
 ## 六、感情婚姻
 述相处模式，语气平和。
@@ -41,6 +43,9 @@ OUTPUT_FORMAT = """
 
 ## 八、大运流年
 结合大运流年，点出 2-3 个值得留意的阶段。
+
+## 九、历史校准（可选）
+根据大运流年组合，提出 2-3 个可能已发生的人生阶段特征（如学业、搬迁、转折），供用户对照验证；语气为「可能」「倾向」，不作断言。
 
 文末引用块：
 > 以上解读由问元 AI 综参子平诸家生成，仅供文化参考，不作人生决策依据。
@@ -93,9 +98,23 @@ class AIAnalysisService:
         if ss:
             top = list(ss.items())[:5]
             lines.append(f"【十神分布】{', '.join(f'{k}{v}' for k, v in top)}")
+        geju = insight.get("geju") or {}
+        if geju.get("type"):
+            purity = geju.get("purity") or {}
+            lines.append(
+                f"【格局·{geju.get('source', '子平真诠')}】{geju['type']} "
+                f"({geju.get('origin', '')}) 清纯{purity.get('level', '')} — {geju.get('note', '')}"
+            )
+        ys = insight.get("yongshen") or {}
+        if ys.get("summary"):
+            lines.append(f"【喜用倾向】{ys['summary']}（{ys.get('note', '')[:50]}）")
+        sh = insight.get("shensha") or {}
+        if sh.get("items"):
+            names = "、".join(i["name"] for i in sh["items"])
+            lines.append(f"【神煞辅助】{names} — {sh.get('note', '')[:40]}")
         pat = insight.get("pattern") or {}
         if pat:
-            lines.append(f"【格局倾向】{pat.get('type')} — {pat.get('note')}")
+            lines.append(f"【体用倾向】{pat.get('type')} — {pat.get('note')}")
         lines.append(f"【五行】{insight.get('wuxing_counts')} 旺{insight.get('wuxing_strongest')} 弱{insight.get('wuxing_weakest')}")
         cd = insight.get("current_dayun") or {}
         if cd:
@@ -106,6 +125,11 @@ class AIAnalysisService:
         rel = insight.get("pillars_relations") or []
         if rel:
             lines.append(f"刑冲合害 {', '.join(rel)}")
+        cites = insight.get("citations") or []
+        if cites:
+            lines.append("【典籍参考摘要】")
+            for c in cites:
+                lines.append(f"《{c.get('source', '')}》{c.get('text', '')}")
         return "\n".join(lines)
 
     @classmethod
@@ -158,9 +182,11 @@ class AIAnalysisService:
     @classmethod
     def _system_prompt(cls, style: Style, *, for_ask: bool = False) -> str:
         base = (
-            "你是「问元」平台命理顾问。以子平排盘为基础，综参滴天髓、穷通宝鉴等各家要义，"
-            "借鉴典籍案例理解命理会通，不作单一派系独断。须严格锚定所给命盘与规则层摘要，"
-            "不可臆造四柱与大运。不得断言唯一喜用神。拒绝脱离命盘的闲聊。"
+            "你是「问元」平台命理顾问，具备子平、滴天髓、穷通宝鉴、子平真诠、三命通会、"
+            "渊海子平、千里命稿等典籍素养。以程序规则层（格局、旺衰、调候、喜用倾向）为锚，"
+            "重要论断宜标注典籍出处。借鉴诸家会通，不作单一派系独断。"
+            "须严格锚定所给命盘与规则层摘要，不可臆造四柱与大运。"
+            "喜用神仅作倾向参考，不得断言唯一用神。拒绝脱离命盘的闲聊。"
         )
         if for_ask:
             return base + " 回答简洁，Markdown 格式，3-8 段，须有规则层依据。"
