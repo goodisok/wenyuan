@@ -8,6 +8,7 @@ from typing import Any, Literal
 
 from lunar_python import Lunar, Solar
 
+from app.core.changsheng import changsheng
 from app.core.constants import DIZHI_CANGGAN, DIZHI_WUXING, TIANGAN_WUXING, WUXING_COLOR
 from app.core.relations import compute_pillar_relations
 
@@ -138,6 +139,14 @@ class BaziService:
             "description": desc,
         }
 
+    @staticmethod
+    def _jieqi_str(jq_obj: Any) -> str:
+        if jq_obj is None:
+            return ""
+        if hasattr(jq_obj, "getName"):
+            return jq_obj.getName() or ""
+        return str(jq_obj)
+
     @classmethod
     def build_chart(cls, data: BirthInput) -> dict[str, Any]:
         solar, lunar = cls.resolve_solar(data)
@@ -155,6 +164,9 @@ class BaziService:
             cls._build_pillar(key, gz, ss, ny, xk, list(hs))
             for key, gz, ss, ny, xk, hs in pillar_specs
         ]
+        day_gan = ec.getDayGan()
+        for p in pillars:
+            p["changsheng"] = changsheng(day_gan, p["dizhi"]["name"])
 
         dayun_list: list[dict[str, Any]] = []
         for dy in yun.getDaYun():
@@ -216,6 +228,12 @@ class BaziService:
                 "ming_gong": ec.getMingGong(),
                 "shen_gong": ec.getShenGong(),
                 "tai_yuan": ec.getTaiYuan(),
+                "jieqi": {
+                    "prev": cls._jieqi_str(lunar.getPrevJieQi()),
+                    "next": cls._jieqi_str(lunar.getNextJieQi()),
+                    "current_jie": lunar.getCurrentJie() or "",
+                    "current_qi": lunar.getCurrentQi() or "",
+                },
             },
             "pillars": pillars,
             "dayun": dayun_list,

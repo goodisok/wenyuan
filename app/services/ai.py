@@ -14,36 +14,36 @@ from app.config import settings
 Style = Literal["classic", "modern"]
 
 OUTPUT_FORMAT = """
-请严格使用 Markdown 格式输出，按以下章节组织（保留 ## 标题，每节 3-5 句，要点清晰）：
+请严格以《滴天髓阐微》体用思想解读，使用 Markdown，按以下章节（保留 ## 标题，每节 3-5 句）：
 
-## 一、三元总览
-- 天（命局格局、气势）：…
-- 地（五行流通、平衡）：…
-- 人（性格气质、行事风格）：…
+## 一、三元总览（天地人）
+- 天：格局气势、应期节律
+- 地：五行流通、刑冲合害
+- 人：性情才能、行事风格
 
-## 二、格局与十神
-结合四柱十神、日主强弱，说明命局特点与潜在优势。
+## 二、体用与格局
+据规则层「得令、通根、得助」与格局倾向，论体用得失（勿断唯一格局）。
 
-## 三、五行喜忌
-说明五行分布、喜用神倾向，以及日常可留意之处。须注明为倾向参考，非唯一用神结论。
+## 三、十神性情
+结合四柱十神、藏干，述性格倾向与处事模式。
 
-## 四、性格特质
-以具体场景描述性格倾向，避免空泛形容词堆砌。
+## 四、寒暖燥湿与调候
+据月支气候与调候提示，论命局寒暖偏失及调适方向（倾向参考）。
 
 ## 五、事业财运
-结合大运节奏，给出方向性建议（不作绝对预测）。
+结合大运节奏，述方向性节奏（不作绝对预测）。
 
 ## 六、感情婚姻
-描述相处模式与沟通倾向，语气平和务实。
+述相处模式，语气和平。
 
 ## 七、健康留意
-从五行对应脏腑角度给出养生提示，注明非医疗建议。
+从五行对应角度作养生提示，注明非医疗建议。
 
-## 八、大运流年提示
-结合所给大运，点出 2-3 个值得留意的阶段与应对思路。
+## 八、大运流年
+结合大运流年，点出 2-3 个值得留意的阶段。
 
-文末单独一行引用块：
-> 以上解读由问元 AI 生成，仅供文化参考，不作人生决策依据。
+文末引用块：
+> 以上解读由问元 AI 依滴天髓阐微纲要生成，仅供文化参考，不作人生决策依据。
 """
 
 OFF_TOPIC_HINT = "请就当前命盘提问，问元不支持脱离命盘的闲聊。"
@@ -62,12 +62,35 @@ class AIAnalysisService:
         if not insight:
             return ""
         lines = [
-            "【规则层 BaziInsight】",
+            f"【规则内核】{insight.get('kernel', '滴天髓阐微')}",
             f"日主 {insight.get('day_master')}（{insight.get('day_master_wuxing')}）"
-            f" 强弱倾向={insight.get('day_master_strength')}（{insight.get('day_master_strength_note', '倾向判断')}）",
-            f"五行统计 {insight.get('wuxing_counts')}",
-            f"偏旺 {insight.get('wuxing_strongest')} 偏弱 {insight.get('wuxing_weakest')}",
+            f" 强弱={insight.get('day_master_strength')} 评分={insight.get('strength_score')} "
+            f"（{insight.get('day_master_strength_note', '')}）",
         ]
+        sn = insight.get("stem_nature") or {}
+        if sn.get("verse"):
+            lines.append(f"【十干体象】{sn.get('image', '')} — {sn.get('verse', '')}")
+        de = insight.get("de_ling") or {}
+        if de:
+            lines.append(
+                f"【得令】{de.get('status')} 月支{de.get('month_branch')} "
+                f"本气{de.get('main_qi')} 长生{de.get('changsheng')}"
+            )
+        tg = insight.get("tong_gen") or {}
+        if tg:
+            lines.append(f"【通根】{tg.get('summary')} 得分{tg.get('score')}")
+        dz = insight.get("de_zhu") or {}
+        if dz:
+            lines.append(f"【天干助损】{dz.get('summary')} 得助{dz.get('helps')} 受克泄{dz.get('drains')}")
+        cl = insight.get("climate") or {}
+        if cl:
+            lines.append(f"【气候】{cl.get('season')}{cl.get('climate')} — {cl.get('note')}")
+        if insight.get("tiao_hou"):
+            lines.append(f"【调候】{insight.get('tiao_hou')}")
+        pat = insight.get("pattern") or {}
+        if pat:
+            lines.append(f"【格局倾向】{pat.get('type')} — {pat.get('note')}")
+        lines.append(f"【五行】{insight.get('wuxing_counts')} 旺{insight.get('wuxing_strongest')} 弱{insight.get('wuxing_weakest')}")
         cd = insight.get("current_dayun") or {}
         if cd:
             lines.append(f"当前大运 {cd.get('ganzhi')} ({cd.get('start_year')}-{cd.get('end_year')})")
@@ -96,7 +119,14 @@ class AIAnalysisService:
             )
             lines.append(
                 f"  {p.get('label')}: {p.get('ganzhi')} "
-                f"十神={p.get('shishen')} 纳音={p.get('nayin')} 旬空={p.get('xunkong', '')} 藏干={cg}"
+                f"十神={p.get('shishen')} 纳音={p.get('nayin')} 旬空={p.get('xunkong', '')} "
+                f"长生={p.get('changsheng', '')} 藏干={cg}"
+            )
+        jieqi = meta.get("jieqi") or {}
+        if jieqi:
+            lines.append(
+                f"\n【节令】前{jieqi.get('prev')} 后{jieqi.get('next')} "
+                f"当前建{jieqi.get('current_jie')}{jieqi.get('current_qi')}"
             )
         rel = chart.get("pillars_relations") or []
         if rel:
@@ -122,18 +152,19 @@ class AIAnalysisService:
     @classmethod
     def _system_prompt(cls, style: Style, *, for_ask: bool = False) -> str:
         base = (
-            "你是「问元」平台的命理顾问，须严格锚定所给命盘与 BaziInsight，"
-            "不可臆造四柱、大运或关系。不得断言唯一喜用神，仅可表述倾向。"
-            "拒绝与命盘无关的问题，引导用户就当前盘提问。"
+            "你是「问元」平台命理顾问，以《滴天髓阐微》为主要理论内核，"
+            "须严格锚定所给命盘、滴天髓规则层摘要与 BaziInsight，"
+            "依体用、通根、得令、寒暖燥湿、调候论述，不可臆造四柱与大运。"
+            "不得断言唯一喜用神或固定格局，仅述倾向。拒绝脱离命盘的闲聊。"
         )
         if for_ask:
-            return base + " 回答须简洁聚焦，Markdown 格式，3-8 段为宜。"
+            return base + " 回答简洁，Markdown 格式，3-8 段，须引用规则层依据。"
         if style == "classic":
             return (
-                base + " 精通子平命理，行文可参考《滴天髓》《子平真诠》体系，"
-                "以天地人三元为纲，文白相间、典雅而不晦涩。"
+                base + " 行文可参考《滴天髓阐微》《子平真诠》，文白相间、典雅明晰，"
+                "引用十干体象、长生、调候时须与所给数据一致。"
             )
-        return base + " 用清晰、温和的现代中文阐述，避免宿命论与恐吓式断语。"
+        return base + " 用清晰现代中文阐述滴天髓要义，避免宿命论与恐吓式断语。"
 
     @classmethod
     def _build_messages(

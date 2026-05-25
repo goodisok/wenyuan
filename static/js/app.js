@@ -1,4 +1,4 @@
-/** 问元 · 前端 v1.0 */
+/** 问元 · 前端 v1.1 · 滴天髓阐微内核 */
 const STORAGE_KEY = "wenyuan_chart";
 const HISTORY_KEY = "wenyuan_history";
 const INPUT_KEY = "wenyuan_input";
@@ -329,6 +329,7 @@ function renderPillar(p) {
       return `<span class="canggan-tag ${wuxingClass(c.color)}">${c.name}${ss}</span>`;
     })
     .join("");
+  const cs = p.changsheng ? `<div class="pillar-changsheng">${escapeHtml(p.changsheng)}</div>` : "";
   const xk = p.xunkong ? `<div class="pillar-xunkong">旬空 ${escapeHtml(p.xunkong)}</div>` : "";
   return `
     <div class="pillar">
@@ -337,6 +338,7 @@ function renderPillar(p) {
       <div class="stem ${wuxingClass(p.tiangan.color)}">${p.tiangan.name} · ${p.tiangan.wuxing}</div>
       <div class="branch ${wuxingClass(p.dizhi.color)}">${p.dizhi.name} · ${p.dizhi.wuxing}</div>
       <div class="canggan-list">${cg}</div>
+      ${cs}
       ${xk}
       <div class="pillar-meta">${p.shishen}<br>${p.nayin}</div>
     </div>`;
@@ -372,21 +374,38 @@ function renderDayunCards(dayun) {
     .join("");
 }
 
+function renderDitiansuiPanel(insight) {
+  const sn = insight.stem_nature || {};
+  const de = insight.de_ling || {};
+  const tg = insight.tong_gen || {};
+  const cl = insight.climate || {};
+  const pat = insight.pattern || {};
+  return `
+    <div class="ditiansui-panel">
+      <h3 class="subsection-title">滴天髓阐微 · 规则摘要</h3>
+      <p class="ditiansui-verse">${escapeHtml(sn.verse || "")}</p>
+      <div class="ditiansui-grid">
+        <span>体象 ${escapeHtml(sn.image || "")}</span>
+        <span>得令 ${escapeHtml(de.status || "")}（${escapeHtml(de.changsheng || "")}）</span>
+        <span>通根 ${escapeHtml(tg.summary || "")}</span>
+        <span>气候 ${escapeHtml(cl.season || "")}${escapeHtml(cl.climate || "")}</span>
+        <span>格局 ${escapeHtml(pat.type || "")}</span>
+      </div>
+      <p class="ditiansui-tiaohou"><strong>调候</strong> ${escapeHtml(insight.tiao_hou || "")}</p>
+      <p class="insight-note">${escapeHtml(insight.day_master_strength_note || "")}</p>
+    </div>`;
+}
+
 function suggestL2Questions(insight) {
   const dynamic = [];
-  const strongest = insight?.wuxing_strongest || [];
-  if (strongest.length) dynamic.push(`命局${strongest[0]}偏旺，日常宜如何调适？`);
-  const weakest = insight?.wuxing_weakest || [];
-  if (weakest.length && !strongest.includes(weakest[0])) {
-    dynamic.push(`五行${weakest[0]}较弱，可留意哪些方面？`);
-  }
+  if (insight?.tiao_hou) dynamic.push("依滴天髓，此盘调候如何理解？");
+  const pat = insight?.pattern || {};
+  if (pat.type && pat.type !== "正格") dynamic.push(`格局倾向「${pat.type}」，对我意味着什么？`);
   const cd = insight?.current_dayun;
   if (cd?.ganzhi) dynamic.push(`大运${cd.ganzhi}阶段的重点是什么？`);
-  if (insight?.day_master_strength && insight.day_master_strength !== "平衡") {
-    dynamic.push(`日主${insight.day_master_strength}，行事风格有何特点？`);
-  }
-  const rel = insight?.pillars_relations || [];
-  if (rel.length) dynamic.push(`盘中有「${rel[0]}」，如何理解？`);
+  if ((insight?.tong_gen || {}).summary === "无根") dynamic.push("日主无根，行事上宜注意什么？");
+  const strongest = insight?.wuxing_strongest || [];
+  if (strongest.length) dynamic.push(`命局${strongest[0]}偏旺，日常宜如何调适？`);
   return [...L2_FIXED, ...dynamic.slice(0, 4)].slice(0, 6);
 }
 
@@ -426,12 +445,14 @@ function renderChart(data) {
       <p class="birth-time-note">阳历 ${m.birth_time?.solar || ""}<br>农历 ${m.birth_time?.lunar || ""}</p>
       <div class="meta-actions">
         <button type="button" class="btn btn-secondary" id="btn-copy-link">复制链接</button>
+        <button type="button" class="btn btn-secondary" id="btn-export-md">导出 Markdown</button>
       </div>
       <div class="insight-panel">
-        <p>日主倾向 <strong>${insight.day_master_strength || "—"}</strong>
-        <span class="insight-note">${insight.day_master_strength_note || ""}</span></p>
+        <p>日主 <strong>${m.day_master}</strong> 强弱 <strong>${insight.day_master_strength || "—"}</strong>
+        （评分 ${insight.strength_score ?? "—"}）</p>
         ${insight.current_dayun ? `<p>当前大运 ${insight.current_dayun.ganzhi}（${insight.current_dayun.start_year}-${insight.current_dayun.end_year}）</p>` : ""}
       </div>
+      ${renderDitiansuiPanel(insight)}
     </section>
 
     <section class="section-block" id="sec-di">
@@ -534,6 +555,30 @@ function appendAskMessage(role, content) {
   div.scrollIntoView({ behavior: "smooth", block: "nearest" });
 }
 
+
+function buildMarkdownExport(chart, insight, analysis, history) {
+  const m = chart.meta || {};
+  let md = `# 问元命盘\n\n`;
+  md += `- 阳历：${m.birth_time?.solar || ""}\n`;
+  md += `- 农历：${m.birth_time?.lunar || ""}\n`;
+  md += `- 日主：${m.day_master}（${m.day_master_wuxing}）\n\n`;
+  md += `## 四柱\n\n`;
+  (chart.pillars || []).forEach((p) => {
+    md += `- ${p.label} ${p.ganzhi} 十神${p.shishen} 长生${p.changsheng || ""} 旬空${p.xunkong || ""}\n`;
+  });
+  md += `\n## 滴天髓阐微摘要\n\n`;
+  md += `- 强弱：${insight?.day_master_strength}\n`;
+  md += `- 调候：${insight?.tiao_hou || ""}\n`;
+  md += `- 格局：${insight?.pattern?.type || ""}\n\n`;
+  if (analysis) md += `## AI 解读\n\n${analysis}\n\n`;
+  if (history?.length) {
+    md += `## 问答\n\n`;
+    history.forEach((h) => { md += `**${h.role}**: ${h.content}\n\n`; });
+  }
+  md += `\n> 由问元导出，仅供文化参考。\n`;
+  return md;
+}
+
 function wireChartInteractions(state) {
   document.querySelectorAll(".section-header").forEach((btn) => {
     btn.addEventListener("click", () => {
@@ -550,6 +595,16 @@ function wireChartInteractions(state) {
       card?.classList.toggle("expanded");
       card?.querySelector(".liunian-badges")?.classList.toggle("hidden");
     });
+  });
+
+  document.getElementById("btn-export-md")?.addEventListener("click", () => {
+    const md = buildMarkdownExport(state.chart, state.chart.insight, state.analysis[state.style] || "", state.history);
+    const blob = new Blob([md], { type: "text/markdown;charset=utf-8" });
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = `wenyuan-${state.input?.birth_date || "chart"}.md`;
+    a.click();
+    showToast("Markdown 已导出");
   });
 
   document.getElementById("btn-copy-link")?.addEventListener("click", () => {

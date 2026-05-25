@@ -1,0 +1,11 @@
+{
+  "name": "问元 · 八字排盘",
+  "short_name": "问元",
+  "description": "探问天地人三元 · 滴天髓阐微内核排盘",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#0f0e0c",
+  "theme_color": "#c9a227",
+  "lang": "zh-CN",
+  "icons": []
+}

@@ -8,6 +8,8 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;500;600&family=Noto+Serif+SC:wght@500;600&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="/static/css/theme.css">
+  <link rel="manifest" href="/static/manifest.json">
+  <meta name="theme-color" content="#c9a227">
   {% block head %}{% endblock %}
 </head>
 <body>
@@ -23,5 +25,10 @@
     <a href="/privacy">隐私说明</a>
   </footer>
   {% block scripts %}{% endblock %}
+  <script>
+    if ("serviceWorker" in navigator) {
+      navigator.serviceWorker.register("/static/sw.js").catch(() => {});
+    }
+  </script>
 </body>
 </html>

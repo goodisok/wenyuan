@@ -53,6 +53,22 @@ SANXING_PAIRS: dict[frozenset[str], str] = {
 
 ZIXING_BRANCHES = frozenset(("辰", "午", "酉", "亥"))
 
+# 三合局（ v1.1 ）
+SANHE_GROUPS: list[tuple[frozenset[str], str]] = [
+    (frozenset(("申", "子", "辰")), "申子辰合水局"),
+    (frozenset(("亥", "卯", "未")), "亥卯未合木局"),
+    (frozenset(("寅", "午", "戌")), "寅午戌合火局"),
+    (frozenset(("巳", "酉", "丑")), "巳酉丑合金局"),
+]
+
+# 三会方
+SANHUI_GROUPS: list[tuple[frozenset[str], str]] = [
+    (frozenset(("寅", "卯", "辰")), "寅卯辰会东方木"),
+    (frozenset(("巳", "午", "未")), "巳午未会南方火"),
+    (frozenset(("申", "酉", "戌")), "申酉戌会西方金"),
+    (frozenset(("亥", "子", "丑")), "亥子丑会北方水"),
+]
+
 
 def _pair_label(a: str, b: str, mapping: dict[frozenset[str], str]) -> str | None:
     return mapping.get(frozenset((a, b)))
@@ -90,8 +106,18 @@ def compute_pillar_relations(pillars: list[dict]) -> list[str]:
                 found.add(tag)
 
     branch_names = [b for _, b in branches]
+    branch_set = set(branch_names)
     for b in ZIXING_BRANCHES:
         if branch_names.count(b) >= 2:
             found.add(_zixing_label(b))
+
+    for group, label in SANHE_GROUPS + SANHUI_GROUPS:
+        hit = branch_set & group
+        if len(hit) >= 2:
+            if len(hit) == 3:
+                found.add(label)
+            else:
+                partial = "".join(sorted(hit))
+                found.add(f"{partial}半合")
 
     return sorted(found)
