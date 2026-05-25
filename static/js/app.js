@@ -8,7 +8,6 @@ const L3_MAX_ROUNDS = 8;
 const SHARE_VERSION = 1;
 const CHART_CACHE_TTL = 3600000;
 
-const L2_FIXED = ["当前大运对我意味着什么？", "我的五行平衡吗？"];
 const AI_STYLE = "modern"; // API 兼容字段，后端提示词已统一
 const DEFAULT_BIRTH = {
   date_type: "solar",
@@ -606,26 +605,6 @@ function renderHighlightsPanel(insight) {
     </div>`;
 }
 
-function suggestL2Questions(insight) {
-  const dynamic = [];
-  const ds = insight?.duanshi?.items || [];
-  const parent = ds.find((i) => i.topic === "父母" && (i.level === "强" || i.level === "中"));
-  if (parent) dynamic.push(`父母宫断「${parent.verdict}」，应期在何运？`);
-  const sg = insight?.sanguan?.gates || [];
-  const highGate = sg.find((g) => g.confidence === "高");
-  if (highGate) dynamic.push(`过三关·${highGate.name}高置信，各家如何互证？`);
-  const geju = insight?.geju || {};
-  if (geju.type) dynamic.push(`「${geju.type}」对我事业与人事有何倾向？`);
-  if (insight?.tiao_hou) dynamic.push("此盘寒暖调候上，日常宜注意什么？");
-  if (insight?.yongshen?.summary) dynamic.push("喜用倾向与当前大运是否相合？");
-  const cd = insight?.current_dayun;
-  if (cd?.ganzhi) dynamic.push(`大运${cd.ganzhi}阶段的重点是什么？`);
-  if ((insight?.tong_gen || {}).summary === "无根") dynamic.push("日主根气较弱，行事风格有何特点？");
-  const strongest = insight?.wuxing_strongest || [];
-  if (strongest.length) dynamic.push(`命局${strongest[0]}偏旺，日常宜如何调适？`);
-  return [...L2_FIXED, ...dynamic.slice(0, 4)].slice(0, 6);
-}
-
 function renderChart(data) {
   const m = data.meta || {};
   const wx = data.wuxing_stats || {};
@@ -644,10 +623,6 @@ function renderChart(data) {
         )
         .join("")}</tbody></table></div>`
     : "";
-
-  const chips = suggestL2Questions(insight)
-    .map((q) => `<button type="button" class="chip-btn" data-q="${escapeHtml(q)}">${escapeHtml(q)}</button>`)
-    .join("");
 
   return `
     <div class="chart-page">
@@ -723,31 +698,44 @@ function renderChart(data) {
       </div>
     </section>
 
-    <section class="section-block section-card section-ai" id="sec-ai">
-      <h2 class="section-title">问 · AI · 子平直断</h2>
-      <p class="ai-hint">锚定本盘解读与追问，非开放闲聊。L3 每命盘每标签页最多 ${L3_MAX_ROUNDS} 轮。</p>
-      <div class="ai-toolbar">
+    <section class="section-block section-card section-ai ai-panel" id="sec-ai">
+      <header class="ai-panel-head">
+        <div class="ai-panel-intro">
+          <h2 class="section-title">问 · AI · 子平直断</h2>
+          <p class="ai-panel-desc">锚定本盘规则层解读，非开放闲聊 · 每命盘最多 ${L3_MAX_ROUNDS} 轮追问</p>
+        </div>
+        <span class="analysis-style-badge style-ziping">子平直断</span>
+      </header>
+      <div class="ai-panel-toolbar">
         <button type="button" class="btn btn-primary" id="btn-analyze">开始解读</button>
         <button type="button" class="btn btn-secondary hidden" id="btn-copy-analysis">复制解读</button>
       </div>
-      <div id="ai-loading" class="ai-loading hidden"><div class="spinner"></div><p class="ai-loading-title">问元解读中</p></div>
+      <div id="ai-loading" class="ai-loading hidden" aria-live="polite">
+        <div class="spinner"></div>
+        <p class="ai-loading-title">问元解读中</p>
+        <p class="ai-loading-desc">正在锚定规则层与过三关…</p>
+      </div>
       <div id="ai-error" class="alert alert-error hidden"></div>
-      <div id="ai-empty" class="ai-empty"><p>点击「开始解读」，AI 将锚定规则层，按八个章节流式输出 L1 解读。</p></div>
-      <div id="ai-result-wrap" class="analysis-panel hidden">
-        <div class="analysis-header">
-          <span id="ai-style-badge" class="analysis-style-badge style-ziping">子平直断</span>
+      <div id="ai-empty" class="ai-empty-state">
+        <p class="ai-empty-title">尚未解读</p>
+        <p class="ai-empty-desc">点击「开始解读」，AI 将按八个章节流式输出 L1 直断。</p>
+      </div>
+      <div id="ai-result-wrap" class="ai-result-card hidden">
+        <div class="ai-result-meta">
           <span id="ai-time" class="analysis-time"></span>
         </div>
         <div id="ai-result" class="analysis-content"></div>
       </div>
-      <div class="l2-chips">${chips}</div>
-      <div class="ask-panel">
+      <div class="ai-ask-block">
+        <div class="ai-ask-head">
+          <h3 class="ai-ask-title">就盘追问</h3>
+          <span id="ask-rounds" class="ask-rounds"></span>
+        </div>
         <div id="ask-history" class="ask-history"></div>
         <div class="ask-input-bar">
-          <input type="text" id="ask-input" placeholder="就本盘提问…" maxlength="500">
-          <button type="button" class="btn btn-primary" id="btn-ask">提问</button>
+          <textarea id="ask-input" rows="2" placeholder="输入你想问的问题…" maxlength="500"></textarea>
+          <button type="button" class="btn btn-primary" id="btn-ask">发送</button>
         </div>
-        <p id="ask-rounds" class="ask-rounds"></p>
       </div>
     </section>
     </div>`;
@@ -919,10 +907,6 @@ function wireChartInteractions(state) {
 
   document.getElementById("btn-analyze")?.addEventListener("click", () => runAnalyze());
 
-  document.querySelectorAll(".chip-btn").forEach((btn) => {
-    btn.addEventListener("click", () => runAsk(btn.dataset.q));
-  });
-
   async function runAsk(question) {
     const askInput = document.getElementById("ask-input");
     const askBtn = document.getElementById("btn-ask");
@@ -976,14 +960,17 @@ function wireChartInteractions(state) {
 
   document.getElementById("btn-ask")?.addEventListener("click", () => runAsk());
   document.getElementById("ask-input")?.addEventListener("keydown", (e) => {
-    if (e.key === "Enter") runAsk();
+    if (e.key === "Enter" && !e.shiftKey) {
+      e.preventDefault();
+      runAsk();
+    }
   });
 }
 
 function updateRounds(state) {
   const n = state.history.filter((h) => h.role === "user").length;
   const el = document.getElementById("ask-rounds");
-  if (el) el.textContent = `已问 ${n} / ${L3_MAX_ROUNDS} 轮`;
+  if (el) el.textContent = `追问 ${n} / ${L3_MAX_ROUNDS}`;
 }
 
 function historyLabel(chart, input) {

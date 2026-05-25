@@ -11,7 +11,7 @@ def test_health():
     assert res.status_code == 200
     body = res.json()
     assert body["status"] == "ok"
-    assert body["version"] == "1.8.1"
+    assert body["version"] == "1.8.2"
 
 
 def test_index_page():
@@ -25,7 +25,7 @@ def test_index_page():
     assert "feature-card" in text
     assert "page-home" in text
     assert "site-nav-link" in text
-    assert "theme.css?v=1.8.1" in text
+    assert "theme.css?v=1.8.2" in text
 
 
 def test_chart_page():

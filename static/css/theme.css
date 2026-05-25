@@ -602,17 +602,88 @@ th { color: var(--text-muted); font-weight: 500; }
 .history-item a { color: var(--text); }
 .history-item a:hover { color: var(--accent); }
 
-.l2-chips { display: flex; flex-wrap: wrap; gap: 0.5rem; margin: 1rem 0; }
-.chip-btn {
-  padding: 0.4rem 0.75rem;
+.l2-chips { display: none; }
+
+.ai-panel-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 1rem;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid var(--border);
+}
+.ai-panel-intro .section-title { margin-bottom: 0.35rem; }
+.ai-panel-desc {
+  font-size: 0.82rem;
+  color: var(--text-muted);
+  line-height: 1.55;
+  max-width: 28rem;
+}
+.ai-panel-toolbar {
+  display: flex;
+  gap: 0.65rem;
+  flex-wrap: wrap;
+  margin-bottom: 1rem;
+}
+.ai-empty-state {
+  margin-bottom: 1rem;
+  padding: 1.35rem 1.25rem;
+  text-align: center;
+  border: 1px dashed rgba(201, 162, 39, 0.28);
+  border-radius: 10px;
+  background: rgba(201, 162, 39, 0.03);
+}
+.ai-empty-title {
+  font-family: var(--font-serif);
+  color: var(--accent);
+  font-size: 0.92rem;
+  margin-bottom: 0.35rem;
+}
+.ai-empty-desc {
+  font-size: 0.84rem;
+  color: var(--text-muted);
+  line-height: 1.6;
+}
+.ai-result-card {
+  margin-bottom: 1.25rem;
+  padding: 1.15rem 1.25rem;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  border-left: 3px solid var(--accent-dim);
+}
+.ai-result-meta {
+  margin-bottom: 0.85rem;
+  padding-bottom: 0.65rem;
+  border-bottom: 1px solid var(--border);
+}
+.ai-ask-block {
+  padding-top: 1.15rem;
+  border-top: 1px solid var(--border);
+}
+.ai-ask-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin-bottom: 0.75rem;
+}
+.ai-ask-title {
+  font-family: var(--font-serif);
+  font-size: 0.95rem;
+  color: var(--accent);
+  margin: 0;
+}
+.ask-rounds {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  background: var(--bg-elevated);
+  padding: 0.2rem 0.55rem;
   border-radius: 999px;
   border: 1px solid var(--border);
-  background: var(--bg-elevated);
-  color: var(--text);
-  font-size: 0.8rem;
-  cursor: pointer;
+  white-space: nowrap;
 }
-.chip-btn:hover { border-color: var(--accent-dim); color: var(--accent); }
 
 .ask-panel { margin-top: 1rem; }
 .ask-history { display: flex; flex-direction: column; gap: 0.75rem; margin-bottom: 1rem; max-height: 360px; overflow-y: auto; }
@@ -627,17 +698,30 @@ th { color: var(--text-muted); font-weight: 500; }
 .ask-input-bar {
   display: flex;
   gap: 0.5rem;
-  padding: 0.75rem 0;
+  padding: 0.75rem 0 0;
+  align-items: flex-end;
 }
-.ask-input-bar input {
+.ask-input-bar input,
+.ask-input-bar textarea {
   flex: 1;
   padding: 0.65rem 0.85rem;
   background: var(--bg-elevated);
   border: 1px solid var(--border);
   border-radius: 8px;
   color: var(--text);
+  font-family: inherit;
+  font-size: 0.92rem;
+  line-height: 1.5;
+  resize: vertical;
+  min-height: 2.75rem;
+  max-height: 8rem;
 }
-.ask-rounds { font-size: 0.78rem; color: var(--text-muted); }
+.ask-input-bar input:focus,
+.ask-input-bar textarea:focus {
+  outline: none;
+  border-color: var(--accent-dim);
+  box-shadow: 0 0 0 2px rgba(201, 162, 39, 0.12);
+}
 
 .modal { position: fixed; inset: 0; z-index: 100; display: flex; align-items: center; justify-content: center; padding: 1rem; }
 .modal-backdrop { position: absolute; inset: 0; background: rgba(0,0,0,0.55); }
@@ -875,7 +959,6 @@ th { color: var(--text-muted); font-weight: 500; }
 
 .btn:focus-visible,
 .chart-nav-btn:focus-visible,
-.chip-btn:focus-visible,
 .dayun-card-head:focus-visible,
 .section-header:focus-visible {
   outline: 2px solid var(--accent);
@@ -1311,10 +1394,10 @@ th { color: var(--text-muted); font-weight: 500; }
 #chart-form .btn-primary {
   width: 100%;
 }
-.ai-toolbar .btn-primary {
+.ai-panel-toolbar .btn-primary {
   width: auto;
-  flex: 1;
-  max-width: 14rem;
+  flex: 0 0 auto;
+  min-width: 7.5rem;
 }
 .modal-actions .btn {
   width: auto;
@@ -1342,6 +1425,7 @@ th { color: var(--text-muted); font-weight: 500; }
 }
 .section-ai {
   border-color: rgba(201, 162, 39, 0.35);
-  background: linear-gradient(180deg, rgba(201, 162, 39, 0.04), var(--bg-card));
+  background: linear-gradient(180deg, rgba(201, 162, 39, 0.05), var(--bg-card));
+  padding: 1.35rem 1.45rem;
 }
 
