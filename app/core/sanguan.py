@@ -280,7 +280,7 @@ def analyze(chart: dict[str, Any]) -> dict[str, Any]:
     relations = chart.get("pillars_relations") or []
     branches = _pillar_branches(pillars)
     stems = _pillar_stems(pillars)
-    dayun_trig = _dayun_triggers(chart.get("dayun", []), branches)
+    dayun_trig = _dayun_triggers(chart.get("dayun", []), branches, stems)
 
     chuan_list: list[str] = []
     for ka, kb in (("year", "month"), ("year", "day"), ("year", "hour"), ("month", "day"), ("month", "hour"), ("day", "hour")):

@@ -24,6 +24,15 @@ LIUQIN_FEMALE = {
     "child": "食神",
 }
 
+DIZHI_CHUAN: dict[frozenset[str], str] = {
+    frozenset(("子", "未")): "子未穿",
+    frozenset(("丑", "午")): "丑午穿",
+    frozenset(("寅", "巳")): "寅巳穿",
+    frozenset(("卯", "辰")): "卯辰穿",
+    frozenset(("申", "亥")): "申亥穿",
+    frozenset(("酉", "戌")): "酉戌穿",
+}
+
 DIZHI_PO: dict[frozenset[str], str] = {
     frozenset(("子", "酉")): "子酉破",
     frozenset(("寅", "亥")): "寅亥破",
@@ -91,31 +100,94 @@ def _year_month_harm(branches: dict[str, str], stems: dict[str, str]) -> list[st
     return tags
 
 
-def _dayun_triggers(dayun: list[dict], branches: dict[str, str]) -> list[dict[str, str]]:
-    """大运冲刑破年、月支 → 应期。"""
-    out: list[dict[str, str]] = []
+def _branch_hits(db: str, tb: str, label: str) -> list[tuple[str, int]]:
+    """地支对宫位的作用：(描述, 权重)。"""
+    hits: list[tuple[str, int]] = []
+    if not db or not tb:
+        return hits
+    for mapping, verb, weight in (
+        (DIZHI_CHONG, "冲", 4),
+        (DIZHI_CHUAN, "穿", 4),
+        (DIZHI_PO, "破", 3),
+    ):
+        if _pair_tag(db, tb, mapping):
+            hits.append((f"{verb}{label}支{tb}", weight))
+    if db == tb:
+        hits.append((f"伏吟{label}支{tb}", 3))
+    return hits
+
+
+def _liunian_parent_hits(
+    liunian: list[dict],
+    year_b: str,
+    month_b: str,
+    *,
+    limit: int = 3,
+) -> list[str]:
+    scored: list[tuple[int, str]] = []
+    for ln in liunian or []:
+        gz = ln.get("ganzhi", "")
+        if len(gz) < 2:
+            continue
+        lb = gz[1]
+        yr = ln.get("year")
+        age = ln.get("age")
+        for label, tb in (("年", year_b), ("月", month_b)):
+            for desc, weight in _branch_hits(lb, tb, label):
+                scored.append((weight, f"{yr}年(虚岁{age})流年{gz}{desc}"))
+    scored.sort(key=lambda x: (-x[0], x[1]))
+    return [s[1] for s in scored[:limit]]
+
+
+def _dayun_triggers(
+    dayun: list[dict],
+    branches: dict[str, str],
+    stems: dict[str, str] | None = None,
+) -> list[dict[str, str]]:
+    """大运/流年引动年、月支 → 应期（按年龄升序，优先早年）。"""
+    stems = stems or {}
     year_b = branches.get("year", "")
     month_b = branches.get("month", "")
-    for d in dayun[:10]:
+    year_s = stems.get("year", "")
+    month_s = stems.get("month", "")
+    ranked: list[tuple[int, int, dict[str, str]]] = []
+
+    for d in dayun[:12]:
         dy = d.get("ganzhi", "")
         if len(dy) < 2:
             continue
-        db = dy[1]
+        ds, db = dy[0], dy[1]
         note_parts: list[str] = []
+        score = 0
         for label, tb in (("年", year_b), ("月", month_b)):
-            if not tb:
-                continue
-            for mapping, verb in ((DIZHI_CHONG, "冲"), (DIZHI_PO, "破")):
-                if _pair_tag(db, tb, mapping):
-                    note_parts.append(f"大运{dy}{verb}{label}支{tb}")
-        if note_parts:
-            out.append({
+            for desc, weight in _branch_hits(db, tb, label):
+                note_parts.append(f"大运{dy}{desc}")
+                score += weight
+        for label, ts in (("年", year_s), ("月", month_s)):
+            tag = _pair_tag(ds, ts, TIANGAN_CHONG)
+            if tag:
+                note_parts.append(f"大运{dy}{tag}({label}干)")
+                score += 2
+        liu = _liunian_parent_hits(d.get("liunian") or [], year_b, month_b)
+        if liu:
+            note_parts.append("流年应期：" + "；".join(liu))
+            score += len(liu)
+        if not note_parts:
+            continue
+        start_age = int(d.get("start_age") or 0)
+        ranked.append((
+            start_age,
+            -score,
+            {
                 "dayun": dy,
                 "years": f"{d.get('start_year')}-{d.get('end_year')}",
                 "ages": f"{d.get('start_age')}-{d.get('end_age')}岁",
                 "note": "；".join(note_parts),
-            })
-    return out[:6]
+            },
+        ))
+
+    ranked.sort(key=lambda x: (x[0], x[1]))
+    return [item for _, _, item in ranked[:8]]
 
 
 def analyze(chart: dict[str, Any]) -> dict[str, Any]:
@@ -135,7 +207,7 @@ def analyze(chart: dict[str, Any]) -> dict[str, Any]:
     spouse_locs = _find_shishen(pillars, spouse_star)
 
     ym_harm = _year_month_harm(branches, stems)
-    dayun_trig = _dayun_triggers(chart.get("dayun", []), branches)
+    dayun_trig = _dayun_triggers(chart.get("dayun", []), branches, stems)
 
     items: list[dict[str, Any]] = []
 
