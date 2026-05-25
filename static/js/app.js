@@ -1,4 +1,4 @@
-/** 问元 · 前端 v1.1 · 滴天髓阐微内核 */
+/** 问元 · 前端 v1.2 · 子平综参 */
 const STORAGE_KEY = "wenyuan_chart";
 const HISTORY_KEY = "wenyuan_history";
 const INPUT_KEY = "wenyuan_input";
@@ -374,36 +374,43 @@ function renderDayunCards(dayun) {
     .join("");
 }
 
-function renderDitiansuiPanel(insight) {
-  const sn = insight.stem_nature || {};
+function renderRuleDetails(insight) {
   const de = insight.de_ling || {};
   const tg = insight.tong_gen || {};
-  const cl = insight.climate || {};
   const pat = insight.pattern || {};
+  const sn = insight.stem_nature || {};
   return `
-    <div class="ditiansui-panel">
-      <h3 class="subsection-title">滴天髓阐微 · 规则摘要</h3>
-      <p class="ditiansui-verse">${escapeHtml(sn.verse || "")}</p>
-      <div class="ditiansui-grid">
-        <span>体象 ${escapeHtml(sn.image || "")}</span>
-        <span>得令 ${escapeHtml(de.status || "")}（${escapeHtml(de.changsheng || "")}）</span>
-        <span>通根 ${escapeHtml(tg.summary || "")}</span>
-        <span>气候 ${escapeHtml(cl.season || "")}${escapeHtml(cl.climate || "")}</span>
-        <span>格局 ${escapeHtml(pat.type || "")}</span>
-      </div>
-      <p class="ditiansui-tiaohou"><strong>调候</strong> ${escapeHtml(insight.tiao_hou || "")}</p>
-      <p class="insight-note">${escapeHtml(insight.day_master_strength_note || "")}</p>
+    <p>得令：${escapeHtml(de.status || "—")} · 通根：${escapeHtml(tg.summary || "—")} · 格局：${escapeHtml(pat.type || "—")}</p>
+    <p class="ditiansui-verse">${escapeHtml(sn.verse || "")}</p>
+    <p><strong>调候</strong> ${escapeHtml(insight.tiao_hou || "")}</p>
+    <p class="insight-note">${escapeHtml(insight.day_master_strength_note || "")}</p>`;
+}
+
+function renderHighlightsPanel(insight) {
+  const items = (insight.highlights || []).map(
+    (h) => `<li class="highlight-item">${escapeHtml(h)}</li>`
+  ).join("");
+  const sources = (insight.sources || ["子平", "滴天髓", "穷通宝鉴"]).join(" · ");
+  return `
+    <div class="highlights-panel">
+      <h3 class="subsection-title">命局要点</h3>
+      <p class="highlights-source">综参 ${escapeHtml(sources)}</p>
+      <ul class="highlights-list">${items || "<li>暂无摘要</li>"}</ul>
+      <details class="details-more">
+        <summary>查看规则明细</summary>
+        <div class="details-body">${renderRuleDetails(insight)}</div>
+      </details>
     </div>`;
 }
 
 function suggestL2Questions(insight) {
   const dynamic = [];
-  if (insight?.tiao_hou) dynamic.push("依滴天髓，此盘调候如何理解？");
+  if (insight?.tiao_hou) dynamic.push("此盘寒暖调候上，日常宜注意什么？");
   const pat = insight?.pattern || {};
   if (pat.type && pat.type !== "正格") dynamic.push(`格局倾向「${pat.type}」，对我意味着什么？`);
   const cd = insight?.current_dayun;
   if (cd?.ganzhi) dynamic.push(`大运${cd.ganzhi}阶段的重点是什么？`);
-  if ((insight?.tong_gen || {}).summary === "无根") dynamic.push("日主无根，行事上宜注意什么？");
+  if ((insight?.tong_gen || {}).summary === "无根") dynamic.push("日主根气较弱，行事风格有何特点？");
   const strongest = insight?.wuxing_strongest || [];
   if (strongest.length) dynamic.push(`命局${strongest[0]}偏旺，日常宜如何调适？`);
   return [...L2_FIXED, ...dynamic.slice(0, 4)].slice(0, 6);
@@ -433,6 +440,18 @@ function renderChart(data) {
     .join("");
 
   return `
+    <nav class="chart-nav" id="chart-nav" aria-label="命盘分区">
+      <button type="button" class="chart-nav-btn active" data-target="sec-meta">概览</button>
+      <button type="button" class="chart-nav-btn" data-target="sec-di">四柱</button>
+      <button type="button" class="chart-nav-btn" data-target="sec-tian">运势</button>
+      <button type="button" class="chart-nav-btn" data-target="sec-ren">本命</button>
+      <button type="button" class="chart-nav-btn" data-target="sec-ai">问 AI</button>
+    </nav>
+    <div id="chart-sticky-summary" class="chart-sticky-summary">
+      <span class="sticky-ganzhi">${(data.pillars || []).map((p) => p.ganzhi).join(" ")}</span>
+      <span class="sticky-dm">日主 ${m.day_master} · ${insight.day_master_strength || ""}</span>
+    </div>
+
     <section class="section-block" id="sec-meta">
       <h2 class="section-title">命主概览</h2>
       <div class="meta-grid">
@@ -452,7 +471,7 @@ function renderChart(data) {
         （评分 ${insight.strength_score ?? "—"}）</p>
         ${insight.current_dayun ? `<p>当前大运 ${insight.current_dayun.ganzhi}（${insight.current_dayun.start_year}-${insight.current_dayun.end_year}）</p>` : ""}
       </div>
-      ${renderDitiansuiPanel(insight)}
+      ${renderHighlightsPanel(insight)}
     </section>
 
     <section class="section-block" id="sec-di">
@@ -518,7 +537,7 @@ function renderChart(data) {
     </section>`;
 }
 
-function renderAnalysis(text, style) {
+function renderAnalysis(text, style, streaming = false) {
   const wrap = document.getElementById("ai-result-wrap");
   const empty = document.getElementById("ai-empty");
   const badge = document.getElementById("ai-style-badge");
@@ -532,7 +551,7 @@ function renderAnalysis(text, style) {
     badge.className = `analysis-style-badge style-${style}`;
   }
   if (timeEl) timeEl.textContent = new Date().toLocaleString("zh-CN", { hour12: false });
-  result.innerHTML = markdownToHtml(text);
+  result.innerHTML = markdownToHtml(text) + (streaming ? '<span class="stream-cursor">▍</span>' : "");
   wrap?.classList.remove("hidden");
   empty?.classList.add("hidden");
   copyBtn?.classList.remove("hidden");
@@ -566,7 +585,7 @@ function buildMarkdownExport(chart, insight, analysis, history) {
   (chart.pillars || []).forEach((p) => {
     md += `- ${p.label} ${p.ganzhi} 十神${p.shishen} 长生${p.changsheng || ""} 旬空${p.xunkong || ""}\n`;
   });
-  md += `\n## 滴天髓阐微摘要\n\n`;
+  md += `\n## 命局要点（子平综参）\n\n`;
   md += `- 强弱：${insight?.day_master_strength}\n`;
   md += `- 调候：${insight?.tiao_hou || ""}\n`;
   md += `- 格局：${insight?.pattern?.type || ""}\n\n`;
@@ -580,6 +599,15 @@ function buildMarkdownExport(chart, insight, analysis, history) {
 }
 
 function wireChartInteractions(state) {
+  document.querySelectorAll(".chart-nav-btn").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      const id = btn.dataset.target;
+      document.getElementById(id)?.scrollIntoView({ behavior: "smooth", block: "start" });
+      document.querySelectorAll(".chart-nav-btn").forEach((b) => b.classList.toggle("active", b === btn));
+    });
+  });
+
+
   document.querySelectorAll(".section-header").forEach((btn) => {
     btn.addEventListener("click", () => {
       const id = btn.dataset.target;
@@ -637,10 +665,10 @@ function wireChartInteractions(state) {
 
     try {
       const text = await API.analyze(state.chart, style, state.chart.insight, (full) => {
-        renderAnalysis(full, style);
+        renderAnalysis(full, style, true);
       });
       state.analysis[style] = text;
-      renderAnalysis(text, style);
+      renderAnalysis(text, style, false);
       saveAiCache(state.input, { analysis: state.analysis, history: state.history, style: state.style });
     } catch (e) {
       showError(err, e.message || "分析失败");

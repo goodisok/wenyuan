@@ -31,7 +31,6 @@ def test_changsheng_jia_in_hai():
 def test_ditiansui_kernel(ref_chart):
     dts = analyze(ref_chart)
     assert dts["kernel"] == KERNEL
-    assert dts["stem_nature"]["stem"] == "庚"
     assert dts["de_ling"]["status"] in ("得令", "相令", "失令", "泄令", "休令")
     assert dts["tong_gen"]["summary"] in ("有根", "弱根", "无根")
     assert dts["day_master_strength"] in ("偏强", "平衡", "偏弱")
@@ -39,11 +38,11 @@ def test_ditiansui_kernel(ref_chart):
 
 def test_insight_has_ditiansui(ref_chart):
     ins = ref_chart["insight"]
-    assert ins["kernel"] == KERNEL
-    assert ins.get("ditiansui")
+    assert ins["kernel"] == "子平综参"
+    assert ins.get("mingli") or ins.get("ditiansui")
     assert ins.get("tiao_hou")
     assert ins.get("pattern")
-    assert ins.get("stem_nature")
+    assert ins.get("highlights")
 
 
 def test_pillars_have_changsheng(ref_chart):

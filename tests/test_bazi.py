@@ -89,7 +89,7 @@ def test_insight_fields(solar_male):
     assert ins["day_master_wuxing"]
     assert "wuxing_counts" in ins
     assert ins["day_master_strength"] in ("偏弱", "平衡", "偏强")
-    assert ins.get("kernel") == "滴天髓阐微"
+    assert ins.get("kernel") == "子平综参"
     assert ins.get("tiao_hou")
 
 
