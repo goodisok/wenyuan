@@ -29,5 +29,5 @@ def test_insight_has_citations(ref_chart):
 def test_format_for_ai(ref_chart):
     cites = retrieve(ref_chart, ref_chart["insight"])
     text = format_for_ai(cites)
-    assert "典籍参考摘要" in text
+    assert "典籍语料" in text
     assert "《" in text

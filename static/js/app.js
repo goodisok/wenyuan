@@ -400,12 +400,21 @@ function renderRuleDetails(insight) {
 
 function renderCitations(citations) {
   if (!citations?.length) return "";
-  const items = citations.map(
-    (c) => `<li><span class="citation-source">${escapeHtml(c.source || "")}</span> ${escapeHtml(c.text || "")}</li>`
-  ).join("");
+  const items = citations.map((c) => {
+    const chapter = c.chapter ? `<span class="citation-chapter">${escapeHtml(c.chapter)}</span>` : "";
+    const pillars = c.pillars ? `<span class="citation-pillars">例 ${escapeHtml(c.pillars)}</span> ` : "";
+    const kind = c.kind === "case" ? "命例" : (c.kind === "tiao_hou" ? "调候" : "");
+    const kindTag = kind ? `<span class="citation-kind">${kind}</span> ` : "";
+    const commentary = c.commentary ? `<p class="citation-commentary">按：${escapeHtml(c.commentary)}</p>` : "";
+    return `<li>
+      <span class="citation-source">${escapeHtml(c.source || "")}</span>${chapter ? " " + chapter : ""}
+      ${kindTag}${pillars}${escapeHtml(c.text || "")}
+      ${commentary}
+    </li>`;
+  }).join("");
   return `
     <div class="citations-block">
-      <h4 class="citations-title">典籍参考</h4>
+      <h4 class="citations-title">典籍语料</h4>
       <ul class="citations-list">${items}</ul>
     </div>`;
 }
@@ -415,10 +424,13 @@ function renderHighlightsPanel(insight) {
     (h) => `<li class="highlight-item">${escapeHtml(h)}</li>`
   ).join("");
   const sources = (insight.sources || ["子平", "滴天髓", "穷通宝鉴"]).join(" · ");
+  const corpusTotal = insight.corpus_meta?.total;
+  const corpusNote = corpusTotal ? `<p class="corpus-meta">语料库 ${corpusTotal} 条 · 本次召回 ${(insight.citations || []).length} 条</p>` : "";
   return `
     <div class="highlights-panel">
       <h3 class="subsection-title">命局要点</h3>
       <p class="highlights-source">综参 ${escapeHtml(sources)}</p>
+      ${corpusNote}
       <ul class="highlights-list">${items || "<li>暂无摘要</li>"}</ul>
       <details class="details-more">
         <summary>查看规则明细</summary>

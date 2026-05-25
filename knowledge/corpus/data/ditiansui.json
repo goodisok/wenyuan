@@ -1,0 +1,145 @@
+[
+  {
+    "id": "dts_tiandao",
+    "source": "滴天髓",
+    "book": "滴天髓",
+    "chapter": "天道",
+    "kind": "principle",
+    "tags": ["always", "strength"],
+    "text": "天干动而强，地支静而专。天干主外象、主动；地支主根基、主静。论命须天地同参，不可单看表面十神。"
+  },
+  {
+    "id": "dts_didao",
+    "source": "滴天髓",
+    "book": "滴天髓",
+    "chapter": "地道",
+    "kind": "principle",
+    "tags": ["always", "strength"],
+    "text": "地支有根，则天干之气可发；地支无根，则天干虚浮。通根为地，得令为天时，二者缺一则力减。"
+  },
+  {
+    "id": "dts_rendao",
+    "source": "滴天髓",
+    "book": "滴天髓",
+    "chapter": "人道",
+    "kind": "principle",
+    "tags": ["always", "shishen"],
+    "text": "干支配合，人事乃见。十神者，人与事之符号；须合宫位、大运，不可孤立论某一神。"
+  },
+  {
+    "id": "dts_jia",
+    "source": "滴天髓",
+    "book": "滴天髓阐微",
+    "chapter": "甲木论",
+    "kind": "verse",
+    "tags": ["stem:甲", "strength"],
+    "match": {"day_stem": "甲"},
+    "text": "甲木参天，脱胎要火。春不容金，秋不容土。火炽乘龙，水宕骑虎。春木喜火暖，秋木喜金制、火暖。"
+  },
+  {
+    "id": "dts_yi",
+    "source": "滴天髓",
+    "book": "滴天髓阐微",
+    "chapter": "乙木论",
+    "kind": "verse",
+    "tags": ["stem:乙", "strength"],
+    "match": {"day_stem": "乙"},
+    "text": "乙木虽柔，刲羊解牛。怀丙抱丁，跨凤乘猴。藤萝系甲，可春可秋；独阳不长，独阴不生。"
+  },
+  {
+    "id": "dts_bing",
+    "source": "滴天髓",
+    "book": "滴天髓阐微",
+    "chapter": "丙火论",
+    "kind": "verse",
+    "tags": ["stem:丙", "tiao_hou"],
+    "match": {"day_stem": "丙"},
+    "text": "丙火猛烈，欺霜侮雪。能煅庚金，逢辛反怯。土众成慈，水猖显节。夏火宜水，冬火宜木。"
+  },
+  {
+    "id": "dts_geng",
+    "source": "滴天髓",
+    "book": "滴天髓阐微",
+    "chapter": "庚金论",
+    "kind": "verse",
+    "tags": ["stem:庚", "tiao_hou"],
+    "match": {"day_stem": "庚"},
+    "text": "庚金带煞，刚健为最。得水而清，得火而锐。土润则生，土干则脆。冬金宜火暖，夏金宜水淘。"
+  },
+  {
+    "id": "dts_ren",
+    "source": "滴天髓",
+    "book": "滴天髓阐微",
+    "chapter": "壬水论",
+    "kind": "verse",
+    "tags": ["stem:壬", "strength"],
+    "match": {"day_stem": "壬"},
+    "text": "壬水通河，能泄金气。刚中之德，周流不滞。通根透癸，冲天奔地；化则有情，从则相济。"
+  },
+  {
+    "id": "dts_sande",
+    "source": "滴天髓",
+    "book": "滴天髓阐微",
+    "chapter": "旺衰纲要",
+    "kind": "principle",
+    "tags": ["strength", "always"],
+    "text": "得令、得地、得势，为旺之三本。得令为第一，通根为第二，印比助身为第三。失令无根，纵有印比亦难强。"
+  },
+  {
+    "id": "dts_liutong",
+    "source": "滴天髓",
+    "book": "滴天髓阐微",
+    "chapter": "流通",
+    "kind": "principle",
+    "tags": ["wuxing", "relations", "yongshen"],
+    "text": "金木交战，水可通关；水火相战，木可通关；土水相战，金可通关。气势顺则吉，逆则滞；旺极宜泄，衰极看从。"
+  },
+  {
+    "id": "dts_huagai",
+    "source": "滴天髓",
+    "book": "滴天髓阐微",
+    "chapter": "从化",
+    "kind": "principle",
+    "tags": ["pattern", "strength"],
+    "text": "从格者，势之不得已也。从财、从杀、从儿、从势，须真从则贵，假从则贱。不可强扶从格，亦不可轻弃正格。"
+  },
+  {
+    "id": "dts_han_nuan",
+    "source": "滴天髓",
+    "book": "滴天髓阐微",
+    "chapter": "寒暖",
+    "kind": "principle",
+    "tags": ["tiao_hou", "always"],
+    "text": "木火向阳，金水向阴。寒局无火，则万物不生；燥局无水，则万物不润。调候与旺衰并重，不可偏废。"
+  },
+  {
+    "id": "dts_jia_yin",
+    "source": "滴天髓",
+    "book": "滴天髓阐微",
+    "chapter": "甲生寅月",
+    "kind": "principle",
+    "tags": ["stem:甲", "month:寅", "tiao_hou"],
+    "match": {"day_stem": "甲", "month_branch": "寅"},
+    "text": "甲木生于寅月，三阳开泰，余寒未尽。先丙后癸，丙火暖局，癸水润根，方成巨木。"
+  },
+  {
+    "id": "dts_jia_you",
+    "source": "滴天髓",
+    "book": "滴天髓阐微",
+    "chapter": "甲生酉月",
+    "kind": "principle",
+    "tags": ["stem:甲", "month:酉", "tiao_hou", "geju"],
+    "match": {"day_stem": "甲", "month_branch": "酉"},
+    "text": "甲木生于酉月，正官当令，金旺木囚。丁庚并用，丁火制金暖木，庚金劈甲引丁，方成器局。"
+  },
+  {
+    "id": "dts_geng_zi",
+    "source": "滴天髓",
+    "book": "滴天髓阐微",
+    "chapter": "庚生子月",
+    "kind": "principle",
+    "tags": ["stem:庚", "month:子", "tiao_hou"],
+    "match": {"day_stem": "庚", "month_branch": "子"},
+    "text": "庚金生于子月，水冷金寒，金沉不耀。必用丁火暖局，丙火佐之，甲木引丁，方成清贵之金。"
+  }
+]

@@ -1,0 +1,115 @@
+[
+  {
+    "id": "sm_geju_zong",
+    "source": "三命通会",
+    "book": "三命通会",
+    "chapter": "论格局",
+    "kind": "principle",
+    "tags": ["pattern", "geju", "always"],
+    "text": "格局者，以月令所藏天干透干为要。月令为提纲，提纲立则格局定。透干则清，藏而不透则力弱。"
+  },
+  {
+    "id": "sm_zhengguan_ge",
+    "source": "三命通会",
+    "book": "三命通会",
+    "chapter": "正官格",
+    "kind": "principle",
+    "geju": "正官格",
+    "tags": ["geju:正官格", "pattern"],
+    "text": "正官格：月提正官，不见伤官克破，有印绶护官、财星生官，主贵。逢伤官则破格，须印星制伤或合伤。"
+  },
+  {
+    "id": "sm_qisha_ge",
+    "source": "三命通会",
+    "book": "三命通会",
+    "chapter": "七杀格",
+    "kind": "principle",
+    "geju": "七杀格",
+    "tags": ["geju:七杀格", "pattern"],
+    "text": "七杀格：月提七杀，须食神制之或印星化之。制杀太过则无权，制杀不及则多灾。杀重身轻，必赖制化。"
+  },
+  {
+    "id": "sm_cai_ge",
+    "source": "三命通会",
+    "book": "三命通会",
+    "chapter": "财格",
+    "kind": "principle",
+    "geju": "正财格",
+    "tags": ["geju:正财格", "geju:偏财格"],
+    "text": "财格：月提财星，身强则富。喜食伤以生财，喜官星以护财；忌比劫夺财、枭印夺食则财源断。"
+  },
+  {
+    "id": "sm_yin_ge",
+    "source": "三命通会",
+    "book": "三命通会",
+    "chapter": "印格",
+    "kind": "principle",
+    "geju": "正印格",
+    "tags": ["geju:正印格", "geju:偏印格"],
+    "text": "印格：月提印绶，主聪明、有名誉。官印相生最贵；印旺身强，须财以制印或食伤以泄秀。"
+  },
+  {
+    "id": "sm_shi_shang_ge",
+    "source": "三命通会",
+    "book": "三命通会",
+    "chapter": "食伤格",
+    "kind": "principle",
+    "geju": "食神格",
+    "tags": ["geju:食神格", "geju:伤官格"],
+    "text": "食神格主食禄，伤官格主才华。食神忌枭夺，伤官忌见官（调候、从格等另论）。二者皆喜生财。"
+  },
+  {
+    "id": "sm_tianyi",
+    "source": "三命通会",
+    "book": "三命通会",
+    "chapter": "天乙贵人",
+    "kind": "principle",
+    "tags": ["shensha"],
+    "text": "天乙贵人：甲戊庚牛羊，乙己鼠猴乡，丙丁猪鸡位，壬癸兔蛇藏，六辛逢虎马。遇之则贵，逢凶化吉；须配合格局，不可单论。"
+  },
+  {
+    "id": "sm_wenchang",
+    "source": "三命通会",
+    "book": "三命通会",
+    "chapter": "文昌",
+    "kind": "principle",
+    "tags": ["shensha"],
+    "text": "文昌贵人主聪明好学、文才出众。以日干查地支，逢之则利于考试、学业；仍须看印星与食伤配合。"
+  },
+  {
+    "id": "sm_yima",
+    "source": "三命通会",
+    "book": "三命通会",
+    "chapter": "驿马",
+    "kind": "principle",
+    "tags": ["shensha", "dayun"],
+    "text": "驿马主变动、迁移、奔波。申子辰马在寅，寅午戌马在申，巳酉丑马在亥，亥卯未马在巳。大运流年逢之，多主动。"
+  },
+  {
+    "id": "sm_taohua",
+    "source": "三命通会",
+    "book": "三命通会",
+    "chapter": "桃花",
+    "kind": "principle",
+    "tags": ["shensha"],
+    "text": "桃花（咸池）主异性缘、才艺、人缘。与官杀配合看感情；与食伤配合看表现。不可单论为淫邪。"
+  },
+  {
+    "id": "sm_huagai",
+    "source": "三命通会",
+    "book": "三命通会",
+    "chapter": "华盖",
+    "kind": "principle",
+    "tags": ["shensha"],
+    "text": "华盖主孤高、宗教、艺术、学术。与印食配合，则清贵；与杀刃配合，则隐逸或孤独。"
+  },
+  {
+    "id": "sm_shensha_zong",
+    "source": "三命通会",
+    "book": "三命通会",
+    "chapter": "神煞总论",
+    "kind": "principle",
+    "tags": ["shensha", "always"],
+    "text": "神煞者，干支之特殊组合。吉神增福，凶神增祸；然须以格局旺衰、用神喜忌为本，神煞为末，不可倒置。"
+  }
+]

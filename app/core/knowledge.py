@@ -1,13 +1,13 @@
 # -*- coding: utf-8 -*-
-"""典籍知识检索：按命盘特征选取参考片段，供规则层与 AI 锚定。"""
+"""典籍知识检索：语料库 + 摘要片段混合检索。"""
 from __future__ import annotations
 
 from typing import Any
 
-from app.core.qiongtong import lookup as qiongtong_lookup
-from knowledge.snippets import GEJU_SNIPPETS, SHISHEN_SNIPPETS, SNIPPETS, STEM_MONTH_NOTES
+from knowledge.corpus.loader import corpus_stats, match_corpus
+from knowledge.snippets import GEJU_SNIPPETS, SHISHEN_SNIPPETS, SNIPPETS
 
-MAX_CITATIONS = 12
+MAX_CITATIONS = 18
 
 
 def _dominant_shishen(pillars: list[dict]) -> str | None:
@@ -25,22 +25,7 @@ def _dominant_shishen(pillars: list[dict]) -> str | None:
     return max(counts, key=counts.get)
 
 
-def _append(out: list[dict[str, str]], seen: set[str], item: dict[str, str]) -> None:
-    sid = item.get("id", "")
-    if sid in seen:
-        return
-    seen.add(sid)
-    out.append(item)
-
-
-def retrieve(chart: dict[str, Any], insight: dict[str, Any] | None = None) -> list[dict[str, str]]:
-    """返回去重后的典籍片段，每项 {source, text, id}。"""
-    insight = insight or chart.get("insight") or {}
-    meta = chart.get("meta", {})
-    pillars = chart.get("pillars", [])
-    day_stem = meta.get("day_master", "")
-    month_branch = pillars[1]["dizhi"]["name"] if len(pillars) > 1 else ""
-
+def _build_tags(insight: dict[str, Any], chart: dict[str, Any], pillars: list[dict]) -> set[str]:
     tags: set[str] = {"always"}
     if insight.get("tiao_hou") or (insight.get("qiongtong") or {}).get("hint"):
         tags.add("tiao_hou")
@@ -53,6 +38,7 @@ def retrieve(chart: dict[str, Any], insight: dict[str, Any] | None = None) -> li
     if geju.get("type"):
         tags.add("geju")
         tags.add("pattern")
+        tags.add(f"geju:{geju['type']}")
     body_pat = insight.get("pattern") or {}
     if body_pat.get("type"):
         tags.add("pattern")
@@ -64,54 +50,111 @@ def retrieve(chart: dict[str, Any], insight: dict[str, Any] | None = None) -> li
     dom = _dominant_shishen(pillars)
     if dom:
         tags.add("shishen")
+        tags.add(f"ss:{dom}")
     if chart.get("dayun"):
         tags.add("dayun")
+    meta = chart.get("meta", {})
+    day_stem = meta.get("day_master", "")
+    month_branch = pillars[1]["dizhi"]["name"] if len(pillars) > 1 else ""
+    if day_stem:
+        tags.add(f"stem:{day_stem}")
+    if month_branch:
+        tags.add(f"month:{month_branch}")
+    return tags
 
-    seen: set[str] = set()
-    out: list[dict[str, str]] = []
 
-    qt = qiongtong_lookup(day_stem, month_branch)
-    if qt.get("hint"):
-        _append(out, seen, {
-            "id": f"qiongtong_{day_stem}_{month_branch}",
-            "source": "穷通宝鉴",
-            "text": qt["hint"],
-        })
-
-    key = (day_stem, month_branch)
-    if key in STEM_MONTH_NOTES:
-        src, text = STEM_MONTH_NOTES[key]
-        _append(out, seen, {"id": f"month_{day_stem}_{month_branch}", "source": src, "text": text})
-
-    geju_type = geju.get("type", "")
+def _append_snippets(
+    out: list[dict[str, str]],
+    seen: set[str],
+    tags: set[str],
+    geju_type: str,
+    dom: str | None,
+) -> None:
     if geju_type in GEJU_SNIPPETS:
         g = GEJU_SNIPPETS[geju_type]
-        _append(out, seen, {"id": str(g["id"]), "source": str(g["source"]), "text": str(g["text"])})
+        sid = str(g["id"])
+        if sid not in seen:
+            seen.add(sid)
+            out.append({"id": sid, "source": str(g["source"]), "text": str(g["text"]), "kind": "snippet"})
 
     if dom and dom in SHISHEN_SNIPPETS:
-        _append(out, seen, {
-            "id": f"ss_{dom}",
-            "source": "渊海子平",
-            "text": f"{dom}：{SHISHEN_SNIPPETS[dom]}",
-        })
+        sid = f"ss_{dom}"
+        if sid not in seen:
+            seen.add(sid)
+            out.append({
+                "id": sid,
+                "source": "渊海子平",
+                "text": f"{dom}：{SHISHEN_SNIPPETS[dom]}",
+                "kind": "snippet",
+            })
 
     for snip in SNIPPETS:
         snip_tags = set(snip.get("tags") or [])
         if not (snip_tags & tags):
             continue
-        _append(out, seen, {
-            "id": str(snip["id"]),
+        sid = str(snip["id"])
+        if sid in seen:
+            continue
+        seen.add(sid)
+        out.append({
+            "id": sid,
             "source": str(snip["source"]),
             "text": str(snip["text"]),
+            "kind": "snippet",
         })
 
+
+def retrieve(chart: dict[str, Any], insight: dict[str, Any] | None = None) -> list[dict[str, str]]:
+    """混合检索：语料库打分优先，摘要片段补充。"""
+    insight = insight or chart.get("insight") or {}
+    meta = chart.get("meta", {})
+    pillars = chart.get("pillars", [])
+    day_stem = meta.get("day_master", "")
+    month_branch = pillars[1]["dizhi"]["name"] if len(pillars) > 1 else ""
+    geju = insight.get("geju") or {}
+    geju_type = geju.get("type", "")
+    dom = _dominant_shishen(pillars)
+    strength = insight.get("day_master_strength", "")
+    tags = _build_tags(insight, chart, pillars)
+
+    corpus_hits = match_corpus(
+        tags,
+        day_stem=day_stem,
+        month_branch=month_branch,
+        geju_type=geju_type,
+        dominant_shishen=dom,
+        strength=strength,
+        limit=MAX_CITATIONS,
+        min_score=4,
+    )
+
+    seen = {c["id"] for c in corpus_hits}
+    out = list(corpus_hits)
+
+    if len(out) < MAX_CITATIONS:
+        _append_snippets(out, seen, tags, geju_type, dom)
+
     return out[:MAX_CITATIONS]
+
+
+def get_corpus_meta() -> dict[str, Any]:
+    return corpus_stats()
 
 
 def format_for_ai(citations: list[dict[str, str]]) -> str:
     if not citations:
         return ""
-    lines = ["【典籍参考摘要（批命须参此锚定，可标注出处）】"]
+    lines = ["【典籍语料（批命须参此锚定，重要论断请标注书名章节）】"]
     for c in citations:
-        lines.append(f"《{c['source']}》{c['text']}")
+        src = c.get("source", "")
+        chapter = c.get("chapter", "")
+        prefix = f"《{src}》"
+        if chapter:
+            prefix += f"（{chapter}）"
+        text = c.get("text", "")
+        if c.get("kind") == "case" and c.get("pillars"):
+            text = f"【例 {c['pillars']}】{text}"
+        if c.get("commentary"):
+            text = f"{text} 按：{c['commentary']}"
+        lines.append(f"{prefix}{text}")
     return "\n".join(lines)

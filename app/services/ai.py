@@ -127,9 +127,16 @@ class AIAnalysisService:
             lines.append(f"刑冲合害 {', '.join(rel)}")
         cites = insight.get("citations") or []
         if cites:
-            lines.append("【典籍参考摘要】")
+            lines.append("【典籍语料】")
             for c in cites:
-                lines.append(f"《{c.get('source', '')}》{c.get('text', '')}")
+                ch = f"（{c.get('chapter')}）" if c.get("chapter") else ""
+                prefix = f"《{c.get('source', '')}》{ch}"
+                body = c.get("text", "")
+                if c.get("pillars"):
+                    body = f"例{c['pillars']}：{body}"
+                if c.get("commentary"):
+                    body += f" 按：{c['commentary']}"
+                lines.append(f"{prefix}{body}")
         return "\n".join(lines)
 
     @classmethod

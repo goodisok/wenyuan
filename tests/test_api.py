@@ -11,7 +11,7 @@ def test_health():
     assert res.status_code == 200
     body = res.json()
     assert body["status"] == "ok"
-    assert body["version"] == "1.3.0"
+    assert body["version"] == "1.4.0"
 
 
 def test_index_page():

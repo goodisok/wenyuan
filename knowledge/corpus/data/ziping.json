@@ -1,0 +1,108 @@
+[
+  {
+    "id": "zp_yong_shen",
+    "source": "子平真诠",
+    "book": "子平真诠",
+    "chapter": "论用神",
+    "kind": "principle",
+    "tags": ["pattern", "geju", "yongshen", "always"],
+    "text": "用神者，日主之所喜也。成格之用神，不可损伤；败格之忌神，宜有制化。用神一位则清，用神混杂则浊。"
+  },
+  {
+    "id": "zp_xiang_shen",
+    "source": "子平真诠",
+    "book": "子平真诠",
+    "chapter": "论相神",
+    "kind": "principle",
+    "tags": ["pattern", "geju", "yongshen"],
+    "text": "相神者，辅用神而成格者也。如官格喜印、财格喜食、杀格喜食制或印化。无相神则格不成，有相神而受克则格破。"
+  },
+  {
+    "id": "zp_chun_za",
+    "source": "子平真诠",
+    "book": "子平真诠",
+    "chapter": "格局清纯",
+    "kind": "principle",
+    "tags": ["pattern", "geju"],
+    "text": "格局以清纯为贵。用神专一则清，用神多而互克则杂。清则贵，杂则贱；清中有救则成，杂而无制则败。"
+  },
+  {
+    "id": "zp_geju_zhengguan",
+    "source": "子平真诠",
+    "book": "子平真诠",
+    "chapter": "正官格",
+    "kind": "principle",
+    "geju": "正官格",
+    "tags": ["geju:正官格", "pattern", "geju"],
+    "text": "正官格，月令正官透干或藏而透。主贵气、名誉、规矩。喜印绶护官、财星生官；忌伤官破格、七杀混杂无制。"
+  },
+  {
+    "id": "zp_geju_qisha",
+    "source": "子平真诠",
+    "book": "子平真诠",
+    "chapter": "七杀格",
+    "kind": "principle",
+    "geju": "七杀格",
+    "tags": ["geju:七杀格", "pattern", "geju"],
+    "text": "七杀格，偏官当令。主权威、压力、决断。食神制杀为权，印绶化杀为贵；忌财党杀、杀重身轻无制。"
+  },
+  {
+    "id": "zp_geju_cai",
+    "source": "子平真诠",
+    "book": "子平真诠",
+    "chapter": "财格",
+    "kind": "principle",
+    "geju": "正财格",
+    "tags": ["geju:正财格", "geju:偏财格", "pattern"],
+    "text": "财格，正财偏财当令。身强财旺则富，身弱财多则贫。喜食伤生财、官星护财；忌比劫争财、枭印夺食。"
+  },
+  {
+    "id": "zp_geju_yin",
+    "source": "子平真诠",
+    "book": "子平真诠",
+    "chapter": "印格",
+    "kind": "principle",
+    "geju": "正印格",
+    "tags": ["geju:正印格", "geju:偏印格", "pattern"],
+    "text": "印格，正印偏印当令。主学业、庇护、名誉。官印相生大贵；忌财星坏印、印旺身强无泄。"
+  },
+  {
+    "id": "zp_geju_shishang",
+    "source": "子平真诠",
+    "book": "子平真诠",
+    "chapter": "食伤格",
+    "kind": "principle",
+    "geju": "食神格",
+    "tags": ["geju:食神格", "geju:伤官格", "pattern"],
+    "text": "食神格，主福禄才华；伤官格，主才艺表现。食神喜生财，忌枭夺；伤官喜财泄，忌见官（有例外）。"
+  },
+  {
+    "id": "zp_jianlu",
+    "source": "子平真诠",
+    "book": "子平真诠",
+    "chapter": "建禄格",
+    "kind": "principle",
+    "geju": "建禄格",
+    "tags": ["geju:建禄格", "pattern", "strength"],
+    "text": "建禄者，月令为日主临官。身强无疑，不作外格论。宜食伤泄秀、财星耗身、官杀制身，不可再印比帮身。"
+  },
+  {
+    "id": "zp_yangren",
+    "source": "子平真诠",
+    "book": "子平真诠",
+    "chapter": "羊刃格",
+    "kind": "principle",
+    "geju": "羊刃格",
+    "tags": ["geju:羊刃格", "pattern", "strength"],
+    "text": "阳干帝旺为刃。刃重，宜七杀制之或食伤泄之；忌再逢冲刃、刃劫重重无制，则暴烈多灾。"
+  },
+  {
+    "id": "zp_cheng_bai",
+    "source": "子平真诠",
+    "book": "子平真诠",
+    "chapter": "成格败格",
+    "kind": "principle",
+    "tags": ["pattern", "geju", "dayun"],
+    "text": "成格：用神有力、相神辅佐、忌神有制。败格：用神受克、相神缺失、忌神当道。成中有败、败中有成，当细辨轻重。"
+  }
+]

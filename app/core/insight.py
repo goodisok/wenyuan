@@ -5,7 +5,7 @@ from __future__ import annotations
 from datetime import datetime
 from typing import Any
 
-from app.core.knowledge import retrieve as knowledge_retrieve
+from app.core.knowledge import get_corpus_meta, retrieve as knowledge_retrieve
 from app.core.mingli import analyze as mingli_analyze
 
 WUXING_ORDER = ("木", "火", "土", "金", "水")
@@ -76,6 +76,7 @@ def build_insight(chart: dict[str, Any]) -> dict[str, Any]:
     }
     citations = knowledge_retrieve(chart, insight)
     insight["citations"] = citations
+    insight["corpus_meta"] = get_corpus_meta()
     return insight
 
 

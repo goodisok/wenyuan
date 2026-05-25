@@ -1,0 +1,118 @@
+[
+  {
+    "id": "yh_shishen_zong",
+    "source": "渊海子平",
+    "book": "渊海子平",
+    "chapter": "论十神",
+    "kind": "principle",
+    "tags": ["shishen", "always"],
+    "text": "以日干为我，生我者为印，我生者为食伤，克我者为官杀，我克者为财，同我者为比劫。十神者，五行生克之名义也。"
+  },
+  {
+    "id": "yh_zhengguan",
+    "source": "渊海子平",
+    "book": "渊海子平",
+    "chapter": "正官论",
+    "kind": "principle",
+    "shishen": "正官",
+    "tags": ["shishen", "ss:正官", "geju:正官格"],
+    "text": "正官者，阴阳相克，有制有化。主贵气、名誉、守法。女命以正官为夫星。喜印护、财生；忌伤官克破。"
+  },
+  {
+    "id": "yh_qisha",
+    "source": "渊海子平",
+    "book": "渊海子平",
+    "chapter": "七杀论",
+    "kind": "principle",
+    "shishen": "七杀",
+    "tags": ["shishen", "ss:七杀", "geju:七杀格"],
+    "text": "七杀者，偏官也。主权力、压力、果断。须食制或印化，化为权柄；若无制化，则小人、疾病、意外之虞。"
+  },
+  {
+    "id": "yh_zhengcai",
+    "source": "渊海子平",
+    "book": "渊海子平",
+    "chapter": "正财论",
+    "kind": "principle",
+    "shishen": "正财",
+    "tags": ["shishen", "ss:正财", "geju:正财格"],
+    "text": "正财者，我克之阴阳异性。主正当收入、勤俭持家。男命以正财为妻。身强财旺为富；身弱财多则为财所累。"
+  },
+  {
+    "id": "yh_piancai",
+    "source": "渊海子平",
+    "book": "渊海子平",
+    "chapter": "偏财论",
+    "kind": "principle",
+    "shishen": "偏财",
+    "tags": ["shishen", "ss:偏财", "geju:偏财格"],
+    "text": "偏财者，流动之财、人缘之财。主机遇、慷慨、交际。男命偏财亦可为父或情人；忌比劫争夺。"
+  },
+  {
+    "id": "yh_zhengyin",
+    "source": "渊海子平",
+    "book": "渊海子平",
+    "chapter": "正印论",
+    "kind": "principle",
+    "shishen": "正印",
+    "tags": ["shishen", "ss:正印", "geju:正印格"],
+    "text": "正印者，生我之阴阳异性。主母亲、学业、庇护、名誉。官印相生为大贵；忌财星坏印。"
+  },
+  {
+    "id": "yh_pianyin",
+    "source": "渊海子平",
+    "book": "渊海子平",
+    "chapter": "偏印论",
+    "kind": "principle",
+    "shishen": "偏印",
+    "tags": ["shishen", "ss:偏印", "geju:偏印格"],
+    "text": "偏印者，枭神也。主偏门学问、灵感、孤独。杀印相生为权；忌枭神夺食，则福浅寿促或子息艰难。"
+  },
+  {
+    "id": "yh_shishen_god",
+    "source": "渊海子平",
+    "book": "渊海子平",
+    "chapter": "食神论",
+    "kind": "principle",
+    "shishen": "食神",
+    "tags": ["shishen", "ss:食神", "geju:食神格"],
+    "text": "食神者，我生之阴阳同性。主福禄、口才、温和。食神生财为富；忌偏印夺食，则断福源。"
+  },
+  {
+    "id": "yh_shangguan",
+    "source": "渊海子平",
+    "book": "渊海子平",
+    "chapter": "伤官论",
+    "kind": "principle",
+    "shishen": "伤官",
+    "tags": ["shishen", "ss:伤官", "geju:伤官格"],
+    "text": "伤官者，我生之阴阳异性。主才华、表现、叛逆。伤官佩印为贵，伤官生财为富；伤官见官，为祸百端（有制化则例外）。"
+  },
+  {
+    "id": "yh_liuqin",
+    "source": "渊海子平",
+    "book": "渊海子平",
+    "chapter": "六亲论",
+    "kind": "principle",
+    "tags": ["shishen", "always"],
+    "text": "男命：正财为妻，偏财为父或情人，正印为母，正官为女（或压力），食伤为子。女命：正官七杀为夫，食神伤官为子，正印偏印为母。"
+  },
+  {
+    "id": "yh_yong_shen_fa",
+    "source": "渊海子平",
+    "book": "渊海子平",
+    "chapter": "用神法",
+    "kind": "principle",
+    "tags": ["yongshen", "strength", "always"],
+    "text": "用神有四：扶抑、调候、通关、从势。身弱扶之，身旺抑之；寒则暖之，燥则润之；战则通之；从格则顺之。四者兼用，不可执一。"
+  },
+  {
+    "id": "yh_tegeshu",
+    "source": "渊海子平",
+    "book": "渊海子平",
+    "chapter": "外格",
+    "kind": "principle",
+    "tags": ["pattern", "geju"],
+    "text": "外格有：从财、从杀、从儿、从势、化气、建禄、羊刃等。外格成则贵，败则贱；须真弃命从之，假从则凶。"
+  }
+]
