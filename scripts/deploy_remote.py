@@ -77,7 +77,7 @@ def main() -> None:
     run("sudo mkdir -p /var/www/certbot")
 
     cert_check = run(
-        f"test -f /etc/letsencrypt/live/{DOMAIN}/fullchain.pem && echo yes || echo no"
+        f"sudo test -f /etc/letsencrypt/live/{DOMAIN}/fullchain.pem && echo yes || echo no"
     ).strip()
     use_ssl = cert_check.endswith("yes")
 

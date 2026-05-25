@@ -11,6 +11,7 @@ from typing import Any
 
 from app.core.ditiansui import analyze as ditiansui_analyze
 from app.core.duanshi import analyze as duanshi_analyze
+from app.core.publish import publish_duanshi, publish_sanguan
 from app.core.sanguan import analyze as sanguan_analyze
 from app.core.qiongtong import lookup as qiongtong_lookup
 from app.core.shensha import analyze as shensha_analyze
@@ -18,7 +19,7 @@ from app.core.yongshen import analyze as yongshen_analyze
 from app.core.ziping import analyze as ziping_analyze
 
 KERNEL = "子平综参"
-METHOD_NOTE = "综合子平诸家断事，以宫位、六亲、刑冲合害破与大运应期直断人事"
+METHOD_NOTE = "综合子平诸家；断语仅发布高置信或多维印证的人事，模棱两可者不上断"
 SOURCES = [
     "子平", "滴天髓", "穷通宝鉴", "子平真诠", "渊海子平",
     "三命通会", "千里命稿", "神峰通考", "协纪辨方书",
@@ -82,14 +83,12 @@ def _plain_highlights(
     if relations:
         lines.append(f"四柱关系：{'、'.join(relations[:5])}" + ("…" if len(relations) > 5 else ""))
     for item in duanshi.get("items") or []:
-        if item.get("level") in ("强", "中"):
-            lines.append(f"【断{item.get('topic')}】{item.get('verdict')}（{item.get('source')}）")
+        lines.append(f"【断{item.get('topic')}】{item.get('verdict')}（{item.get('source')}）")
     for g in sanguan.get("gates") or []:
-        if g.get("confidence") in ("高", "中"):
-            lines.append(
-                f"【{g.get('name')}·{g.get('confidence')}置信】{g.get('verdict')} "
-                f"（{g.get('schools_agree')}家印证）"
-            )
+        lines.append(
+            f"【{g.get('name')}·{g.get('confidence')}置信】{g.get('verdict')} "
+            f"（{g.get('schools_agree')}家印证）"
+        )
     if sanguan.get("chuan"):
         lines.append(f"【盲派穿】{'、'.join(sanguan['chuan'][:4])}")
     return lines
@@ -105,8 +104,10 @@ def analyze(chart: dict[str, Any]) -> dict[str, Any]:
     qt = qiongtong_lookup(day_stem, month_branch)
     geju = ziping_analyze(chart)
     shensha = shensha_analyze(chart)
-    duanshi = duanshi_analyze(chart)
-    sanguan = sanguan_analyze(chart)
+    duanshi_raw = duanshi_analyze(chart)
+    sanguan_raw = sanguan_analyze(chart)
+    duanshi = publish_duanshi(duanshi_raw, sanguan_raw)
+    sanguan = publish_sanguan(sanguan_raw)
     yongshen = yongshen_analyze(
         chart,
         strength=dts.get("day_master_strength", "平衡"),

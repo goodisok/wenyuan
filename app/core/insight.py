@@ -86,7 +86,7 @@ def suggest_l2_questions(insight: dict[str, Any]) -> list[str]:
     questions: list[str] = []
     ds = insight.get("duanshi") or {}
     for item in ds.get("items") or []:
-        if item.get("topic") == "父母" and item.get("level") in ("强", "中"):
+        if item.get("topic") == "父母" and item.get("level") == "强":
             questions.append(f"父母宫断「{item.get('verdict')}」，应期在何运？")
             break
     sg = insight.get("sanguan") or {}
