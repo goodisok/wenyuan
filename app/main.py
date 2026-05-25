@@ -17,8 +17,8 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 templates = Jinja2Templates(directory=str(BASE_DIR / "templates"))
 
 app = FastAPI(
-    title="文渊",
-    description="八字排盘 · 大运流年 · AI 命理解读",
+    title="问元",
+    description="探问天地人三元 · 八字排盘 · 大运流年 · AI 命理解读",
     version=__version__,
 )
 
@@ -28,12 +28,12 @@ app.include_router(api_router, prefix="/api", tags=["api"])
 
 @app.get("/", response_class=HTMLResponse)
 async def index(request: Request):
-    return templates.TemplateResponse("index.html", {"request": request})
+    return templates.TemplateResponse(request, "index.html")
 
 
 @app.get("/chart", response_class=HTMLResponse)
 async def chart_page(request: Request):
-    return templates.TemplateResponse("chart.html", {"request": request})
+    return templates.TemplateResponse(request, "chart.html")
 
 
 @app.get("/health")

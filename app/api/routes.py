@@ -1,10 +1,12 @@
-from fastapi import APIRouter, Request
-from fastapi.responses import HTMLResponse, JSONResponse
+import logging
+
+from fastapi import APIRouter
 
 from app.core.bazi import BaziService
 from app.schemas import AnalyzeRequest, AnalyzeResponse, ChartRequest, ChartResponse
 from app.services.ai import AIAnalysisService
 
+logger = logging.getLogger(__name__)
 router = APIRouter()
 
 
@@ -16,6 +18,7 @@ async def create_chart(body: ChartRequest) -> ChartResponse:
     except ValueError as e:
         return ChartResponse(success=False, error=str(e))
     except Exception:
+        logger.exception("排盘失败")
         return ChartResponse(success=False, error="排盘失败，请检查输入")
 
 
@@ -26,5 +29,6 @@ async def analyze_chart(body: AnalyzeRequest) -> AnalyzeResponse:
         return AnalyzeResponse(success=True, analysis=text)
     except ValueError as e:
         return AnalyzeResponse(success=False, error=str(e))
-    except Exception as e:
-        return AnalyzeResponse(success=False, error=f"分析失败: {e}")
+    except Exception:
+        logger.exception("AI 分析失败")
+        return AnalyzeResponse(success=False, error="分析失败，请稍后重试")

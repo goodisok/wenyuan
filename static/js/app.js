@@ -1,4 +1,19 @@
-/** 文渊 · 前端工具 */
+/** 问元 · 前端工具 */
+const STORAGE_KEY = "wenyuan_chart";
+
+async function parseJsonResponse(res) {
+  const body = await res.json();
+  if (!res.ok) {
+    const detail = body.detail;
+    if (Array.isArray(detail)) {
+      const msg = detail.map((d) => d.msg || d.message || String(d)).join("；");
+      throw new Error(msg || `请求失败 (${res.status})`);
+    }
+    throw new Error(body.error || body.message || `请求失败 (${res.status})`);
+  }
+  return body;
+}
+
 const API = {
   async chart(payload) {
     const res = await fetch("/api/chart", {
@@ -6,7 +21,7 @@ const API = {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(payload),
     });
-    return res.json();
+    return parseJsonResponse(res);
   },
   async analyze(chart, style = "classic") {
     const res = await fetch("/api/analyze", {
@@ -14,7 +29,7 @@ const API = {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ chart, style }),
     });
-    return res.json();
+    return parseJsonResponse(res);
   },
 };
 
@@ -25,7 +40,141 @@ function showError(el, msg) {
 }
 
 function hideError(el) {
-  if (!el) el?.classList.add("hidden");
+  if (!el) return;
+  el.classList.add("hidden");
+}
+
+function escapeHtml(text) {
+  return String(text)
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;");
+}
+
+function inlineMarkdown(text) {
+  return text.replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>");
+}
+
+function formatMarkdownBody(body) {
+  const lines = body.split("\n");
+  const parts = [];
+  let listType = null;
+
+  const closeList = () => {
+    if (listType) {
+      parts.push(`</${listType}>`);
+      listType = null;
+    }
+  };
+
+  for (const rawLine of lines) {
+    const line = rawLine.trimEnd();
+    const trimmed = line.trim();
+
+    if (!trimmed) {
+      closeList();
+      continue;
+    }
+
+    if (/^---+$/.test(trimmed)) {
+      closeList();
+      parts.push('<hr class="analysis-divider">');
+      continue;
+    }
+
+    if (trimmed.startsWith("### ")) {
+      closeList();
+      parts.push(`<h4 class="analysis-subtitle">${inlineMarkdown(trimmed.slice(4))}</h4>`);
+      continue;
+    }
+
+    if (trimmed.startsWith("> ")) {
+      closeList();
+      parts.push(`<blockquote class="analysis-quote">${inlineMarkdown(trimmed.slice(2))}</blockquote>`);
+      continue;
+    }
+
+    if (/^[-*]\s+/.test(trimmed)) {
+      if (listType !== "ul") {
+        closeList();
+        listType = "ul";
+        parts.push('<ul class="analysis-list">');
+      }
+      parts.push(`<li>${inlineMarkdown(trimmed.replace(/^[-*]\s+/, ""))}</li>`);
+      continue;
+    }
+
+    if (/^\d+\.\s+/.test(trimmed)) {
+      if (listType !== "ol") {
+        closeList();
+        listType = "ol";
+        parts.push('<ol class="analysis-list">');
+      }
+      parts.push(`<li>${inlineMarkdown(trimmed.replace(/^\d+\.\s+/, ""))}</li>`);
+      continue;
+    }
+
+    closeList();
+    parts.push(`<p class="analysis-paragraph">${inlineMarkdown(trimmed)}</p>`);
+  }
+
+  closeList();
+  return parts.join("");
+}
+
+function markdownToHtml(markdown) {
+  const escaped = escapeHtml(String(markdown || "").trim());
+  if (!escaped) return "";
+
+  const blocks = escaped.split(/\n(?=## )/);
+  return blocks
+    .map((block) => {
+      const lines = block.split("\n");
+      let title = "";
+      let body = block;
+
+      if (lines[0].startsWith("## ")) {
+        title = lines[0].replace(/^#+\s*/, "");
+        body = lines.slice(1).join("\n");
+      }
+
+      const inner = formatMarkdownBody(body);
+      if (title) {
+        return `<section class="analysis-block"><h3 class="analysis-block-title">${title}</h3>${inner}</section>`;
+      }
+      return `<section class="analysis-block">${inner}</section>`;
+    })
+    .join("");
+}
+
+function renderAnalysis(text, style) {
+  const wrap = document.getElementById("ai-result-wrap");
+  const empty = document.getElementById("ai-empty");
+  const badge = document.getElementById("ai-style-badge");
+  const timeEl = document.getElementById("ai-time");
+  const result = document.getElementById("ai-result");
+
+  if (!result) return;
+
+  const label = style === "classic" ? "古典风格" : "现代风格";
+  if (badge) {
+    badge.textContent = label;
+    badge.className = `analysis-style-badge style-${style}`;
+  }
+  if (timeEl) {
+    timeEl.textContent = new Date().toLocaleString("zh-CN", { hour12: false });
+  }
+
+  result.innerHTML = markdownToHtml(text);
+  wrap?.classList.remove("hidden");
+  empty?.classList.add("hidden");
+
+  document.querySelectorAll(".ai-style-btn").forEach((btn) => {
+    btn.classList.toggle("active", btn.dataset.style === style);
+  });
+
+  wrap?.scrollIntoView({ behavior: "smooth", block: "nearest" });
 }
 
 function wuxingClass(color) {
@@ -62,7 +211,7 @@ function renderChart(data) {
         <td><strong>${d.ganzhi}</strong></td>
         <td>${d.start_year} — ${d.end_year}</td>
         <td>${d.start_age} — ${d.end_age} 岁</td>
-        <td>${(d.liunian || []).slice(0, 5).map((l) => `<span class="badge">${l.ganzhi}(${l.year})</span>`).join("")}${(d.liunian || []).length > 5 ? "…" : ""}</td>
+        <td class="liunian-cell">${(d.liunian || []).map((l) => `<span class="badge">${l.ganzhi}(${l.year})</span>`).join("")}</td>
       </tr>`
     )
     .join("");
@@ -88,11 +237,12 @@ function renderChart(data) {
         <div class="meta-item"><div class="label">生肖</div><div class="value">${m.zodiac}</div></div>
         <div class="meta-item"><div class="label">虚岁</div><div class="value">${m.age} 岁</div></div>
         <div class="meta-item"><div class="label">日主</div><div class="value">${m.day_master}（${m.day_master_wuxing}）</div></div>
+        <div class="meta-item"><div class="label">十二长生</div><div class="value">${m.day_dishi || "—"}</div></div>
         <div class="meta-item"><div class="label">胎元</div><div class="value">${m.tai_yuan || "—"}</div></div>
         <div class="meta-item"><div class="label">命宫</div><div class="value">${m.ming_gong || "—"}</div></div>
         <div class="meta-item"><div class="label">身宫</div><div class="value">${m.shen_gong || "—"}</div></div>
       </div>
-      <p style="margin-top:1rem;font-size:0.88rem;color:var(--text-muted)">
+      <p class="birth-time-note">
         阳历 ${m.birth_time?.solar || ""}<br>
         农历 ${m.birth_time?.lunar || ""}
       </p>
@@ -108,7 +258,7 @@ function renderChart(data) {
       <h2 class="card-title">大运</h2>
       <div class="table-wrap">
         <table>
-          <thead><tr><th>干支</th><th>年份</th><th>年龄</th><th>流年（节选）</th></tr></thead>
+          <thead><tr><th>干支</th><th>年份</th><th>年龄</th><th>流年</th></tr></thead>
           <tbody>${dayunRows || "<tr><td colspan='4'>暂无</td></tr>"}</tbody>
         </table>
       </div>
@@ -127,21 +277,33 @@ function renderChart(data) {
     </div>`
         : ""
     }
-
     <div class="card" id="ai-section">
       <h2 class="card-title">AI 命理解读</h2>
-      <p style="font-size:0.85rem;color:var(--text-muted);margin-bottom:1rem">
-        需配置 DeepSeek API Key。点击下方按钮开始分析，不会自动消耗额度。
+      <p class="ai-hint">
+        以 DeepSeek 结合本盘四柱、十神与大运生成解读。手动触发，不自动消耗额度。
       </p>
-      <div class="actions">
-        <button type="button" class="btn btn-secondary" id="btn-analyze-classic">古典风格解读</button>
-        <button type="button" class="btn btn-secondary" id="btn-analyze-modern">现代风格解读</button>
+      <div class="ai-toolbar">
+        <button type="button" class="btn btn-secondary ai-style-btn" data-style="classic" id="btn-analyze-classic">古典风格</button>
+        <button type="button" class="btn btn-secondary ai-style-btn" data-style="modern" id="btn-analyze-modern">现代风格</button>
       </div>
-      <div id="ai-loading" class="loading-box hidden"><div class="spinner"></div><p>正在解读命盘…</p></div>
+      <div id="ai-loading" class="ai-loading hidden">
+        <div class="spinner"></div>
+        <p class="ai-loading-title">问元解读中</p>
+        <p class="ai-loading-desc">正在结合天地人三元梳理命盘…</p>
+      </div>
       <div id="ai-error" class="alert alert-error hidden"></div>
-      <div id="ai-result" class="analysis-content" style="margin-top:1rem"></div>
+      <div id="ai-empty" class="ai-empty">
+        <p>选择解读风格后，AI 将按八个章节输出结构化分析。</p>
+      </div>
+      <div id="ai-result-wrap" class="analysis-panel hidden">
+        <div class="analysis-header">
+          <span id="ai-style-badge" class="analysis-style-badge style-classic">古典风格</span>
+          <span id="ai-time" class="analysis-time"></span>
+        </div>
+        <div id="ai-result" class="analysis-content"></div>
+      </div>
     </div>
   `;
 }
 
-window.Wenyuan = { API, renderChart, showError, hideError };
+window.Wenyuan = { API, renderChart, renderAnalysis, showError, hideError, STORAGE_KEY };

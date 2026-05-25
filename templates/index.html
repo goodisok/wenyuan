@@ -3,6 +3,7 @@
 {% block content %}
 <div class="card">
   <h2 class="card-title">输入生辰</h2>
+  <p class="form-intro">问元取天地人三元之理，以八字窥命途节律。</p>
   <div id="form-error" class="alert alert-error hidden"></div>
   <form id="chart-form">
     <div class="form-group">
@@ -11,6 +12,7 @@
         <option value="solar">公历（阳历）</option>
         <option value="lunar">农历（阴历）</option>
       </select>
+      <p id="lunar-hint" class="field-hint hidden">农历模式下，请按农历年月日填写（如正月初一填 1 月 1 日）。</p>
     </div>
     <div class="form-row">
       <div class="form-group">
@@ -40,12 +42,15 @@
   const form = document.getElementById("chart-form");
   const errEl = document.getElementById("form-error");
   const btn = document.getElementById("submit-btn");
+  const dateType = document.getElementById("date_type");
+  const lunarHint = document.getElementById("lunar-hint");
 
-  const today = new Date();
-  const pad = (n) => String(n).padStart(2, "0");
-  document.getElementById("birth_date").value =
-    `${today.getFullYear()}-${pad(today.getMonth() + 1)}-${pad(today.getDate())}`;
+  document.getElementById("birth_date").value = "1990-05-15";
   document.getElementById("birth_time").value = "12:00";
+
+  dateType.addEventListener("change", () => {
+    lunarHint.classList.toggle("hidden", dateType.value !== "lunar");
+  });
 
   form.addEventListener("submit", async (e) => {
     e.preventDefault();
@@ -67,10 +72,10 @@
         Wenyuan.showError(errEl, res.error || "排盘失败");
         return;
       }
-      sessionStorage.setItem("wenyuan_chart", JSON.stringify(res.data));
+      sessionStorage.setItem(Wenyuan.STORAGE_KEY, JSON.stringify(res.data));
       location.href = "/chart";
     } catch (err) {
-      Wenyuan.showError(errEl, "网络错误，请稍后重试");
+      Wenyuan.showError(errEl, err.message || "网络错误，请稍后重试");
     } finally {
       btn.disabled = false;
       btn.textContent = "开始排盘";

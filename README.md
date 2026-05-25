@@ -1,6 +1,6 @@
-# 文渊 Wenyuan
+# 问元 Wenyuan
 
-基于 FastAPI 的八字排盘系统，在 [fate_web](https://github.com/lichengguang/fate_web) 基础上重构，提供更清晰的架构、更完整的命盘信息与更现代的交互体验。
+探问天地人三元 — 基于 FastAPI 的八字排盘系统，在 [fate_web](https://github.com/lichengguang/fate_web) 基础上重构，提供更清晰的架构、更完整的命盘信息与更现代的交互体验。
 
 ## 特性
 
