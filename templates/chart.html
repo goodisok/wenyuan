@@ -1,0 +1,57 @@
+{% extends "base.html" %}
+{% block title %}命盘{% endblock %}
+{% block content %}
+<div id="chart-root"></div>
+<div class="actions">
+  <a href="/" class="btn btn-secondary">重新排盘</a>
+</div>
+{% endblock %}
+{% block scripts %}
+<script src="/static/js/app.js"></script>
+<script>
+(function () {
+  const root = document.getElementById("chart-root");
+  const raw = sessionStorage.getItem("wenyuan_chart");
+
+  if (!raw) {
+    root.innerHTML = '<div class="alert alert-error">暂无命盘数据，请先<a href="/">排盘</a></div>';
+    return;
+  }
+
+  let chart;
+  try {
+    chart = JSON.parse(raw);
+  } catch {
+    root.innerHTML = '<div class="alert alert-error">数据损坏，请重新排盘</div>';
+    return;
+  }
+
+  root.innerHTML = Wenyuan.renderChart(chart);
+
+  async function runAnalyze(style) {
+    const loading = document.getElementById("ai-loading");
+    const result = document.getElementById("ai-result");
+    const err = document.getElementById("ai-error");
+    Wenyuan.hideError(err);
+    result.textContent = "";
+    loading.classList.remove("hidden");
+
+    try {
+      const res = await Wenyuan.API.analyze(chart, style);
+      if (!res.success) {
+        Wenyuan.showError(err, res.error || "分析失败");
+      } else {
+        result.textContent = res.analysis;
+      }
+    } catch (e) {
+      Wenyuan.showError(err, "请求失败: " + e.message);
+    } finally {
+      loading.classList.add("hidden");
+    }
+  }
+
+  document.getElementById("btn-analyze-classic")?.addEventListener("click", () => runAnalyze("classic"));
+  document.getElementById("btn-analyze-modern")?.addEventListener("click", () => runAnalyze("modern"));
+})();
+</script>
+{% endblock %}

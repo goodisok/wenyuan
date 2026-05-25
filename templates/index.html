@@ -1,0 +1,81 @@
+{% extends "base.html" %}
+{% block title %}排盘{% endblock %}
+{% block content %}
+<div class="card">
+  <h2 class="card-title">输入生辰</h2>
+  <div id="form-error" class="alert alert-error hidden"></div>
+  <form id="chart-form">
+    <div class="form-group">
+      <label>历法</label>
+      <select name="date_type" id="date_type">
+        <option value="solar">公历（阳历）</option>
+        <option value="lunar">农历（阴历）</option>
+      </select>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label for="birth_date">出生日期</label>
+        <input type="date" id="birth_date" name="birth_date" required>
+      </div>
+      <div class="form-group">
+        <label for="birth_time">出生时间</label>
+        <input type="time" id="birth_time" name="birth_time" required>
+      </div>
+    </div>
+    <div class="form-group">
+      <label>性别</label>
+      <div class="radio-group">
+        <label><input type="radio" name="gender" value="male" checked> 男</label>
+        <label><input type="radio" name="gender" value="female"> 女</label>
+      </div>
+    </div>
+    <button type="submit" class="btn btn-primary" id="submit-btn">开始排盘</button>
+  </form>
+</div>
+{% endblock %}
+{% block scripts %}
+<script src="/static/js/app.js"></script>
+<script>
+(function () {
+  const form = document.getElementById("chart-form");
+  const errEl = document.getElementById("form-error");
+  const btn = document.getElementById("submit-btn");
+
+  const today = new Date();
+  const pad = (n) => String(n).padStart(2, "0");
+  document.getElementById("birth_date").value =
+    `${today.getFullYear()}-${pad(today.getMonth() + 1)}-${pad(today.getDate())}`;
+  document.getElementById("birth_time").value = "12:00";
+
+  form.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    Wenyuan.hideError(errEl);
+    btn.disabled = true;
+    btn.textContent = "排盘中…";
+
+    const fd = new FormData(form);
+    const payload = {
+      date_type: fd.get("date_type"),
+      birth_date: fd.get("birth_date"),
+      birth_time: fd.get("birth_time"),
+      gender: fd.get("gender"),
+    };
+
+    try {
+      const res = await Wenyuan.API.chart(payload);
+      if (!res.success) {
+        Wenyuan.showError(errEl, res.error || "排盘失败");
+        return;
+      }
+      sessionStorage.setItem("wenyuan_chart", JSON.stringify(res.data));
+      location.href = "/chart";
+    } catch (err) {
+      Wenyuan.showError(errEl, "网络错误，请稍后重试");
+    } finally {
+      btn.disabled = false;
+      btn.textContent = "开始排盘";
+    }
+  });
+})();
+</script>
+{% endblock %}
