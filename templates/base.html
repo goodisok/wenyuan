@@ -8,7 +8,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;500;600&family=Noto+Serif+SC:wght@500;600&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="/static/css/theme.css">
+  <link rel="stylesheet" href="/static/css/theme.css?v={{ app_version }}">
   <link rel="manifest" href="/static/manifest.json">
   <meta name="theme-color" content="#c9a227">
   {% block head %}{% endblock %}
@@ -35,7 +35,7 @@
   {% block scripts %}{% endblock %}
   <script>
     if ("serviceWorker" in navigator) {
-      navigator.serviceWorker.register("/static/sw.js").catch(() => {});
+      navigator.serviceWorker.register("/static/sw.js?v={{ app_version }}").catch(() => {});
     }
   </script>
 </body>

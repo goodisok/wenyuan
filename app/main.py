@@ -15,6 +15,7 @@ load_dotenv()
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 templates = Jinja2Templates(directory=str(BASE_DIR / "templates"))
+templates.env.globals["app_version"] = __version__
 
 app = FastAPI(
     title="问元",
