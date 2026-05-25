@@ -55,7 +55,7 @@ class ChartResponse(BaseModel):
 class AnalyzeRequest(BaseModel):
     chart: dict = Field(..., description="完整排盘结果")
     insight: dict | None = None
-    style: Literal["classic", "modern"] = "classic"
+    style: Literal["classic", "modern"] = "modern"  # 兼容旧客户端，提示词已统一
 
 
 class AnalyzeResponse(BaseModel):
@@ -70,7 +70,7 @@ class AskRequest(BaseModel):
     analysis: str = ""
     question: str = Field(..., min_length=1, max_length=500)
     history: list[dict[str, str]] = Field(default_factory=list)
-    style: Literal["classic", "modern"] = "classic"
+    style: Literal["classic", "modern"] = "modern"  # 兼容旧客户端，提示词已统一
 
     @field_validator("history")
     @classmethod

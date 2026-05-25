@@ -13,18 +13,24 @@
   <meta name="theme-color" content="#c9a227">
   {% block head %}{% endblock %}
 </head>
-<body>
+<body class="{% block body_class %}{% endblock %}">
   <a href="#main-content" class="skip-link">跳到主要内容</a>
   <header class="site-header">
-    <h1><a href="/" class="site-logo">问元</a></h1>
-    <p class="site-tagline">探问天地人三元 · 子平综参排盘 · AI 就盘解读</p>
+    <div class="site-header-inner">
+      <h1><a href="/" class="site-logo">问元</a></h1>
+      <nav class="site-nav" aria-label="站点导航">
+        <a href="/" class="site-nav-link{% if request.url.path == '/' %} is-active{% endif %}"{% if request.url.path == '/' %} aria-current="page"{% endif %}>排盘</a>
+        <a href="/privacy" class="site-nav-link{% if request.url.path == '/privacy' %} is-active{% endif %}"{% if request.url.path == '/privacy' %} aria-current="page"{% endif %}>隐私</a>
+      </nav>
+    </div>
+    {% block header_extra %}{% endblock %}
   </header>
-  <main id="main-content" class="container">
+  <main id="main-content" class="container {% block main_class %}{% endblock %}">
     {% block content %}{% endblock %}
   </main>
   <footer class="footer">
-    问元 Wenyuan · 仅供参考，不构成人生决策依据 ·
-    <a href="/privacy">隐私说明</a>
+    <p class="footer-brand">问元 Wenyuan · 自研子平综参</p>
+    <p class="footer-note">仅供参考，不构成人生决策依据 · <a href="/privacy">隐私说明</a></p>
   </footer>
   {% block scripts %}{% endblock %}
   <script>

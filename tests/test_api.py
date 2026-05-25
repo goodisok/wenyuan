@@ -11,28 +11,39 @@ def test_health():
     assert res.status_code == 200
     body = res.json()
     assert body["status"] == "ok"
-    assert body["version"] == "1.7.0"
+    assert body["version"] == "1.8.0"
 
 
 def test_index_page():
     res = client.get("/")
     assert res.status_code == 200
-    assert "问元" in res.text
-    assert "开始排盘" in res.text
-    assert "闰月" in res.text
+    text = res.text
+    assert "问元" in text
+    assert "开始排盘" in text
+    assert "闰月" in text
+    assert 'class="hero"' in text
+    assert "feature-card" in text
+    assert "page-home" in text
+    assert "site-nav-link" in text
 
 
 def test_chart_page():
     res = client.get("/chart")
     assert res.status_code == 200
-    assert "chart-root" in res.text
+    text = res.text
+    assert "chart-root" in text
+    assert "chart-skeleton" in text
+    assert "page-chart" in text
+    assert "Wenyuan.initChartPage" in text
 
 
 def test_privacy_page():
     res = client.get("/privacy")
     assert res.status_code == 200
-    assert "隐私" in res.text
-    assert "不持久化" in res.text
+    text = res.text
+    assert "隐私" in text
+    assert "不持久化" in text
+    assert "page-legal" in text
 
 
 def test_api_chart_solar_male():

@@ -1,0 +1,79 @@
+---
+description: 问元前端 UI — 国风深色产品化规范（Jinja2 + 原生 JS + theme.css）
+globs:
+  - templates/**
+  - static/css/**
+  - static/js/app.js
+alwaysApply: false
+---
+
+# 问元 UI 规则
+
+## 技术约束
+
+- **栈**：Jinja2 模板 + 单文件 `static/css/theme.css` + `static/js/app.js`（无 React/Vue/Tailwind）
+- **禁止**：引入新 UI 框架；在模板里写 inline style；硬编码 `#hex`（须用 CSS 变量）
+- **HTML 转义**：JS 渲染用户/服务端字符串必须用 `escapeHtml()`
+
+## 设计令牌（必须引用）
+
+见 `docs/DESIGN.md`。核心变量：
+
+- 背景：`--bg` / `--bg-card` / `--bg-elevated`
+- 文字：`--text` / `--text-muted`
+- 强调：`--accent` / `--accent-dim` / `--accent-cool` / `--accent-warm`
+- 五行：`--wood` `--fire` `--earth` `--metal` `--water`
+- 圆角：`--radius`（12px）；间距：4px 倍数
+
+## 组件类名（复用，勿发明平行体系）
+
+| 用途 | 类名 |
+|------|------|
+| 页面卡片 | `.card` `.panel-card` + `.panel-card-header` / `.panel-card-body` |
+| 主按钮 | `.btn.btn-primary` |
+| 次按钮 | `.btn.btn-secondary` |
+| 徽章 | `.badge` `.topic-badge` `.conf-badge` |
+| 表单 | `.form-group` `.form-row` `.form-tip` |
+| 命盘分区 | `.section-block` `.section-title` `.chart-nav` |
+| 断事/三关 | `.duanshi-panel` `.sanguan-panel` `.insight-stack` |
+| 空/错/加载 | `.ai-empty` `.alert-error` `.chart-skeleton` `.spinner` |
+
+## 页面 IA
+
+### 首页 `/`
+
+1. Hero（价值主张 + 三步流程）
+2. 排盘表单（主 CTA）
+3. 能力亮点（规则层 / 断事 / AI）
+4. 最近排盘（localStorage）
+
+### 命盘 `/chart`
+
+1. 顶栏：返回 + 分享/导出
+2.  sticky：四柱摘要 + 分区 Tab
+3. 概览 → 四柱 → 运势 → 本命 → 问 AI（单一「开始解读」）
+
+## 文案调性
+
+- 产品化、直接：「开始排盘」「开始解读」「子平直断」
+- 避免：「仅供娱乐」「算命平台」口吻；避免古典/现代双风格选项
+- AI 区说明：锚定本盘、非闲聊、L3 轮次上限
+
+## 无障碍
+
+- 主 landmark：`<main id="main-content">`
+- 模态：`role="dialog"` `aria-modal` Esc 关闭
+- Tab 导航：`role="tablist"` / `aria-selected`
+- 按钮：`focus-visible` 轮廓；`prefers-reduced-motion` 已支持
+
+## 移动端
+
+- 四柱横向滑动；大运卡片；底部 ask 栏 sticky + safe-area
+- 主按钮在表单区 `width: 100%`，工具栏内 `width: auto`
+
+## 反模式
+
+- 不要拆出第二个 CSS 文件（除非用户明确要求）
+- 不要用 emoji 充当图标
+- 不要恢复「古典风格 / 现代风格」双按钮
+- 不要在 `renderChart` 外重复绑定 `#btn-copy-link` 等同 id

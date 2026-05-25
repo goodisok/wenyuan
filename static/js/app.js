@@ -9,6 +9,7 @@ const SHARE_VERSION = 1;
 const CHART_CACHE_TTL = 3600000;
 
 const L2_FIXED = ["当前大运对我意味着什么？", "我的五行平衡吗？"];
+const AI_STYLE = "modern"; // API 兼容字段，后端提示词已统一
 
 const WUXING_MAP = { 木: "wood", 火: "fire", 土: "earth", 金: "metal", 水: "water" };
 
@@ -166,6 +167,18 @@ function loadAiCache(input) {
 
 function saveAiCache(input, data) {
   localStorage.setItem(aiCacheKey(input), JSON.stringify(data));
+}
+
+function normalizeAiCache(cache) {
+  if (!cache) return { analysis: "", history: [] };
+  if (typeof cache.analysis === "string") {
+    return { analysis: cache.analysis, history: cache.history || [] };
+  }
+  const legacy = cache.analysis || {};
+  return {
+    analysis: legacy.modern || legacy.classic || "",
+    history: cache.history || [],
+  };
 }
 
 async function parseJsonResponse(res) {
@@ -631,6 +644,14 @@ function renderChart(data) {
     .join("");
 
   return `
+    <div class="chart-page">
+    <header class="chart-topbar">
+      <a href="/" class="chart-back">← 重新排盘</a>
+      <div class="chart-topbar-actions">
+        <button type="button" class="btn btn-secondary btn-sm" id="btn-copy-link">分享链接</button>
+        <button type="button" class="btn btn-secondary btn-sm" id="btn-export-md">导出</button>
+      </div>
+    </header>
     <nav class="chart-nav" id="chart-nav" role="tablist" aria-label="命盘分区">
       <button type="button" class="chart-nav-btn active" role="tab" aria-selected="true" data-target="sec-meta">概览</button>
       <button type="button" class="chart-nav-btn" role="tab" aria-selected="false" data-target="sec-di">四柱</button>
@@ -643,20 +664,16 @@ function renderChart(data) {
       <span class="sticky-dm">日主 ${m.day_master} · ${insight.geju?.type || insight.day_master_strength || ""}</span>
     </div>
 
-    <section class="section-block" id="sec-meta">
+    <section class="section-block section-card" id="sec-meta">
       <h2 class="section-title">命主概览</h2>
       <div class="meta-grid">
-        <div class="meta-item"><div class="label">性别</div><div class="value">${m.gender_label}</div></div>
-        <div class="meta-item"><div class="label">生肖</div><div class="value">${m.zodiac}</div></div>
-        <div class="meta-item"><div class="label">虚岁</div><div class="value">${m.age} 岁</div></div>
-        <div class="meta-item"><div class="label">日主</div><div class="value">${m.day_master}（${m.day_master_wuxing}）</div></div>
-        <div class="meta-item"><div class="label">十二长生</div><div class="value">${m.day_dishi || "—"}</div></div>
+        <div class="meta-item"><div class="label">性别</div><div class="value">${escapeHtml(m.gender_label || "")}</div></div>
+        <div class="meta-item"><div class="label">生肖</div><div class="value">${escapeHtml(m.zodiac || "")}</div></div>
+        <div class="meta-item"><div class="label">虚岁</div><div class="value">${escapeHtml(String(m.age ?? ""))} 岁</div></div>
+        <div class="meta-item"><div class="label">日主</div><div class="value">${escapeHtml(m.day_master || "")}（${escapeHtml(m.day_master_wuxing || "")}）</div></div>
+        <div class="meta-item"><div class="label">十二长生</div><div class="value">${escapeHtml(m.day_dishi || "—")}</div></div>
       </div>
-      <p class="birth-time-note">阳历 ${m.birth_time?.solar || ""}<br>农历 ${m.birth_time?.lunar || ""}</p>
-      <div class="meta-actions">
-        <button type="button" class="btn btn-secondary" id="btn-copy-link">复制链接</button>
-        <button type="button" class="btn btn-secondary" id="btn-export-md">导出 Markdown</button>
-      </div>
+      <p class="birth-time-note">阳历 ${escapeHtml(m.birth_time?.solar || "")}<br>农历 ${escapeHtml(m.birth_time?.lunar || "")}</p>
       <div class="insight-panel">
         <p>日主 <strong>${m.day_master}</strong> 强弱 <strong>${insight.day_master_strength || "—"}</strong>
         （评分 ${insight.strength_score ?? "—"}）
@@ -667,7 +684,7 @@ function renderChart(data) {
       ${renderHighlightsPanel(insight)}
     </section>
 
-    <section class="section-block" id="sec-di">
+    <section class="section-block section-card" id="sec-di">
       <h2 class="section-title">地 · 四柱根基</h2>
       <div class="bazi-board">${(data.pillars || []).map(renderPillar).join("")}</div>
       ${rel ? `<div class="relation-tags">${rel}</div>` : ""}
@@ -675,7 +692,7 @@ function renderChart(data) {
       <div class="wuxing-chart">${renderWuxingChart(wx)}</div>
     </section>
 
-    <section class="section-block collapsible" id="sec-tian">
+    <section class="section-block section-card collapsible" id="sec-tian">
       <button type="button" class="section-header" data-target="sec-tian-body">
         <h2 class="section-title">天 · 运势节律</h2><span class="section-chevron">▼</span>
       </button>
@@ -687,7 +704,7 @@ function renderChart(data) {
       </div>
     </section>
 
-    <section class="section-block collapsible" id="sec-ren">
+    <section class="section-block section-card collapsible" id="sec-ren">
       <button type="button" class="section-header" data-target="sec-ren-body">
         <h2 class="section-title">人 · 本命特质</h2><span class="section-chevron">▼</span>
       </button>
@@ -700,20 +717,19 @@ function renderChart(data) {
       </div>
     </section>
 
-    <section class="section-block" id="sec-ai">
-      <h2 class="section-title">问 · AI</h2>
+    <section class="section-block section-card section-ai" id="sec-ai">
+      <h2 class="section-title">问 · AI · 子平直断</h2>
       <p class="ai-hint">锚定本盘解读与追问，非开放闲聊。L3 每命盘每标签页最多 ${L3_MAX_ROUNDS} 轮。</p>
       <div class="ai-toolbar">
-        <button type="button" class="btn btn-secondary ai-style-btn" data-style="classic" id="btn-analyze-classic">古典风格</button>
-        <button type="button" class="btn btn-secondary ai-style-btn" data-style="modern" id="btn-analyze-modern">现代风格</button>
+        <button type="button" class="btn btn-primary" id="btn-analyze">开始解读</button>
         <button type="button" class="btn btn-secondary hidden" id="btn-copy-analysis">复制解读</button>
       </div>
       <div id="ai-loading" class="ai-loading hidden"><div class="spinner"></div><p class="ai-loading-title">问元解读中</p></div>
       <div id="ai-error" class="alert alert-error hidden"></div>
-      <div id="ai-empty" class="ai-empty"><p>选择风格后，AI 将按八个章节流式输出 L1 解读。</p></div>
+      <div id="ai-empty" class="ai-empty"><p>点击「开始解读」，AI 将锚定规则层，按八个章节流式输出 L1 解读。</p></div>
       <div id="ai-result-wrap" class="analysis-panel hidden">
         <div class="analysis-header">
-          <span id="ai-style-badge" class="analysis-style-badge style-classic">古典风格</span>
+          <span id="ai-style-badge" class="analysis-style-badge style-ziping">子平直断</span>
           <span id="ai-time" class="analysis-time"></span>
         </div>
         <div id="ai-result" class="analysis-content"></div>
@@ -727,30 +743,22 @@ function renderChart(data) {
         </div>
         <p id="ask-rounds" class="ask-rounds"></p>
       </div>
-    </section>`;
+    </section>
+    </div>`;
 }
 
-function renderAnalysis(text, style, streaming = false) {
+function renderAnalysis(text, streaming = false) {
   const wrap = document.getElementById("ai-result-wrap");
   const empty = document.getElementById("ai-empty");
-  const badge = document.getElementById("ai-style-badge");
   const timeEl = document.getElementById("ai-time");
   const result = document.getElementById("ai-result");
   const copyBtn = document.getElementById("btn-copy-analysis");
   if (!result) return;
-  const label = style === "classic" ? "古典风格" : "现代风格";
-  if (badge) {
-    badge.textContent = label;
-    badge.className = `analysis-style-badge style-${style}`;
-  }
   if (timeEl) timeEl.textContent = new Date().toLocaleString("zh-CN", { hour12: false });
   result.innerHTML = markdownToHtml(text) + (streaming ? '<span class="stream-cursor">▍</span>' : "");
   wrap?.classList.remove("hidden");
   empty?.classList.add("hidden");
   copyBtn?.classList.remove("hidden");
-  document.querySelectorAll(".ai-style-btn").forEach((btn) => {
-    btn.classList.toggle("active", btn.dataset.style === style);
-  });
 }
 
 function appendAskMessage(role, content) {
@@ -848,7 +856,7 @@ function wireChartInteractions(state) {
   });
 
   document.getElementById("btn-export-md")?.addEventListener("click", () => {
-    const md = buildMarkdownExport(state.chart, state.chart.insight, state.analysis[state.style] || "", state.history);
+    const md = buildMarkdownExport(state.chart, state.chart.insight, state.analysis || "", state.history);
     const blob = new Blob([md], { type: "text/markdown;charset=utf-8" });
     const a = document.createElement("a");
     a.href = URL.createObjectURL(blob);
@@ -873,37 +881,37 @@ function wireChartInteractions(state) {
   });
 
   document.getElementById("btn-copy-analysis")?.addEventListener("click", () => {
-    const text = state.analysis[state.style] || "";
+    const text = state.analysis || "";
     if (text) navigator.clipboard.writeText(text).then(() => showToast("解读已复制"));
   });
 
-  async function runAnalyze(style) {
+  async function runAnalyze() {
     const loading = document.getElementById("ai-loading");
     const err = document.getElementById("ai-error");
+    const analyzeBtn = document.getElementById("btn-analyze");
     hideError(err);
     loading?.classList.remove("hidden");
     document.getElementById("ai-empty")?.classList.add("hidden");
-    document.querySelectorAll(".ai-style-btn").forEach((b) => { b.disabled = true; });
+    if (analyzeBtn) analyzeBtn.disabled = true;
     const result = document.getElementById("ai-result");
     if (result) result.innerHTML = "";
     document.getElementById("ai-result-wrap")?.classList.remove("hidden");
 
     try {
-      const streamRender = throttle((full) => renderAnalysis(full, style, true), 80);
-      const text = await API.analyze(state.chart, style, state.chart.insight, streamRender);
-      state.analysis[style] = text;
-      renderAnalysis(text, style, false);
-      saveAiCache(state.input, { analysis: state.analysis, history: state.history, style: state.style });
+      const streamRender = throttle((full) => renderAnalysis(full, true), 80);
+      const text = await API.analyze(state.chart, AI_STYLE, state.chart.insight, streamRender);
+      state.analysis = text;
+      renderAnalysis(text, false);
+      saveAiCache(state.input, { analysis: state.analysis, history: state.history });
     } catch (e) {
       showError(err, e.message || "分析失败");
     } finally {
       loading?.classList.add("hidden");
-      document.querySelectorAll(".ai-style-btn").forEach((b) => { b.disabled = false; });
+      if (analyzeBtn) analyzeBtn.disabled = false;
     }
   }
 
-  document.getElementById("btn-analyze-classic")?.addEventListener("click", () => runAnalyze("classic"));
-  document.getElementById("btn-analyze-modern")?.addEventListener("click", () => runAnalyze("modern"));
+  document.getElementById("btn-analyze")?.addEventListener("click", () => runAnalyze());
 
   document.querySelectorAll(".chip-btn").forEach((btn) => {
     btn.addEventListener("click", () => runAsk(btn.dataset.q));
@@ -938,9 +946,9 @@ function wireChartInteractions(state) {
       answer = await API.ask(
         state.chart,
         q,
-        state.style,
+        AI_STYLE,
         state.chart.insight,
-        state.analysis[state.style] || "",
+        state.analysis || "",
         state.history.slice(0, -1),
         (full) => {
           placeholder.innerHTML = markdownToHtml(full);
@@ -948,7 +956,7 @@ function wireChartInteractions(state) {
       );
       placeholder.innerHTML = markdownToHtml(answer);
       state.history.push({ role: "assistant", content: answer });
-      saveAiCache(state.input, { analysis: state.analysis, history: state.history, style: state.style });
+      saveAiCache(state.input, { analysis: state.analysis, history: state.history });
     } catch (e) {
       placeholder.remove();
       state.history.pop();
@@ -1083,19 +1091,18 @@ async function initChartPage() {
   if (input) sessionStorage.setItem(INPUT_KEY, JSON.stringify(input));
 
   const cache = input ? loadAiCache(input) : null;
+  const normalized = normalizeAiCache(cache);
   const state = {
     chart,
     input: input || {},
-    analysis: cache?.analysis || { classic: "", modern: "" },
-    history: cache?.history || [],
-    style: cache?.style || "classic",
+    analysis: normalized.analysis,
+    history: normalized.history,
   };
 
   root.innerHTML = renderChart(chart);
   wireChartInteractions(state);
 
-  if (state.analysis.classic) renderAnalysis(state.analysis.classic, "classic");
-  else if (state.analysis.modern) renderAnalysis(state.analysis.modern, "modern");
+  if (state.analysis) renderAnalysis(state.analysis);
 
   state.history.forEach((h) => {
     appendAskMessage(h.role, h.content);

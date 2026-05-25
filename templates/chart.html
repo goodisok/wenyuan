@@ -1,5 +1,10 @@
 {% extends "base.html" %}
 {% block title %}命盘{% endblock %}
+{% block body_class %}page-chart{% endblock %}
+{% block header_extra %}
+<p class="site-tagline site-tagline-compact">命盘 · 子平综参 · 子平直断</p>
+{% endblock %}
+{% block main_class %}container-chart{% endblock %}
 {% block content %}
 <div id="chart-loading" class="chart-skeleton" aria-live="polite" aria-busy="true">
   <div class="skeleton-pulse"></div>
@@ -11,9 +16,6 @@
   </div>
 </div>
 <div id="chart-root"></div>
-<div class="actions">
-  <a href="/" class="btn btn-secondary">重新排盘</a>
-</div>
 <div id="privacy-modal" class="modal hidden" role="dialog" aria-modal="true" aria-labelledby="privacy-modal-title" aria-hidden="true">
   <div class="modal-backdrop" tabindex="-1"></div>
   <div class="modal-panel">

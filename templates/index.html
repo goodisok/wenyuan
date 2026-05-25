@@ -1,9 +1,21 @@
 ﻿{% extends "base.html" %}
 {% block title %}排盘{% endblock %}
+{% block body_class %}page-home{% endblock %}
 {% block content %}
-<div class="card">
+<section class="hero" aria-labelledby="hero-title">
+  <p class="hero-eyebrow">自研 · 子平综参</p>
+  <h2 id="hero-title" class="hero-title">探问天地人三元</h2>
+  <p class="hero-desc">程序排盘与规则断事，AI 锚定命盘解读 — 断事、过三关、典籍语料交叉印证。</p>
+  <ol class="hero-steps">
+    <li><span class="step-num">1</span>输入生辰排盘</li>
+    <li><span class="step-num">2</span>查看规则层断语</li>
+    <li><span class="step-num">3</span>开始解读与追问</li>
+  </ol>
+</section>
+
+<div class="card form-card">
   <h2 class="card-title">输入生辰</h2>
-  <p class="form-intro">输入生辰即可排盘；程序综参子平诸家推算，AI 在命盘上下文中解读。</p>
+  <p class="form-intro">支持公历 / 农历，精确到时辰。排盘后可分享链接，生辰仅编码在 URL 中。</p>
   <div class="form-tips">
     <span class="form-tip">精确到时辰</span>
     <span class="form-tip">农历请勾选闰月</span>
@@ -12,7 +24,7 @@
   <div id="form-error" class="alert alert-error hidden"></div>
   <form id="chart-form">
     <div class="form-group">
-      <label>历法</label>
+      <label for="date_type">历法</label>
       <select name="date_type" id="date_type">
         <option value="solar">公历（阳历）</option>
         <option value="lunar">农历（阴历）</option>
@@ -46,6 +58,21 @@
     </button>
   </form>
 </div>
+
+<section class="features" aria-label="核心能力">
+  <article class="feature-card">
+    <h3 class="feature-title">规则层 · 子平综参</h3>
+    <p class="feature-desc">格局、旺衰、调候、喜用、神煞 — 程序直算，非 AI 臆断。</p>
+  </article>
+  <article class="feature-card">
+    <h3 class="feature-title">断事 · 过三关</h3>
+    <p class="feature-desc">父母 / 婚姻 / 财运直断，三关多维交叉验证与应期。</p>
+  </article>
+  <article class="feature-card">
+    <h3 class="feature-title">问 · 子平直断</h3>
+    <p class="feature-desc">L1 八章流式解读，L2 预设追问，L3 就盘问答。</p>
+  </article>
+</section>
 
 <div class="card hidden" id="history-card">
   <h2 class="card-title">最近排盘</h2>

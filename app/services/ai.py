@@ -11,7 +11,9 @@ import httpx
 
 from app.config import settings
 
-Style = Literal["classic", "modern"]
+Style = Literal["classic", "modern"]  # 保留 API 兼容，提示词已统一
+
+AI_STYLE_LABEL = "子平直断"
 
 OUTPUT_FORMAT = """
 你是专业子平命理师，以断事为要。综参滴天髓、穷通宝鉴、子平真诠、渊海子平、三命通会、千里命稿等典籍，
@@ -210,17 +212,16 @@ class AIAnalysisService:
         return "\n".join(lines)
 
     @classmethod
-    def _system_prompt(cls, style: Style, *, for_ask: bool = False) -> str:
+    def _system_prompt(cls, *, for_ask: bool = False) -> str:
         base = (
             "你是「问元」专业命理师，以子平断事为本。须锚定命盘与规则层（含断事、过三关多维验证、大运应期），"
             "直断父母、婚姻、财运、灾厄等具体人事，给出应期年份。可引典籍出处。"
             "不作脱离命盘的闲聊；不回避离异、破财、灾厄等断语。"
+            "用现代中文直断，干脆明确，不断事、不空泛。"
         )
         if for_ask:
             return base + " 就用户所问直断，Markdown，须有规则层与大运依据，3-8 段。"
-        if style == "classic":
-            return base + " 行文可典雅，文白相间，断语要干脆。"
-        return base + " 用现代中文直断，干脆明确。"
+        return base
 
     @classmethod
     def _build_messages(
@@ -243,7 +244,7 @@ class AIAnalysisService:
         if for_ask:
             user_content = f"{chr(10).join(parts)}\n\n用户问题：{question}"
             messages: list[dict[str, str]] = [
-                {"role": "system", "content": cls._system_prompt(style, for_ask=True)},
+                {"role": "system", "content": cls._system_prompt(for_ask=True)},
             ]
             for h in (history or [])[-8:]:
                 messages.append({"role": h["role"], "content": h["content"]})
@@ -252,7 +253,7 @@ class AIAnalysisService:
 
         user_content = f"{chr(10).join(parts)}\n\n{OUTPUT_FORMAT}"
         return [
-            {"role": "system", "content": cls._system_prompt(style)},
+            {"role": "system", "content": cls._system_prompt()},
             {"role": "user", "content": user_content},
         ]
 
