@@ -10,6 +10,12 @@ const CHART_CACHE_TTL = 3600000;
 
 const L2_FIXED = ["当前大运对我意味着什么？", "我的五行平衡吗？"];
 const AI_STYLE = "modern"; // API 兼容字段，后端提示词已统一
+const DEFAULT_BIRTH = {
+  date_type: "solar",
+  birth_date: "1993-12-09",
+  birth_time: "18:00",
+  gender: "male",
+};
 
 const WUXING_MAP = { 木: "wood", 火: "fire", 土: "earth", 金: "metal", 水: "water" };
 
@@ -1002,8 +1008,11 @@ function initIndexPage() {
   const lunarHint = document.getElementById("lunar-hint");
   const leapGroup = document.getElementById("leap-month-group");
 
-  document.getElementById("birth_date").value = "1990-05-15";
-  document.getElementById("birth_time").value = "12:00";
+  document.getElementById("birth_date").value = DEFAULT_BIRTH.birth_date;
+  document.getElementById("birth_time").value = DEFAULT_BIRTH.birth_time;
+  if (dateType) dateType.value = DEFAULT_BIRTH.date_type;
+  const genderInput = form?.querySelector(`input[name="gender"][value="${DEFAULT_BIRTH.gender}"]`);
+  if (genderInput) genderInput.checked = true;
 
   const renderHist = () => {
     const list = loadHistory();

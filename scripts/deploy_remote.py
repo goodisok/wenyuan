@@ -15,6 +15,7 @@ ROOT = pathlib.Path(__file__).resolve().parents[1]
 REMOTE = "/opt/wenyuan"
 SKIP_DIRS = {".git", "venv", "__pycache__", ".pytest_cache", "node_modules", "scripts", ".cursor"}
 SKIP_FILES = {".env"}
+SKIP_PREFIXES = ("_tmp_",)
 
 
 def should_skip(path: pathlib.Path) -> bool:
@@ -22,6 +23,8 @@ def should_skip(path: pathlib.Path) -> bool:
         if part in SKIP_DIRS:
             return True
     if path.name in SKIP_FILES and path.parent == ROOT:
+        return True
+    if any(path.name.startswith(p) for p in SKIP_PREFIXES):
         return True
     return False
 
