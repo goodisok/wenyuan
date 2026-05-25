@@ -1,13 +1,14 @@
-"""Verify live demo at http://119.91.54.153/"""
+"""Verify live demo at http://wenyuan.online/"""
 from __future__ import annotations
 
 import json
+import os
 import sys
 import urllib.error
 import urllib.request
 from pathlib import Path
 
-BASE = "http://119.91.54.153"
+BASE = os.environ.get("WENYUAN_BASE", "http://wenyuan.online")
 TMP = Path(__file__).resolve().parents[1]
 
 

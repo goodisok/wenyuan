@@ -9,6 +9,7 @@ import textwrap
 import paramiko
 
 HOST = sys.argv[1] if len(sys.argv) > 1 else "119.91.54.153"
+DOMAIN = "wenyuan.online"
 USER = "ubuntu"
 PASSWORD = sys.argv[2] if len(sys.argv) > 2 else ""
 ROOT = pathlib.Path(__file__).resolve().parents[1]
@@ -112,7 +113,7 @@ def main() -> None:
         server {
             listen 80 default_server;
             listen [::]:80 default_server;
-            server_name _;
+            server_name wenyuan.online www.wenyuan.online _;
             client_max_body_size 2m;
             location / {
                 proxy_pass http://127.0.0.1:8000;
@@ -146,7 +147,7 @@ def main() -> None:
     run("sleep 2 && curl -sS http://127.0.0.1:8000/health")
     print(run("curl -sS -o /dev/null -w '%{http_code}' http://127.0.0.1/"))
     client.close()
-    print(f"Deployed: http://{HOST}/")
+    print(f"Deployed: http://{DOMAIN}/ (IP: http://{HOST}/)")
 
 
 if __name__ == "__main__":

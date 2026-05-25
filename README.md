@@ -6,7 +6,9 @@
 
 ## 在线试用
 
-**Demo：** [http://119.91.54.153/](http://119.91.54.153/)（v1.8.4）
+**Demo：** [https://wenyuan.online/](https://wenyuan.online/)（v1.8.4）
+
+备用 IP：[http://119.91.54.153/](http://119.91.54.153/)
 
 输入生辰即可排盘；配置 DeepSeek API Key 后可使用 L1 解读、L2 追问、L3 就盘问答。
 

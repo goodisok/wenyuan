@@ -11,6 +11,24 @@ sudo apt install -y python3 python3-venv python3-pip nginx git
 
 安全组放行 **22**、**80**（HTTPS 另开 **443**）。
 
+## 1.1 域名解析（wenyuan.online）
+
+在 [腾讯云 DNS 解析](https://console.cloud.tencent.com/cns) 为 `wenyuan.online` 添加记录：
+
+| 主机记录 | 记录类型 | 记录值 | 说明 |
+|---------|---------|--------|------|
+| `@` | A | `119.91.54.153` | 根域名 |
+| `www` | A | `119.91.54.153` | 可选，www 子域 |
+
+TTL 建议 **600**。生效通常几分钟到几小时。验证：
+
+```bash
+ping wenyuan.online
+curl -sS http://wenyuan.online/health
+```
+
+HTTPS 可在解析生效后，于腾讯云 **SSL 证书** 申请免费 DV 证书，或使用 `certbot` 配置 Let's Encrypt。
+
 ## 2. 部署代码
 
 **方式 A：本机 SFTP 上传（推荐，绕过 GitHub 超时）**
@@ -80,7 +98,7 @@ sudo systemctl restart wenyuan
 server {
     listen 80 default_server;
     listen [::]:80 default_server;
-    server_name _;
+    server_name wenyuan.online www.wenyuan.online _;
 
     location / {
         proxy_pass http://127.0.0.1:8000;
