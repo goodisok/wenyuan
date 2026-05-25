@@ -53,6 +53,8 @@ def _build_tags(insight: dict[str, Any], chart: dict[str, Any], pillars: list[di
         tags.add(f"ss:{dom}")
     if chart.get("dayun"):
         tags.add("dayun")
+    if insight.get("duanshi"):
+        tags.add("duanshi")
     meta = chart.get("meta", {})
     day_stem = meta.get("day_master", "")
     month_branch = pillars[1]["dizhi"]["name"] if len(pillars) > 1 else ""

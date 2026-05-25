@@ -53,6 +53,16 @@ SANXING_PAIRS: dict[frozenset[str], str] = {
 
 ZIXING_BRANCHES = frozenset(("辰", "午", "酉", "亥"))
 
+# 地支相破（六破）
+DIZHI_PO: dict[frozenset[str], str] = {
+    frozenset(("子", "酉")): "子酉破",
+    frozenset(("寅", "亥")): "寅亥破",
+    frozenset(("卯", "午")): "卯午破",
+    frozenset(("辰", "丑")): "辰丑破",
+    frozenset(("巳", "申")): "巳申破",
+    frozenset(("未", "戌")): "未戌破",
+}
+
 # 三合局（ v1.1 ）
 SANHE_GROUPS: list[tuple[frozenset[str], str]] = [
     (frozenset(("申", "子", "辰")), "申子辰合水局"),
@@ -100,7 +110,7 @@ def compute_pillar_relations(pillars: list[dict]) -> list[str]:
             found.add(tag)
 
     for (_, a), (_, b) in combinations(branches, 2):
-        for mapping in (DIZHI_LIUHE, DIZHI_CHONG, DIZHI_HAI, SANXING_PAIRS):
+        for mapping in (DIZHI_LIUHE, DIZHI_CHONG, DIZHI_HAI, DIZHI_PO, SANXING_PAIRS):
             tag = _pair_label(a, b, mapping)
             if tag:
                 found.add(tag)

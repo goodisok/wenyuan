@@ -66,6 +66,7 @@ def build_insight(chart: dict[str, Any]) -> dict[str, Any]:
         "geju": ml.get("geju"),
         "yongshen": ml.get("yongshen"),
         "shensha": ml.get("shensha"),
+        "duanshi": ml.get("duanshi"),
         "shishen_summary": ml.get("shishen_summary"),
         "changsheng_map": ml.get("changsheng_map"),
         "pattern": ml.get("pattern"),
@@ -82,6 +83,11 @@ def build_insight(chart: dict[str, Any]) -> dict[str, Any]:
 
 def suggest_l2_questions(insight: dict[str, Any]) -> list[str]:
     questions: list[str] = []
+    ds = insight.get("duanshi") or {}
+    for item in ds.get("items") or []:
+        if item.get("topic") == "父母" and item.get("level") in ("强", "中"):
+            questions.append(f"父母宫断「{item.get('verdict')}」，应期在何运？")
+            break
     geju = insight.get("geju") or {}
     if geju.get("type"):
         questions.append(f"「{geju['type']}」对我事业与人事有何倾向？")

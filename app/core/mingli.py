@@ -10,16 +10,14 @@ from __future__ import annotations
 from typing import Any
 
 from app.core.ditiansui import analyze as ditiansui_analyze
+from app.core.duanshi import analyze as duanshi_analyze
 from app.core.qiongtong import lookup as qiongtong_lookup
 from app.core.shensha import analyze as shensha_analyze
 from app.core.yongshen import analyze as yongshen_analyze
 from app.core.ziping import analyze as ziping_analyze
 
 KERNEL = "子平综参"
-METHOD_NOTE = (
-    "综合子平、滴天髓、穷通宝鉴、子平真诠、三命通会、渊海子平等典籍要义，"
-    "倾向判断，非唯一流派结论"
-)
+METHOD_NOTE = "综合子平诸家断事，以宫位、六亲、刑冲合害破与大运应期直断人事"
 SOURCES = [
     "子平", "滴天髓", "穷通宝鉴", "子平真诠", "渊海子平",
     "三命通会", "千里命稿", "神峰通考", "协纪辨方书",
@@ -46,6 +44,7 @@ def _plain_highlights(
     geju: dict[str, Any],
     yongshen: dict[str, Any],
     shensha: dict[str, Any],
+    duanshi: dict[str, Any],
     relations: list[str],
 ) -> list[str]:
     lines: list[str] = []
@@ -80,6 +79,9 @@ def _plain_highlights(
         lines.append(f"神煞辅助：{names}（须合格局参看）。")
     if relations:
         lines.append(f"四柱关系：{'、'.join(relations[:5])}" + ("…" if len(relations) > 5 else ""))
+    for item in duanshi.get("items") or []:
+        if item.get("level") in ("强", "中"):
+            lines.append(f"【断{item.get('topic')}】{item.get('verdict')}（{item.get('source')}）")
     return lines
 
 
@@ -93,6 +95,7 @@ def analyze(chart: dict[str, Any]) -> dict[str, Any]:
     qt = qiongtong_lookup(day_stem, month_branch)
     geju = ziping_analyze(chart)
     shensha = shensha_analyze(chart)
+    duanshi = duanshi_analyze(chart)
     yongshen = yongshen_analyze(
         chart,
         strength=dts.get("day_master_strength", "平衡"),
@@ -107,7 +110,7 @@ def analyze(chart: dict[str, Any]) -> dict[str, Any]:
     if dts_tiao and dts_tiao != tiao_hou:
         tiao_hou = f"{tiao_hou}；滴天髓：{dts_tiao}"
 
-    highlights = _plain_highlights(meta, dts, qt, geju, yongshen, shensha, relations)
+    highlights = _plain_highlights(meta, dts, qt, geju, yongshen, shensha, duanshi, relations)
 
     return {
         "kernel": KERNEL,
@@ -125,6 +128,7 @@ def analyze(chart: dict[str, Any]) -> dict[str, Any]:
         "geju": geju,
         "yongshen": yongshen,
         "shensha": shensha,
+        "duanshi": duanshi,
         "shishen_summary": shishen,
         "pattern": dts.get("pattern"),
         "changsheng_map": dts.get("changsheng_map"),

@@ -374,6 +374,24 @@ function renderDayunCards(dayun) {
     .join("");
 }
 
+function renderDuanshi(duanshi) {
+  if (!duanshi?.items?.length) return "";
+  const blocks = duanshi.items.map((item) => {
+    const reasons = (item.reasons || []).map((r) => `<li>${escapeHtml(r)}</li>`).join("");
+    const windows = (item.windows || []).map(
+      (w) => `<li>大运 ${escapeHtml(w.dayun || "")}（${escapeHtml(w.years || "")} / ${escapeHtml(w.ages || "")}）${escapeHtml(w.note || "")}</li>`
+    ).join("");
+    return `<div class="duanshi-item duanshi-level-${escapeHtml(item.level || "")}">
+      <p><strong>断·${escapeHtml(item.topic || "")}</strong>
+        <span class="duanshi-verdict">${escapeHtml(item.verdict || "")}</span>
+        <span class="duanshi-level">[${escapeHtml(item.level || "")}]</span></p>
+      ${reasons ? `<ul class="duanshi-reasons">${reasons}</ul>` : ""}
+      ${windows ? `<p class="duanshi-windows-title">应期</p><ul class="duanshi-windows">${windows}</ul>` : ""}
+    </div>`;
+  }).join("");
+  return `<div class="duanshi-panel"><h4 class="subsection-title">断事</h4>${blocks}</div>`;
+}
+
 function renderRuleDetails(insight) {
   const de = insight.de_ling || {};
   const tg = insight.tong_gen || {};
@@ -432,6 +450,7 @@ function renderHighlightsPanel(insight) {
       <p class="highlights-source">综参 ${escapeHtml(sources)}</p>
       ${corpusNote}
       <ul class="highlights-list">${items || "<li>暂无摘要</li>"}</ul>
+      ${renderDuanshi(insight.duanshi)}
       <details class="details-more">
         <summary>查看规则明细</summary>
         <div class="details-body">${renderRuleDetails(insight)}</div>
@@ -441,6 +460,9 @@ function renderHighlightsPanel(insight) {
 
 function suggestL2Questions(insight) {
   const dynamic = [];
+  const ds = insight?.duanshi?.items || [];
+  const parent = ds.find((i) => i.topic === "父母" && (i.level === "强" || i.level === "中"));
+  if (parent) dynamic.push(`父母宫断「${parent.verdict}」，应期在何运？`);
   const geju = insight?.geju || {};
   if (geju.type) dynamic.push(`「${geju.type}」对我事业与人事有何倾向？`);
   if (insight?.tiao_hou) dynamic.push("此盘寒暖调候上，日常宜注意什么？");
