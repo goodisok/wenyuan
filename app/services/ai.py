@@ -15,14 +15,14 @@ Style = Literal["classic", "modern"]
 
 OUTPUT_FORMAT = """
 你是专业子平命理师，以断事为要。综参滴天髓、穷通宝鉴、子平真诠、渊海子平、三命通会、千里命稿等典籍，
-结合规则层（格局、断事、大运应期、语料）直断人事，不必过度委婉，不必作道德说教。
-规则层「断事」项须展开论述；重要论断标注出处。Markdown 格式，按以下章节（保留 ## 标题）：
+结合规则层（格局、断事、过三关多维验证、大运应期、语料）直断人事，不必过度委婉，不必作道德说教。
+规则层「断事」「过三关」项须展开论述；高置信三关须写明盲派/子平/千里各家印证。重要论断标注出处。Markdown 格式，按以下章节（保留 ## 标题）：
 
 ## 一、命局总断
 格局、旺衰、体用，三句话定调。
 
 ## 二、父母与原生家庭
-据断事层父母项、年月宫位、子酉破/冲刑、印星财星，直断父母缘分、分离离异、应期大运（写具体年份范围）。
+据断事层父母项、过三关第一关（盲派穿、子平六亲、千里应期交叉印证）、年月宫位、子酉破/冲刑、印星财星，直断父母缘分、分离离异、应期大运（写具体年份范围）。
 
 ## 三、婚姻感情
 妻宫/夫星、桃花、冲刑，直断感情模式与婚变可能。
@@ -121,6 +121,20 @@ class AIAnalysisService:
                 f"【六亲】父{lq.get('father', {}).get('star')}@{lq.get('father', {}).get('locations')} "
                 f"母{lq.get('mother', {}).get('star')}@{lq.get('mother', {}).get('locations')}"
             )
+        sg = insight.get("sanguan") or {}
+        if sg.get("summary"):
+            lines.append(f"【过三关·多维验证】{sg['summary']}（{sg.get('method', '')}）")
+        if sg.get("chuan"):
+            lines.append(f"【盲派穿象】{'、'.join(sg['chuan'][:6])}")
+        for g in sg.get("gates") or []:
+            lines.append(
+                f"【{g.get('name')}】{g.get('verdict')} "
+                f"（置信{g.get('confidence')}，{g.get('schools_agree')}家印证）"
+            )
+            for s in g.get("signals") or []:
+                lines.append(f"  · [{s.get('school')}] {s.get('text')}")
+            for w in g.get("windows") or []:
+                lines.append(f"  应期：大运{w.get('dayun')} {w.get('years')} {w.get('note')}")
         pat = insight.get("pattern") or {}
         if pat:
             lines.append(f"【体用倾向】{pat.get('type')} — {pat.get('note')}")
@@ -198,7 +212,7 @@ class AIAnalysisService:
     @classmethod
     def _system_prompt(cls, style: Style, *, for_ask: bool = False) -> str:
         base = (
-            "你是「问元」专业命理师，以子平断事为本。须锚定命盘与规则层（含断事、大运应期），"
+            "你是「问元」专业命理师，以子平断事为本。须锚定命盘与规则层（含断事、过三关多维验证、大运应期），"
             "直断父母、婚姻、财运、灾厄等具体人事，给出应期年份。可引典籍出处。"
             "不作脱离命盘的闲聊；不回避离异、破财、灾厄等断语。"
         )

@@ -41,6 +41,16 @@ DIZHI_HAI: dict[frozenset[str], str] = {
     frozenset(("酉", "戌")): "酉戌害",
 }
 
+# 盲派六穿
+DIZHI_CHUAN: dict[frozenset[str], str] = {
+    frozenset(("子", "未")): "子未穿",
+    frozenset(("丑", "午")): "丑午穿",
+    frozenset(("寅", "巳")): "寅巳穿",
+    frozenset(("卯", "辰")): "卯辰穿",
+    frozenset(("申", "亥")): "申亥穿",
+    frozenset(("酉", "戌")): "酉戌穿",
+}
+
 SANXING_PAIRS: dict[frozenset[str], str] = {
     frozenset(("寅", "巳")): "寅巳刑",
     frozenset(("巳", "申")): "巳申刑",
@@ -110,7 +120,7 @@ def compute_pillar_relations(pillars: list[dict]) -> list[str]:
             found.add(tag)
 
     for (_, a), (_, b) in combinations(branches, 2):
-        for mapping in (DIZHI_LIUHE, DIZHI_CHONG, DIZHI_HAI, DIZHI_PO, SANXING_PAIRS):
+        for mapping in (DIZHI_LIUHE, DIZHI_CHONG, DIZHI_HAI, DIZHI_PO, DIZHI_CHUAN, SANXING_PAIRS):
             tag = _pair_label(a, b, mapping)
             if tag:
                 found.add(tag)

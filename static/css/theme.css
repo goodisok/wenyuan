@@ -755,6 +755,18 @@ th { color: var(--text-muted); font-weight: 500; }
 .duanshi-level-强 .duanshi-verdict { color: #e8a87c; }
 .duanshi-reasons, .duanshi-windows { margin: 0.35rem 0 0; padding-left: 1.1rem; font-size: 0.84rem; color: var(--text-muted); }
 .duanshi-windows-title { margin: 0.5rem 0 0.25rem; font-size: 0.78rem; color: var(--accent); }
+
+.sanguan-panel { margin-top: 1rem; padding: 0.85rem; background: var(--bg-elevated); border-radius: 10px; border-left: 3px solid #7eb8da; }
+.sanguan-summary { font-size: 0.88rem; color: var(--text-muted); margin: 0 0 0.5rem; }
+.sanguan-chuan { font-size: 0.84rem; color: var(--accent-dim); margin: 0 0 0.65rem; }
+.sanguan-gate { margin-bottom: 0.75rem; }
+.sanguan-gate:last-child { margin-bottom: 0; }
+.sanguan-verdict { color: var(--text); margin-left: 0.35rem; }
+.sanguan-meta { font-size: 0.75rem; color: var(--accent-dim); margin-left: 0.25rem; }
+.sanguan-conf-高 .sanguan-verdict { color: #7eb8da; }
+.sanguan-signals, .sanguan-windows { margin: 0.35rem 0 0; padding-left: 1.1rem; font-size: 0.84rem; color: var(--text-muted); }
+.sanguan-school { color: var(--accent); margin-right: 0.25rem; }
+.sanguan-windows-title { margin: 0.5rem 0 0.25rem; font-size: 0.78rem; color: var(--accent); }
 .highlights-list {
   list-style: none;
   padding: 0;

@@ -11,6 +11,7 @@ from typing import Any
 
 from app.core.ditiansui import analyze as ditiansui_analyze
 from app.core.duanshi import analyze as duanshi_analyze
+from app.core.sanguan import analyze as sanguan_analyze
 from app.core.qiongtong import lookup as qiongtong_lookup
 from app.core.shensha import analyze as shensha_analyze
 from app.core.yongshen import analyze as yongshen_analyze
@@ -45,6 +46,7 @@ def _plain_highlights(
     yongshen: dict[str, Any],
     shensha: dict[str, Any],
     duanshi: dict[str, Any],
+    sanguan: dict[str, Any],
     relations: list[str],
 ) -> list[str]:
     lines: list[str] = []
@@ -82,6 +84,14 @@ def _plain_highlights(
     for item in duanshi.get("items") or []:
         if item.get("level") in ("强", "中"):
             lines.append(f"【断{item.get('topic')}】{item.get('verdict')}（{item.get('source')}）")
+    for g in sanguan.get("gates") or []:
+        if g.get("confidence") in ("高", "中"):
+            lines.append(
+                f"【{g.get('name')}·{g.get('confidence')}置信】{g.get('verdict')} "
+                f"（{g.get('schools_agree')}家印证）"
+            )
+    if sanguan.get("chuan"):
+        lines.append(f"【盲派穿】{'、'.join(sanguan['chuan'][:4])}")
     return lines
 
 
@@ -96,6 +106,7 @@ def analyze(chart: dict[str, Any]) -> dict[str, Any]:
     geju = ziping_analyze(chart)
     shensha = shensha_analyze(chart)
     duanshi = duanshi_analyze(chart)
+    sanguan = sanguan_analyze(chart)
     yongshen = yongshen_analyze(
         chart,
         strength=dts.get("day_master_strength", "平衡"),
@@ -110,7 +121,7 @@ def analyze(chart: dict[str, Any]) -> dict[str, Any]:
     if dts_tiao and dts_tiao != tiao_hou:
         tiao_hou = f"{tiao_hou}；滴天髓：{dts_tiao}"
 
-    highlights = _plain_highlights(meta, dts, qt, geju, yongshen, shensha, duanshi, relations)
+    highlights = _plain_highlights(meta, dts, qt, geju, yongshen, shensha, duanshi, sanguan, relations)
 
     return {
         "kernel": KERNEL,
@@ -129,6 +140,7 @@ def analyze(chart: dict[str, Any]) -> dict[str, Any]:
         "yongshen": yongshen,
         "shensha": shensha,
         "duanshi": duanshi,
+        "sanguan": sanguan,
         "shishen_summary": shishen,
         "pattern": dts.get("pattern"),
         "changsheng_map": dts.get("changsheng_map"),

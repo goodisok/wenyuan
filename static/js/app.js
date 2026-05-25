@@ -392,6 +392,30 @@ function renderDuanshi(duanshi) {
   return `<div class="duanshi-panel"><h4 class="subsection-title">断事</h4>${blocks}</div>`;
 }
 
+function renderSanguan(sanguan) {
+  if (!sanguan?.gates?.length) return "";
+  const chuan = (sanguan.chuan || []).length
+    ? `<p class="sanguan-chuan">盲派穿象：${escapeHtml(sanguan.chuan.join("、"))}</p>`
+    : "";
+  const blocks = sanguan.gates.map((g) => {
+    const signals = (g.signals || []).map(
+      (s) => `<li><span class="sanguan-school">${escapeHtml(s.school || "")}</span> ${escapeHtml(s.text || "")}</li>`
+    ).join("");
+    const windows = (g.windows || []).map(
+      (w) => `<li>大运 ${escapeHtml(w.dayun || "")}（${escapeHtml(w.years || "")}）${escapeHtml(w.note || "")}</li>`
+    ).join("");
+    return `<div class="sanguan-gate sanguan-conf-${escapeHtml(g.confidence || "")}">
+      <p><strong>${escapeHtml(g.name || "")}</strong>
+        <span class="sanguan-verdict">${escapeHtml(g.verdict || "")}</span>
+        <span class="sanguan-meta">[${escapeHtml(g.confidence || "")} · ${g.schools_agree || 0}家印证]</span></p>
+      ${signals ? `<ul class="sanguan-signals">${signals}</ul>` : ""}
+      ${windows ? `<p class="sanguan-windows-title">应期</p><ul class="sanguan-windows">${windows}</ul>` : ""}
+    </div>`;
+  }).join("");
+  const summary = sanguan.summary ? `<p class="sanguan-summary">${escapeHtml(sanguan.summary)}</p>` : "";
+  return `<div class="sanguan-panel"><h4 class="subsection-title">过三关 · 多维验证</h4>${summary}${chuan}${blocks}</div>`;
+}
+
 function renderRuleDetails(insight) {
   const de = insight.de_ling || {};
   const tg = insight.tong_gen || {};
@@ -451,6 +475,7 @@ function renderHighlightsPanel(insight) {
       ${corpusNote}
       <ul class="highlights-list">${items || "<li>暂无摘要</li>"}</ul>
       ${renderDuanshi(insight.duanshi)}
+      ${renderSanguan(insight.sanguan)}
       <details class="details-more">
         <summary>查看规则明细</summary>
         <div class="details-body">${renderRuleDetails(insight)}</div>
@@ -463,6 +488,9 @@ function suggestL2Questions(insight) {
   const ds = insight?.duanshi?.items || [];
   const parent = ds.find((i) => i.topic === "父母" && (i.level === "强" || i.level === "中"));
   if (parent) dynamic.push(`父母宫断「${parent.verdict}」，应期在何运？`);
+  const sg = insight?.sanguan?.gates || [];
+  const highGate = sg.find((g) => g.confidence === "高");
+  if (highGate) dynamic.push(`过三关·${highGate.name}高置信，各家如何互证？`);
   const geju = insight?.geju || {};
   if (geju.type) dynamic.push(`「${geju.type}」对我事业与人事有何倾向？`);
   if (insight?.tiao_hou) dynamic.push("此盘寒暖调候上，日常宜注意什么？");
