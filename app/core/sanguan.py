@@ -22,7 +22,7 @@ from app.core.duanshi import (
     _year_month_harm,
 )
 
-KERNEL = "过三关·多维验证"
+KERNEL = "六亲人事·多维验证"
 
 # 盲派六穿
 DIZHI_CHUAN: dict[frozenset[str], str] = {

@@ -10,6 +10,7 @@ from typing import Any, Literal
 import httpx
 
 from app.config import settings
+from app.core.ai_validate import validate_analysis
 
 Style = Literal["classic", "modern"]  # 保留 API 兼容，提示词已统一
 
@@ -17,12 +18,13 @@ AI_STYLE_LABEL = "子平直断"
 
 OUTPUT_FORMAT = """
 你是专业子平命理师，以断事为要。综参滴天髓、穷通宝鉴、子平真诠、渊海子平、三命通会、千里命稿及问元知识库（bazi-wiki 概念与命例），
-结合规则层（格局、断事、过三关多维验证、大运应期、语料）直断人事，不必过度委婉，不必作道德说教。
-规则层已过滤：仅含高置信断事与过三关高置信项；模棱两可、单源低置信不在规则层，勿臆造。
-规则层「断事」「过三关」项须展开论述；高置信三关须写明盲派/子平/千里各家印证。重要论断标注出处。Markdown 格式，按以下章节（保留 ## 标题）：
+结合规则层（观命总观、格局、断事、六亲人事多维验证、大运应期、语料）直断，不必过度委婉，不必作道德说教。
+须先依【观命总观】展开天道/地道/人道/体用/调候/流通，再论具体人事。
+规则层已过滤：仅含高置信断事与六亲高置信印证；模棱两可、单源低置信不在规则层，勿臆造。
+规则层「断事」「六亲印证」须展开；高置信须写明盲派/子平/千里各家信号。应期年份须在规则层窗口内。重要论断标注出处。Markdown 格式，按以下章节（保留 ## 标题）：
 
 ## 一、命局总断
-格局、旺衰、体用，三句话定调。
+据观命总观：格局、旺衰、体用、流通，三句话定调。
 
 ## 二、父母与原生家庭
 若规则层有父母断语或过三关第一关，据其展开；否则只论年月宫位与结构，不断具体分离离异。
@@ -67,6 +69,18 @@ class AIAnalysisService:
             f"日主 {insight.get('day_master')}（{insight.get('day_master_wuxing')}）"
             f" 强弱={insight.get('day_master_strength')} 评分={insight.get('strength_score')}",
         ]
+        gm = insight.get("guanming") or {}
+        if gm.get("summary"):
+            lines.append(f"【观命总观·滴天髓】{gm['summary']}（{gm.get('method', '')}）")
+        if gm.get("verse"):
+            lines.append(f"【滴天髓歌诀】{gm['verse']}")
+        for layer in gm.get("layers") or []:
+            layer_lines = layer.get("lines") or []
+            if layer_lines:
+                lines.append(
+                    f"【{layer.get('name')}·{layer.get('subtitle', '')}】"
+                    + "；".join(layer_lines[:3])
+                )
         for h in insight.get("highlights") or []:
             lines.append(f"· {h}")
         qt = insight.get("qiongtong") or {}
@@ -126,7 +140,7 @@ class AIAnalysisService:
             )
         sg = insight.get("sanguan") or {}
         if sg.get("summary"):
-            lines.append(f"【过三关·多维验证】{sg['summary']}（{sg.get('method', '')}）")
+            lines.append(f"【六亲人事·多维验证】{sg['summary']}（{sg.get('method', '')}）")
         if sg.get("chuan"):
             lines.append(f"【盲派穿象】{'、'.join(sg['chuan'][:6])}")
         for g in sg.get("gates") or []:
@@ -320,6 +334,15 @@ class AIAnalysisService:
         return content.strip()
 
     @classmethod
+    @classmethod
+    def _append_validation_note(cls, text: str, insight: dict[str, Any] | None) -> str:
+        vr = validate_analysis(text, insight)
+        if not vr.get("warnings"):
+            return text
+        note = "；".join(vr["warnings"])
+        return f"{text}\n\n---\n> 规则层校对：{note}\n"
+
+    @classmethod
     async def analyze(
         cls,
         chart: dict[str, Any],
@@ -328,7 +351,9 @@ class AIAnalysisService:
     ) -> str:
         cls.ensure_available()
         messages = cls._build_messages(chart, insight, style)
-        return await cls._complete_once(messages)
+        ins = insight or chart.get("insight")
+        text = await cls._complete_once(messages)
+        return cls._append_validation_note(text, ins)
 
     @classmethod
     async def analyze_stream(
@@ -339,8 +364,15 @@ class AIAnalysisService:
     ) -> AsyncIterator[str]:
         cls.ensure_available()
         messages = cls._build_messages(chart, insight, style)
+        ins = insight or chart.get("insight")
+        buf: list[str] = []
         async for chunk in cls._stream_completion(messages):
+            buf.append(chunk)
             yield chunk
+        full = "".join(buf)
+        noted = cls._append_validation_note(full, ins)
+        if noted != full:
+            yield noted[len(full) :]
 
     @classmethod
     async def ask(

@@ -4,7 +4,8 @@ from __future__ import annotations
 
 from typing import Any
 
-from knowledge.corpus.loader import corpus_stats, match_corpus
+from knowledge.bm25 import SimpleBM25
+from knowledge.corpus.loader import corpus_stats, load_all, match_corpus
 from knowledge.snippets import GEJU_SNIPPETS, SHISHEN_SNIPPETS, SNIPPETS
 
 MAX_CITATIONS = 18
@@ -66,6 +67,9 @@ def _build_tags(insight: dict[str, Any], chart: dict[str, Any], pillars: list[di
         tags.add("sanguan")
     if sg.get("chuan"):
         tags.add("chuan")
+    if insight.get("guanming"):
+        tags.add("guanming")
+        tags.add("di-tian")
     meta = chart.get("meta", {})
     day_stem = meta.get("day_master", "")
     month_branch = pillars[1]["dizhi"]["name"] if len(pillars) > 1 else ""
@@ -117,8 +121,56 @@ def _append_snippets(
         })
 
 
+def _build_retrieval_query(insight: dict[str, Any], chart: dict[str, Any]) -> str:
+    meta = chart.get("meta", {})
+    parts = [
+        meta.get("day_master", ""),
+        meta.get("day_master_wuxing", ""),
+        insight.get("day_master_strength", ""),
+        (insight.get("geju") or {}).get("type", ""),
+        (insight.get("pattern") or {}).get("type", ""),
+        insight.get("tiao_hou", ""),
+        " ".join(chart.get("pillars_relations") or []),
+        (insight.get("guanming") or {}).get("summary", ""),
+    ]
+    ss = insight.get("shishen_summary") or {}
+    if ss:
+        parts.append(" ".join(f"{k}{v}" for k, v in list(ss.items())[:4]))
+    return " ".join(p for p in parts if p)
+
+
+def _rerank_with_bm25(
+    candidates: list[dict[str, str]],
+    query: str,
+) -> list[dict[str, str]]:
+    if not candidates or not query.strip():
+        return candidates
+    entries = load_all()
+    id_to_entry = {str(e.get("id", "")): e for e in entries}
+    texts: list[str] = []
+    valid: list[dict[str, str]] = []
+    for c in candidates:
+        e = id_to_entry.get(c["id"])
+        if not e:
+            valid.append(c)
+            texts.append(c.get("text", ""))
+            continue
+        texts.append(
+            f"{e.get('source', '')} {e.get('chapter', '')} {e.get('text', '')} "
+            f"{' '.join(e.get('tags') or [])}"
+        )
+        valid.append(c)
+    if not texts:
+        return candidates
+    bm25 = SimpleBM25(texts)
+    ranked = bm25.rank(query, range(len(valid)))
+    order = [valid[i] for i, _ in ranked if _ > 0]
+    tail = [c for c in valid if c not in order]
+    return order + tail
+
+
 def retrieve(chart: dict[str, Any], insight: dict[str, Any] | None = None) -> list[dict[str, str]]:
-    """混合检索：语料库打分优先，摘要片段补充。"""
+    """混合检索：标签打分候选 + BM25 重排，摘要片段补充。"""
     insight = insight or chart.get("insight") or {}
     meta = chart.get("meta", {})
     pillars = chart.get("pillars", [])
@@ -137,12 +189,14 @@ def retrieve(chart: dict[str, Any], insight: dict[str, Any] | None = None) -> li
         geju_type=geju_type,
         dominant_shishen=dom,
         strength=strength,
-        limit=MAX_CITATIONS,
-        min_score=4,
+        limit=max(MAX_CITATIONS * 2, 24),
+        min_score=3,
     )
+    query = _build_retrieval_query(insight, chart)
+    corpus_hits = _rerank_with_bm25(corpus_hits, query)
 
     seen = {c["id"] for c in corpus_hits}
-    out = list(corpus_hits)
+    out = corpus_hits[:MAX_CITATIONS]
 
     if len(out) < MAX_CITATIONS:
         _append_snippets(out, seen, tags, geju_type, dom)

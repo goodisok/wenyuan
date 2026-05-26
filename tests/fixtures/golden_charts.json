@@ -1,0 +1,50 @@
+[
+  {
+    "id": "user_default",
+    "input": {
+      "date_type": "solar",
+      "year": 1993,
+      "month": 12,
+      "day": 9,
+      "hour": 18,
+      "minute": 0,
+      "gender": "male",
+      "is_leap_month": false
+    },
+    "pillars": ["癸酉", "甲子", "甲子", "癸酉"],
+    "day_master": "甲",
+    "first_dayun": "癸亥"
+  },
+  {
+    "id": "solar_1990_male",
+    "input": {
+      "date_type": "solar",
+      "year": 1990,
+      "month": 5,
+      "day": 15,
+      "hour": 12,
+      "minute": 30,
+      "gender": "male",
+      "is_leap_month": false
+    },
+    "pillars": ["庚午", "辛巳", "庚辰", "壬午"],
+    "day_master": "庚",
+    "first_dayun": "壬午"
+  },
+  {
+    "id": "lunar_2020_leap_female",
+    "input": {
+      "date_type": "lunar",
+      "year": 2020,
+      "month": 4,
+      "day": 1,
+      "hour": 10,
+      "minute": 0,
+      "gender": "female",
+      "is_leap_month": true
+    },
+    "pillars": ["庚子", "辛巳", "丙寅", "癸巳"],
+    "day_master": "丙",
+    "first_dayun": "庚辰"
+  }
+]

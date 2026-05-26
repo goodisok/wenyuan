@@ -227,6 +227,7 @@ function setupNavObserver() {
     });
   };
 
+  const isMobile = window.matchMedia("(max-width: 640px)").matches;
   const observer = new IntersectionObserver(
     (entries) => {
       const visible = entries
@@ -234,7 +235,10 @@ function setupNavObserver() {
         .sort((a, b) => b.intersectionRatio - a.intersectionRatio);
       if (visible[0]?.target?.id) setActive(visible[0].target.id);
     },
-    { rootMargin: "-20% 0px -55% 0px", threshold: [0, 0.25, 0.5] }
+    {
+      rootMargin: isMobile ? "-28% 0px -48% 0px" : "-20% 0px -55% 0px",
+      threshold: [0, 0.25, 0.5],
+    }
   );
   sections.forEach((sec) => observer.observe(sec));
 }
@@ -741,7 +745,79 @@ function renderSanguan(sanguan) {
     </div>`;
   }).join("");
   const summary = sanguan.summary ? `<p class="sanguan-summary">${escapeHtml(sanguan.summary)}</p>` : "";
-  return `<div class="panel-card sanguan-panel"><div class="panel-card-header"><h4 class="panel-card-title">过三关 · 多维验证</h4></div><div class="panel-card-body">${summary}${chuan}${blocks}</div></div>`;
+  const note = sanguan.publish_note
+    ? `<p class="sanguan-publish-note">${escapeHtml(sanguan.publish_note)}</p>`
+    : "";
+  return `<div class="panel-card sanguan-panel"><div class="panel-card-header"><h4 class="panel-card-title">六亲人事 · 多维验证</h4></div><div class="panel-card-body"><p class="sanguan-role-note">在观命总观之后，对父母 / 兄弟 / 子女等作盲派、子平、千里交叉印证；仅展示高置信关。</p>${note}${summary}${chuan}${blocks}</div></div>`;
+}
+
+function renderGuanming(guanming) {
+  if (!guanming?.layers?.length) return "";
+  const layers = guanming.layers.map((layer) => {
+    const lines = (layer.lines || []).map((ln) => `<li>${escapeHtml(ln)}</li>`).join("");
+    return `<div class="guanming-layer guanming-${escapeHtml(layer.id || "")}">
+      <h5 class="guanming-layer-title">${escapeHtml(layer.name || "")} <span class="guanming-layer-sub">${escapeHtml(layer.subtitle || "")}</span></h5>
+      <ul class="guanming-layer-lines">${lines}</ul>
+    </div>`;
+  }).join("");
+  const verse = guanming.verse
+    ? `<blockquote class="guanming-verse">${escapeHtml(guanming.verse)}</blockquote>`
+    : "";
+  return `<div class="panel-card guanming-panel">
+    <div class="panel-card-header"><h4 class="panel-card-title">观命总观 · 滴天髓</h4></div>
+    <div class="panel-card-body">
+      <p class="guanming-summary">${escapeHtml(guanming.summary || "")}</p>
+      <p class="guanming-method">${escapeHtml(guanming.method || "")}</p>
+      ${verse}
+      <div class="guanming-layers">${layers}</div>
+    </div>
+  </div>`;
+}
+
+const CALIBRATION_KEY = "wenyuan_calibration_v1";
+
+function loadCalibration(chartKey) {
+  try {
+    const all = JSON.parse(localStorage.getItem(CALIBRATION_KEY) || "{}");
+    return all[chartKey] || {};
+  } catch {
+    return {};
+  }
+}
+
+function saveCalibration(chartKey, itemId, checked) {
+  try {
+    const all = JSON.parse(localStorage.getItem(CALIBRATION_KEY) || "{}");
+    const row = all[chartKey] || {};
+    row[itemId] = checked;
+    all[chartKey] = row;
+    localStorage.setItem(CALIBRATION_KEY, JSON.stringify(all));
+  } catch { /* ignore */ }
+}
+
+function renderCalibration(insight, chartKey) {
+  const items = [];
+  for (const g of (insight.sanguan?.gates || [])) {
+    items.push({ id: `sg-${g.id}`, label: `${g.name}：${g.verdict}` });
+  }
+  for (const d of (insight.duanshi?.items || [])) {
+    for (const w of d.windows || []) {
+      items.push({
+        id: `w-${d.topic}-${w.dayun}`,
+        label: `${d.topic}应期 ${w.dayun}（${w.years}）`,
+      });
+    }
+  }
+  if (!items.length) return "";
+  const saved = loadCalibration(chartKey);
+  const rows = items.map((it) => {
+    const checked = saved[it.id] ? " checked" : "";
+    return `<label class="calibration-item"><input type="checkbox" data-cal-id="${escapeHtml(it.id)}"${checked}> ${escapeHtml(it.label)}</label>`;
+  }).join("");
+  return `<div class="calibration-panel" id="calibration-panel">
+    <h4 class="calibration-title">历史校准（仅本机记录，供你对照）</h4>
+    <div class="calibration-items">${rows}</div>
+  </div>`;
 }
 
 function renderRuleDetails(insight) {
@@ -796,16 +872,20 @@ function renderHighlightsPanel(insight) {
   const sources = (insight.sources || ["子平", "滴天髓", "穷通宝鉴"]).join(" · ");
   const corpusTotal = insight.corpus_meta?.total;
   const corpusNote = corpusTotal ? `<p class="corpus-meta">语料库 ${corpusTotal} 条 · 本次召回 ${(insight.citations || []).length} 条</p>` : "";
+  const topCitations = renderCitations((insight.citations || []).slice(0, 3));
   return `
     <div class="insight-stack">
+      ${renderGuanming(insight.guanming)}
       <div class="panel-card highlights-panel">
         <div class="panel-card-header"><h3 class="panel-card-title">命局要点</h3></div>
         <div class="panel-card-body">
+          <p class="rule-trust-note">结构层据盘上可见信息直述；具体人事以已发布断事与六亲高置信印证为准。</p>
           <p class="highlights-source">综参 ${escapeHtml(sources)}</p>
           ${corpusNote}
           <ul class="highlights-list">${items || "<li class=\"highlight-item\">暂无摘要</li>"}</ul>
-          <details class="details-more sub-panel-details">
-            <summary>查看规则明细</summary>
+          ${topCitations}
+          <details class="details-more sub-panel-details" open>
+            <summary>规则明细（体用 / 格局 / 调候）</summary>
             <div class="details-body">${renderRuleDetails(insight)}</div>
           </details>
         </div>
@@ -902,7 +982,7 @@ function renderChart(data) {
       <header class="ai-panel-head">
         <div class="ai-panel-intro">
           <h2 class="section-title">问 · AI · 子平直断</h2>
-          <p class="ai-panel-desc">锚定本盘规则层解读，非开放闲聊 · 就盘自由追问</p>
+          <p class="ai-panel-desc">先依观命总观展开，再论已发布断事与六亲印证 · 非开放闲聊</p>
         </div>
         <span class="analysis-style-badge style-ziping">子平直断</span>
       </header>
@@ -913,7 +993,7 @@ function renderChart(data) {
       <div id="ai-loading" class="ai-loading hidden" aria-live="polite">
         <div class="spinner"></div>
         <p class="ai-loading-title">问元解读中</p>
-        <p class="ai-loading-desc">正在锚定规则层与过三关…</p>
+        <p class="ai-loading-desc">正在锚定观命总观与规则层…</p>
       </div>
       <div id="ai-error" class="alert alert-error hidden"></div>
       <div id="ai-empty" class="ai-empty-state">
@@ -930,12 +1010,14 @@ function renderChart(data) {
         <div class="ai-ask-head">
           <h3 class="ai-ask-title">就盘追问</h3>
         </div>
+        <div class="l2-chips" id="l2-chips"></div>
         <div id="ask-history" class="ask-history"></div>
         <div class="ask-input-bar">
           <textarea id="ask-input" rows="2" placeholder="输入你想问的问题…" maxlength="500"></textarea>
           <button type="button" class="btn btn-primary" id="btn-ask">发送</button>
         </div>
       </div>
+      <div id="calibration-root"></div>
     </section>
     </div>`;
 }
@@ -1159,6 +1241,32 @@ function wireChartInteractions(state) {
       runAsk();
     }
   });
+
+  const l2 = document.getElementById("l2-chips");
+  const questions = state.chart.insight?.l2_questions || [];
+  if (l2 && questions.length) {
+    l2.innerHTML = questions.map(
+      (q) => `<button type="button" class="l2-chip" data-q="${escapeHtml(q)}">${escapeHtml(q)}</button>`
+    ).join("");
+    l2.querySelectorAll(".l2-chip").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        const askInput = document.getElementById("ask-input");
+        if (askInput) askInput.value = btn.dataset.q || "";
+        runAsk(btn.dataset.q || "");
+      });
+    });
+  }
+
+  const calKey = encodeSharePayload(state.input);
+  const calRoot = document.getElementById("calibration-root");
+  if (calRoot && state.chart.insight) {
+    calRoot.innerHTML = renderCalibration(state.chart.insight, calKey);
+    calRoot.querySelectorAll("input[data-cal-id]").forEach((inp) => {
+      inp.addEventListener("change", () => {
+        saveCalibration(calKey, inp.dataset.calId, inp.checked);
+      });
+    });
+  }
 }
 
 

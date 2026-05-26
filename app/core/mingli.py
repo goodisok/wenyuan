@@ -7,9 +7,11 @@
 """
 from __future__ import annotations
 
+from datetime import datetime
 from typing import Any
 
 from app.core.ditiansui import analyze as ditiansui_analyze
+from app.core.guanming import build_guanming
 from app.core.duanshi import analyze as duanshi_analyze
 from app.core.publish import publish_duanshi, publish_sanguan
 from app.core.sanguan import analyze as sanguan_analyze
@@ -19,7 +21,7 @@ from app.core.yongshen import analyze as yongshen_analyze
 from app.core.ziping import analyze as ziping_analyze
 
 KERNEL = "子平综参"
-METHOD_NOTE = "综合子平诸家；断语仅发布高置信或多维印证的人事，模棱两可者不上断"
+METHOD_NOTE = "先观命盘全息（滴天髓天道地道人道），再断高置信人事；模棱两可者不上断"
 SOURCES = [
     "子平", "滴天髓", "穷通宝鉴", "子平真诠", "渊海子平",
     "三命通会", "千里命稿", "神峰通考", "协纪辨方书",
@@ -39,8 +41,30 @@ def _shishen_summary(pillars: list[dict]) -> dict[str, int]:
     return dict(sorted(counts.items(), key=lambda x: -x[1]))
 
 
+def _current_dayun(dayun: list[dict[str, Any]]) -> dict[str, Any] | None:
+    year = datetime.now().year
+    for d in dayun:
+        if d.get("start_year", 0) <= year <= d.get("end_year", 0):
+            return {
+                "ganzhi": d.get("ganzhi"),
+                "start_year": d.get("start_year"),
+                "end_year": d.get("end_year"),
+            }
+    return dayun[0] if dayun else None
+
+
+def _current_liunian(dayun: list[dict[str, Any]]) -> dict[str, Any] | None:
+    year = datetime.now().year
+    for d in dayun:
+        for ln in d.get("liunian", []):
+            if ln.get("year") == year:
+                return {"ganzhi": ln.get("ganzhi"), "year": ln.get("year")}
+    return None
+
+
 def _plain_highlights(
     meta: dict[str, Any],
+    guanming: dict[str, Any],
     dts: dict[str, Any],
     qt: dict[str, str],
     geju: dict[str, Any],
@@ -51,6 +75,11 @@ def _plain_highlights(
     relations: list[str],
 ) -> list[str]:
     lines: list[str] = []
+    if guanming.get("summary"):
+        lines.append(f"【观命总观】{guanming['summary']}")
+    for layer in guanming.get("layers") or []:
+        if layer.get("lines"):
+            lines.append(f"【{layer.get('name')}】{layer['lines'][0]}")
     dm = meta.get("day_master", "")
     wx = meta.get("day_master_wuxing", "")
     de = dts.get("de_ling", {})
@@ -122,11 +151,27 @@ def analyze(chart: dict[str, Any]) -> dict[str, Any]:
     if dts_tiao and dts_tiao != tiao_hou:
         tiao_hou = f"{tiao_hou}；滴天髓：{dts_tiao}"
 
-    highlights = _plain_highlights(meta, dts, qt, geju, yongshen, shensha, duanshi, sanguan, relations)
+    guanming = build_guanming(
+        chart,
+        dts=dts,
+        geju=geju,
+        yongshen=yongshen,
+        shensha=shensha,
+        shishen_summary=shishen,
+        tiao_hou=tiao_hou,
+        relations=relations,
+        current_dayun=_current_dayun(chart.get("dayun", [])),
+        current_liunian=_current_liunian(chart.get("dayun", [])),
+    )
+
+    highlights = _plain_highlights(
+        meta, guanming, dts, qt, geju, yongshen, shensha, duanshi, sanguan, relations
+    )
 
     return {
         "kernel": KERNEL,
         "method_note": METHOD_NOTE,
+        "guanming": guanming,
         "day_master_strength": dts.get("day_master_strength", "平衡"),
         "strength_score": dts.get("strength_score"),
         "stem_nature": dts.get("stem_nature"),

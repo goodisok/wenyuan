@@ -68,6 +68,7 @@ def build_insight(chart: dict[str, Any]) -> dict[str, Any]:
         "shensha": ml.get("shensha"),
         "duanshi": ml.get("duanshi"),
         "sanguan": ml.get("sanguan"),
+        "guanming": ml.get("guanming"),
         "shishen_summary": ml.get("shishen_summary"),
         "changsheng_map": ml.get("changsheng_map"),
         "pattern": ml.get("pattern"),
@@ -79,11 +80,18 @@ def build_insight(chart: dict[str, Any]) -> dict[str, Any]:
     citations = knowledge_retrieve(chart, insight)
     insight["citations"] = citations
     insight["corpus_meta"] = get_corpus_meta()
+    insight["l2_questions"] = suggest_l2_questions(insight)
     return insight
 
 
 def suggest_l2_questions(insight: dict[str, Any]) -> list[str]:
     questions: list[str] = []
+    gm = insight.get("guanming") or {}
+    if gm.get("summary"):
+        questions.append("依观命总观，此盘体用与流通要点何在？")
+    pat = insight.get("pattern") or {}
+    if pat.get("type") and pat.get("type") != "正格":
+        questions.append(f"体用「{pat['type']}」对行事风格有何影响？")
     ds = insight.get("duanshi") or {}
     for item in ds.get("items") or []:
         if item.get("topic") == "父母" and item.get("level") == "强":
@@ -92,7 +100,7 @@ def suggest_l2_questions(insight: dict[str, Any]) -> list[str]:
     sg = insight.get("sanguan") or {}
     for g in sg.get("gates") or []:
         if g.get("confidence") == "高":
-            questions.append(f"过三关·{g.get('name')}高置信，各家信号如何互证？")
+            questions.append(f"六亲人事·{g.get('name')}高置信，各家信号如何互证？")
             break
     geju = insight.get("geju") or {}
     if geju.get("type"):

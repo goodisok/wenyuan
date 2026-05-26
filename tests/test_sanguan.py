@@ -26,7 +26,7 @@ def test_user_parents_gate_high_confidence(user_chart):
 def test_insight_has_sanguan(user_chart):
     ins = user_chart["insight"]
     assert ins.get("sanguan")
-    assert any("第一关" in h or "三关" in h for h in ins.get("highlights", []))
+    assert any("观命" in h or "六亲" in h for h in ins.get("highlights", []))
 
 
 def test_sanguan_three_gates(user_chart):

@@ -34,9 +34,9 @@ def publish_sanguan(sanguan: dict[str, Any]) -> dict[str, Any]:
     out = dict(sanguan)
     out["gates"] = published
     out["summary"] = (
-        f"三关验证：{len(published)}关高置信"
+        f"六亲印证：{len(published)}关高置信"
         if published
-        else "三关验证：暂无高置信断语（中低置信不发布）"
+        else "六亲印证：暂无高置信断语（中低置信不发布）"
     )
     if not published:
         out["chuan"] = []
