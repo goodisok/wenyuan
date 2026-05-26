@@ -160,6 +160,7 @@ def analyze(chart: dict[str, Any]) -> dict[str, Any]:
         shishen_summary=shishen,
         tiao_hou=tiao_hou,
         relations=relations,
+        chuan_list=sanguan_raw.get("chuan") or [],
         current_dayun=_current_dayun(chart.get("dayun", [])),
         current_liunian=_current_liunian(chart.get("dayun", [])),
     )

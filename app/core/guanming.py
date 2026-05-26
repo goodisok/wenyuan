@@ -10,7 +10,7 @@ from __future__ import annotations
 from typing import Any
 
 KERNEL = "观命总观"
-METHOD = "依滴天髓天道（天干）、地道（地支）、人道（旺衰根气）及子平格局、穷通调候综参"
+METHOD = "依滴天髓天道/地道/人道、盲派体用做功、子平格局与穷通调候综参"
 
 
 def _shishen_line(summary: dict[str, int]) -> str:
@@ -36,6 +36,39 @@ def _flow_note(relations: list[str], yongshen: dict[str, Any], pattern: dict[str
     return base
 
 
+def _mangpai_lines(
+    relations: list[str],
+    chuan_list: list[str],
+    body_pat: dict[str, Any],
+    pillars: list[dict],
+) -> list[str]:
+    """盲派体用做功：穿、刑冲与体用气势（学术体用论之程序化摘要）。"""
+    lines: list[str] = []
+    ti = body_pat.get("type", "正格")
+    ti_note = body_pat.get("note", "")
+    lines.append(f"体：日主为体，当前取「{ti}」— {ti_note or '以旺衰喜忌为用'}")
+
+    chuan = list(chuan_list)
+    for r in relations:
+        if "穿" in r and r not in chuan:
+            chuan.append(r)
+    if chuan:
+        lines.append(f"做功（穿/破）：{'、'.join(chuan[:5])}" + ("…" if len(chuan) > 5 else ""))
+        if any("年月" in c or "年" in c[:2] for c in chuan):
+            lines.append("年月宫位有穿破，多主家庭、父母缘或早年环境有动象")
+    else:
+        lines.append("四柱未见显著六穿，做功看大运引动与宫位引化")
+
+    month_p = next((p for p in pillars if p.get("key") == "month"), None)
+    day_p = next((p for p in pillars if p.get("key") == "day"), None)
+    if month_p and day_p:
+        lines.append(
+            f"提纲：月柱{month_p.get('ganzhi', '')} 为环境，日柱{day_p.get('ganzhi', '')} 为自身，"
+            f"以月令定旺衰、以日支为配偶宫"
+        )
+    return lines
+
+
 def build_guanming(
     chart: dict[str, Any],
     *,
@@ -46,6 +79,7 @@ def build_guanming(
     shishen_summary: dict[str, int],
     tiao_hou: str,
     relations: list[str],
+    chuan_list: list[str] | None = None,
     current_dayun: dict[str, Any] | None = None,
     current_liunian: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
@@ -103,6 +137,12 @@ def build_guanming(
                 f"体用：{body_pat.get('type', '正格')} — {body_pat.get('note', '')}",
                 geju.get("note", "") or "—",
             ],
+        },
+        {
+            "id": "mangpai",
+            "name": "盲派做功",
+            "subtitle": "体用 · 穿破宫位",
+            "lines": _mangpai_lines(relations, chuan_list or [], body_pat, pillars),
         },
         {
             "id": "tiaohou",

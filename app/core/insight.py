@@ -5,6 +5,7 @@ from __future__ import annotations
 from datetime import datetime
 from typing import Any
 
+from app.core.calibration import build_calibration_items, build_temperament
 from app.core.knowledge import get_corpus_meta, retrieve as knowledge_retrieve
 from app.core.mingli import analyze as mingli_analyze
 
@@ -80,6 +81,8 @@ def build_insight(chart: dict[str, Any]) -> dict[str, Any]:
     citations = knowledge_retrieve(chart, insight)
     insight["citations"] = citations
     insight["corpus_meta"] = get_corpus_meta()
+    insight["temperament"] = build_temperament(ml)
+    insight["calibration_items"] = build_calibration_items(insight)
     insight["l2_questions"] = suggest_l2_questions(insight)
     return insight
 

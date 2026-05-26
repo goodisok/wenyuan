@@ -17,6 +17,7 @@ def test_guanming_layers(user_chart):
     gm = ml["guanming"]
     ids = {layer["id"] for layer in gm["layers"]}
     assert "tiandao" in ids
+    assert "mangpai" in ids
     assert "didao" in ids
     assert "rendao" in ids
     assert "tiyong" in ids

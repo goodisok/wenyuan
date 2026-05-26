@@ -708,17 +708,20 @@ function renderDuanshi(duanshi) {
       (w) => `<li>大运 ${escapeHtml(w.dayun || "")}（${escapeHtml(w.years || "")} / ${escapeHtml(w.ages || "")}）${escapeHtml(w.note || "")}</li>`
     ).join("");
     const level = escapeHtml(item.level || "");
+    const evidence = reasons
+      ? `<details class="evidence-details" open><summary class="evidence-summary">依据（为何如此断）</summary><ul class="duanshi-reasons">${reasons}</ul></details>`
+      : "";
     return `<div class="duanshi-item duanshi-level-${level}">
       <div class="duanshi-head">
         <span class="topic-badge">断·${escapeHtml(item.topic || "")}</span>
         <span class="conf-badge conf-badge-${level}">${level}</span>
         <span class="duanshi-verdict">${escapeHtml(item.verdict || "")}</span>
       </div>
-      ${reasons ? `<ul class="duanshi-reasons">${reasons}</ul>` : ""}
+      ${evidence}
       ${windows ? `<p class="duanshi-windows-title">应期</p><ul class="duanshi-windows">${windows}</ul>` : ""}
     </div>`;
   }).join("");
-  return `<div class="panel-card duanshi-panel"><div class="panel-card-header"><h4 class="panel-card-title">断事</h4></div><div class="panel-card-body">${blocks}</div></div>`;
+  return `<div class="panel-card duanshi-panel"><div class="panel-card-header"><h4 class="panel-card-title">断事</h4></div><div class="panel-card-body"><p class="rule-trust-note">以下为人事断语，须结合上方观命总观；仅发布高置信项。</p>${blocks}</div></div>`;
 }
 
 function renderSanguan(sanguan) {
@@ -734,13 +737,16 @@ function renderSanguan(sanguan) {
       (w) => `<li>大运 ${escapeHtml(w.dayun || "")}（${escapeHtml(w.years || "")}）${escapeHtml(w.note || "")}</li>`
     ).join("");
     const conf = escapeHtml(g.confidence || "");
+    const evidence = signals
+      ? `<details class="evidence-details" open><summary class="evidence-summary">各家印证</summary><ul class="sanguan-signals">${signals}</ul></details>`
+      : "";
     return `<div class="sanguan-gate sanguan-conf-${conf}">
       <div class="sanguan-head">
         <span class="topic-badge">${escapeHtml(g.name || "")}</span>
         <span class="conf-badge conf-badge-${conf}">${conf} · ${g.schools_agree || 0}家</span>
         <span class="sanguan-verdict">${escapeHtml(g.verdict || "")}</span>
       </div>
-      ${signals ? `<ul class="sanguan-signals">${signals}</ul>` : ""}
+      ${evidence}
       ${windows ? `<p class="sanguan-windows-title">应期</p><ul class="sanguan-windows">${windows}</ul>` : ""}
     </div>`;
   }).join("");
@@ -795,28 +801,46 @@ function saveCalibration(chartKey, itemId, checked) {
   } catch { /* ignore */ }
 }
 
+const CALIBRATION_KEY = "wenyuan_calibration_v2";
+
+const CALIBRATION_GROUP_LABELS = {
+  temperament: "性情倾向（自我核对）",
+  structure: "结构象（盲派做功等）",
+  event: "人事断语",
+  timing: "应期窗口",
+  liuqin: "六亲印证",
+};
+
 function renderCalibration(insight, chartKey) {
-  const items = [];
-  for (const g of (insight.sanguan?.gates || [])) {
-    items.push({ id: `sg-${g.id}`, label: `${g.name}：${g.verdict}` });
-  }
-  for (const d of (insight.duanshi?.items || [])) {
-    for (const w of d.windows || []) {
-      items.push({
-        id: `w-${d.topic}-${w.dayun}`,
-        label: `${d.topic}应期 ${w.dayun}（${w.years}）`,
-      });
-    }
-  }
+  const items = insight.calibration_items?.length
+    ? insight.calibration_items
+    : [];
   if (!items.length) return "";
   const saved = loadCalibration(chartKey);
-  const rows = items.map((it) => {
-    const checked = saved[it.id] ? " checked" : "";
-    return `<label class="calibration-item"><input type="checkbox" data-cal-id="${escapeHtml(it.id)}"${checked}> ${escapeHtml(it.label)}</label>`;
-  }).join("");
+  const groups = {};
+  items.forEach((it) => {
+    const cat = it.category || "event";
+    if (!groups[cat]) groups[cat] = [];
+    groups[cat].push(it);
+  });
+  let html = "";
+  Object.keys(CALIBRATION_GROUP_LABELS).forEach((cat) => {
+    const list = groups[cat];
+    if (!list?.length) return;
+    const rows = list.map((it) => {
+      const checked = saved[it.id] ? " checked" : "";
+      return `<label class="calibration-item"><input type="checkbox" data-cal-id="${escapeHtml(it.id)}"${checked}> ${escapeHtml(it.label)}</label>`;
+    }).join("");
+    html += `<div class="calibration-group"><h5 class="calibration-group-title">${escapeHtml(CALIBRATION_GROUP_LABELS[cat])}</h5>${rows}</div>`;
+  });
+  const tempNote = insight.temperament?.note
+    ? `<p class="calibration-note">${escapeHtml(insight.temperament.note)}</p>`
+    : "";
   return `<div class="calibration-panel" id="calibration-panel">
-    <h4 class="calibration-title">历史校准（仅本机记录，供你对照）</h4>
-    <div class="calibration-items">${rows}</div>
+    <h4 class="calibration-title">参与式核对</h4>
+    <p class="calibration-intro">勾选与你经历或自我感受相符的项，仅保存在本机；AI 解读第七章应与此列表一致。</p>
+    ${tempNote}
+    ${html}
   </div>`;
 }
 

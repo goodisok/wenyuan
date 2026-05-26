@@ -42,7 +42,7 @@ OUTPUT_FORMAT = """
 逐步大运，断 3-5 个已应或将应之事（学业、搬迁、婚恋、家庭变故、破财升官等），给出年份；须与规则层应期窗口一致或在其范围内。
 
 ## 七、历史校准
-据大运流年，断 3-5 件可能已发生之具体事件（含父母离异、分居等若规则层有象），供命主核对。
+列出规则层 calibration 项（性情/结构/人事/应期），供命主勾选核对；与前端校准面板一致，勿臆造未列事项。
 
 文末：
 > 问元 AI 子平断事，以所给命盘与规则层为准。
@@ -83,6 +83,14 @@ class AIAnalysisService:
                 )
         for h in insight.get("highlights") or []:
             lines.append(f"· {h}")
+        temp = insight.get("temperament") or {}
+        if temp.get("summary"):
+            lines.append(f"【性情倾向·核对】{temp['summary']}")
+        cal = insight.get("calibration_items") or []
+        if cal:
+            lines.append("【历史校准项·供第七章勾选核对】")
+            for item in cal[:14]:
+                lines.append(f"  · [{item.get('category', '')}] {item.get('label', '')}")
         qt = insight.get("qiongtong") or {}
         if qt.get("hint"):
             lines.append(f"【穷通宝鉴】{qt['hint']}")
