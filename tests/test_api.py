@@ -67,6 +67,8 @@ def test_api_chart_solar_male():
     assert len(data["pillars"]) == 4
     assert data["meta"]["day_dishi"]
     assert data.get("insight")
+    assert "citations" not in data["insight"]
+    assert "corpus_meta" not in data["insight"]
     assert data.get("qiyun")
     assert "pillars_relations" in data
 

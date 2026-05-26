@@ -231,8 +231,8 @@ class BaziService:
                 "jieqi": {
                     "prev": cls._jieqi_str(lunar.getPrevJieQi()),
                     "next": cls._jieqi_str(lunar.getNextJieQi()),
-                    "current_jie": lunar.getCurrentJie() or "",
-                    "current_qi": lunar.getCurrentQi() or "",
+                    "current_jie": cls._jieqi_str(lunar.getCurrentJie()),
+                    "current_qi": cls._jieqi_str(lunar.getCurrentQi()),
                 },
             },
             "pillars": pillars,

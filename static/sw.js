@@ -1,4 +1,4 @@
-const CACHE = "wenyuan-v4";
+const CACHE = "wenyuan-v6";
 const PRECACHE = ["/static/manifest.json"];
 
 const HTML_PATHS = new Set(["/", "/chart", "/privacy"]);

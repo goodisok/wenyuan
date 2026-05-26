@@ -17,7 +17,7 @@ ROOT = pathlib.Path(__file__).resolve().parents[1]
 REMOTE = "/opt/wenyuan"
 SKIP_DIRS = {".git", "venv", "__pycache__", ".pytest_cache", "node_modules", "scripts", ".cursor"}
 SKIP_FILES = {".env"}
-SKIP_PREFIXES = ("_tmp_",)
+SKIP_PREFIXES = ("_tmp_", "_prod_")
 
 
 def should_skip(path: pathlib.Path) -> bool:

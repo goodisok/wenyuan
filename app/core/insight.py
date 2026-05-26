@@ -5,7 +5,6 @@ from __future__ import annotations
 from datetime import datetime
 from typing import Any
 
-from app.core.calibration import build_calibration_items, build_temperament
 from app.core.knowledge import get_corpus_meta, retrieve as knowledge_retrieve
 from app.core.mingli import analyze as mingli_analyze
 
@@ -81,10 +80,26 @@ def build_insight(chart: dict[str, Any]) -> dict[str, Any]:
     citations = knowledge_retrieve(chart, insight)
     insight["citations"] = citations
     insight["corpus_meta"] = get_corpus_meta()
-    insight["temperament"] = build_temperament(ml)
-    insight["calibration_items"] = build_calibration_items(insight)
     insight["l2_questions"] = suggest_l2_questions(insight)
     return insight
+
+
+def public_insight(insight: dict[str, Any]) -> dict[str, Any]:
+    """Strip internal corpus payloads before exposing insight to clients."""
+    out = dict(insight)
+    out.pop("citations", None)
+    out.pop("corpus_meta", None)
+    out.pop("temperament", None)
+    out.pop("calibration_items", None)
+    return out
+
+
+def ensure_citations(chart: dict[str, Any], insight: dict[str, Any] | None) -> dict[str, Any]:
+    """Re-attach corpus citations for server-side AI when clients omit them."""
+    ins = dict(insight or chart.get("insight") or {})
+    if not ins.get("citations"):
+        ins["citations"] = knowledge_retrieve(chart, ins)
+    return ins
 
 
 def suggest_l2_questions(insight: dict[str, Any]) -> list[str]:

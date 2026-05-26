@@ -4,6 +4,7 @@ from fastapi import APIRouter, Request
 from fastapi.responses import JSONResponse, StreamingResponse
 
 from app.core.bazi import BaziService
+from app.core.insight import ensure_citations, public_insight
 from app.schemas import (
     AnalyzeRequest,
     AnalyzeResponse,
@@ -34,6 +35,8 @@ def _ai_disabled_response():
 async def create_chart(body: ChartRequest) -> ChartResponse:
     try:
         chart = BaziService.build_chart(body.to_birth_input())
+        chart = dict(chart)
+        chart["insight"] = public_insight(chart["insight"])
         return ChartResponse(success=True, data=chart)
     except ValueError as e:
         return ChartResponse(success=False, error=str(e))
@@ -45,7 +48,7 @@ async def create_chart(body: ChartRequest) -> ChartResponse:
 @router.post("/analyze")
 async def analyze_chart(body: AnalyzeRequest, request: Request):
     try:
-        insight = body.insight or body.chart.get("insight")
+        insight = ensure_citations(body.chart, body.insight or body.chart.get("insight"))
         if _wants_sse(request):
             stream = AIAnalysisService.analyze_stream(body.chart, body.style, insight)
             gen = AIAnalysisService.sse_events(stream)
@@ -66,7 +69,7 @@ async def analyze_chart(body: AnalyzeRequest, request: Request):
 @router.post("/ask")
 async def ask_chart(body: AskRequest, request: Request):
     try:
-        insight = body.insight or body.chart.get("insight")
+        insight = ensure_citations(body.chart, body.insight or body.chart.get("insight"))
         if _wants_sse(request):
             stream = AIAnalysisService.ask_stream(
                 body.chart,

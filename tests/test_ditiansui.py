@@ -55,6 +55,8 @@ def test_meta_jieqi(ref_chart):
     assert jq
     assert jq.get("prev")
     assert jq.get("next")
+    assert isinstance(jq.get("current_jie"), str)
+    assert isinstance(jq.get("current_qi"), str)
 
 
 def test_sanhe_detection():

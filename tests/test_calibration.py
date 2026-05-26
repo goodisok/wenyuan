@@ -13,18 +13,28 @@ def user_chart():
 
 def test_temperament_items(user_chart):
     ins = user_chart["insight"]
-    temp = ins.get("temperament") or {}
+    ml = ins.get("mingli") or ins
+    temp = build_temperament(ml)
     assert temp.get("items")
     assert any(i["category"] == "temperament" for i in temp["items"])
 
 
 def test_calibration_items_grouped(user_chart):
     ins = user_chart["insight"]
-    items = ins.get("calibration_items") or []
+    ins = {**ins, "temperament": build_temperament(ins.get("mingli") or ins)}
+    items = build_calibration_items(ins)
     assert items
     cats = {i["category"] for i in items}
     assert "temperament" in cats
     assert "event" in cats or "timing" in cats
+
+
+def test_public_insight_omits_calibration(user_chart):
+    from app.core.insight import public_insight
+
+    pub = public_insight(user_chart["insight"])
+    assert "temperament" not in pub
+    assert "calibration_items" not in pub
 
 
 def test_guanming_has_mangpai(user_chart):

@@ -17,27 +17,6 @@ const DEFAULT_BIRTH = {
 
 const WUXING_MAP = { 木: "wood", 火: "fire", 土: "earth", 金: "metal", 水: "water" };
 
-const TERM_TIPS = {
-  正官: "克我之阴阳异者，主贵气、端方、自律（渊海子平）",
-  七杀: "克我之阴阳同者，主魄力、压力、竞争（渊海子平）",
-  正财: "我克之阴阳异者，主稳定收入、务实（渊海子平）",
-  偏财: "我克之阴阳同者，主机遇、人缘、流动财（渊海子平）",
-  正印: "生我之阴阳异者，主学业、庇护、名誉（渊海子平）",
-  偏印: "生我之阴阳同者，主偏门学识、灵感（三命通会）",
-  食神: "我生之阴阳同者，主食禄、才华、温和（渊海子平）",
-  伤官: "我生之阴阳异者，主表达、创新、锋芒（三命通会）",
-  比肩: "同我之阴阳同者，主自我、同伴、竞争（渊海子平）",
-  劫财: "同我之阴阳异者，主合伙、分担、夺财（渊海子平）",
-  日主: "日干为命主本身，诸般十神皆相对日主而论（子平真诠）",
-  天乙贵人: "逢凶化吉，贵人相助（三命通会）",
-  文昌: "聪明好学，文才出众（三命通会）",
-  驿马: "主动迁移，奔波变动（三命通会）",
-  桃花: "异性缘、才艺人缘（三命通会）",
-  华盖: "孤高学术、宗教艺术（三命通会）",
-};
-
-const NAYIN_TIP = "纳音以干支组合论五行意象，为辅助参考（三命通会）";
-
 function pad2(n) {
   return String(n).padStart(2, "0");
 }
@@ -47,13 +26,17 @@ function daysInMonth(year, month) {
 }
 
 function readBirthFromForm(form) {
-  const y = form.birth_year?.value;
-  const m = pad2(form.birth_month?.value || 1);
-  const d = pad2(form.birth_day?.value || 1);
-  const h = pad2(form.birth_hour?.value ?? 0);
-  const mi = pad2(form.birth_minute?.value ?? 0);
+  const y = birthField(form, "birth_year")?.value;
+  const m = pad2(birthField(form, "birth_month")?.value || 1);
+  const d = pad2(birthField(form, "birth_day")?.value || 1);
+  const h = pad2(birthField(form, "birth_hour")?.value ?? 0);
+  const mi = pad2(birthField(form, "birth_minute")?.value ?? 0);
+  const dateType =
+    form.querySelector('input[name="date_type"]:checked')?.value
+    || form.date_type?.value
+    || "solar";
   return {
-    date_type: form.date_type?.value || "solar",
+    date_type: dateType,
     birth_date: `${y}-${m}-${d}`,
     birth_time: `${h}:${mi}`,
     gender: form.querySelector('input[name="gender"]:checked')?.value || "male",
@@ -65,13 +48,28 @@ function applyBirthToForm(form, input) {
   if (!form || !input?.birth_date) return;
   const [y, m, d] = input.birth_date.split("-");
   const [h, mi] = (input.birth_time || "12:00").split(":");
-  if (form.birth_year) form.birth_year.value = y;
-  if (form.birth_month) form.birth_month.value = String(Number(m));
+  const yearEl = birthField(form, "birth_year");
+  const monthEl = birthField(form, "birth_month");
+  const dayEl = birthField(form, "birth_day");
+  const hourEl = birthField(form, "birth_hour");
+  const minuteEl = birthField(form, "birth_minute");
+  if (yearEl) yearEl.value = y;
+  if (monthEl) monthEl.value = String(Number(m));
   syncBirthDayOptions(form);
-  if (form.birth_day) form.birth_day.value = String(Number(d));
-  if (form.birth_hour) form.birth_hour.value = String(Number(h));
-  if (form.birth_minute) form.birth_minute.value = String(Number(mi || 0));
-  if (form.date_type && input.date_type) form.date_type.value = input.date_type;
+  if (dayEl) dayEl.value = String(Number(d));
+  if (hourEl) hourEl.value = String(Number(h));
+  if (minuteEl) {
+    const mNum = Number(mi || 0);
+    if (!minuteEl.querySelector(`option[value="${mNum}"]`)) {
+      fillBirthMinuteOptions(minuteEl);
+    }
+    minuteEl.value = String(mNum);
+  }
+  if (form.date_type && input.date_type) {
+    const dt = form.querySelector(`input[name="date_type"][value="${input.date_type}"]`);
+    if (dt) dt.checked = true;
+    else if (form.date_type.value !== undefined) form.date_type.value = input.date_type;
+  }
   if (input.gender) {
     const g = form.querySelector(`input[name="gender"][value="${input.gender}"]`);
     if (g) g.checked = true;
@@ -80,14 +78,17 @@ function applyBirthToForm(form, input) {
 }
 
 function syncBirthDayOptions(form) {
-  if (!form?.birth_year || !form?.birth_month || !form?.birth_day) return;
-  const max = daysInMonth(form.birth_year.value, form.birth_month.value);
-  const cur = Number(form.birth_day.value) || 1;
-  form.birth_day.innerHTML = Array.from({ length: max }, (_, i) => {
+  const yearEl = birthField(form, "birth_year");
+  const monthEl = birthField(form, "birth_month");
+  const dayEl = birthField(form, "birth_day");
+  if (!yearEl || !monthEl || !dayEl) return;
+  const max = daysInMonth(yearEl.value, monthEl.value);
+  const cur = Number(dayEl.value) || 1;
+  dayEl.innerHTML = Array.from({ length: max }, (_, i) => {
     const v = i + 1;
     return `<option value="${v}"${v === cur ? " selected" : ""}>${v} 日</option>`;
   }).join("");
-  if (cur > max) form.birth_day.value = String(max);
+  if (cur > max) dayEl.value = String(max);
 }
 
 function fillBirthYearOptions(select, from = 1920, to = 2030) {
@@ -98,19 +99,17 @@ function fillBirthYearOptions(select, from = 1920, to = 2030) {
   }).join("");
 }
 
-function termTip(label, tip, source) {
-  const text = tip || TERM_TIPS[label] || "";
-  if (!text) return escapeHtml(label);
-  const src = source ? `<span class="term-tip-src">${escapeHtml(source)}</span>` : "";
-  return `<span class="term-tip" tabindex="0" role="note"><span class="term-tip-label">${escapeHtml(label)}</span><span class="term-tip-pop">${escapeHtml(text)}${src}</span></span>`;
+function fillBirthMinuteOptions(select) {
+  if (!select) return;
+  select.innerHTML = Array.from({ length: 60 }, (_, i) =>
+    `<option value="${i}">${pad2(i)} 分</option>`
+  ).join("");
 }
 
-function shishenTip(name) {
-  return termTip(name, TERM_TIPS[name], "渊海子平");
-}
-
-function shenshaNote(name, insight) {
-  return (insight?.shensha?.items || []).find((i) => i.name === name)?.note || TERM_TIPS[name] || "";
+/** Reliable access to named birth fields (nested in form-row divs). */
+function birthField(form, name) {
+  if (!form) return null;
+  return form.elements?.namedItem?.(name) || form.querySelector(`[name="${name}"]`);
 }
 
 function escapeHtml(text) {
@@ -241,6 +240,61 @@ function setupNavObserver() {
     }
   );
   sections.forEach((sec) => observer.observe(sec));
+}
+
+function setupChartNavA11y() {
+  const nav = document.getElementById("chart-nav");
+  if (!nav) return;
+  const tabs = [...nav.querySelectorAll(".chart-nav-btn")];
+  if (!tabs.length) return;
+
+  tabs.forEach((btn, i) => {
+    btn.setAttribute("tabindex", i === 0 ? "0" : "-1");
+    btn.setAttribute("aria-controls", btn.dataset.target || "");
+  });
+
+  const focusTab = (btn) => {
+    tabs.forEach((t) => t.setAttribute("tabindex", t === btn ? "0" : "-1"));
+    btn.focus();
+  };
+
+  const activateTab = (btn) => {
+    const id = btn.dataset.target;
+    document.getElementById(id)?.scrollIntoView({ behavior: "smooth", block: "start" });
+    tabs.forEach((t) => {
+      const active = t === btn;
+      t.classList.toggle("active", active);
+      t.setAttribute("aria-selected", active ? "true" : "false");
+    });
+    focusTab(btn);
+  };
+
+  nav.addEventListener("keydown", (e) => {
+    const idx = tabs.indexOf(document.activeElement);
+    if (idx < 0) return;
+    let next = idx;
+    if (e.key === "ArrowRight" || e.key === "ArrowDown") {
+      next = (idx + 1) % tabs.length;
+    } else if (e.key === "ArrowLeft" || e.key === "ArrowUp") {
+      next = (idx - 1 + tabs.length) % tabs.length;
+    } else if (e.key === "Home") {
+      next = 0;
+    } else if (e.key === "End") {
+      next = tabs.length - 1;
+    } else if (e.key === "Enter" || e.key === " ") {
+      e.preventDefault();
+      activateTab(tabs[idx]);
+      return;
+    } else {
+      return;
+    }
+    e.preventDefault();
+    focusTab(tabs[next]);
+  });
+
+  tabs.forEach((btn) => {
+    btn.addEventListener("click", () => activateTab(btn));
+  });
 }
 
 function loadHistory() {
@@ -541,9 +595,8 @@ function renderCangganCell(p) {
     .join("");
 }
 
-function renderPillarGrid(pillars, insight) {
+function renderPillarGrid(pillars) {
   if (!pillars?.length) return "";
-  const byPillar = insight?.shensha?.by_pillar || {};
   const colClass = (p) => (p.key === "day" ? "day-col" : "");
   const header = pillars
     .map((p) => `<th class="col-head ${colClass(p)}">${escapeHtml(p.label)}</th>`)
@@ -551,7 +604,7 @@ function renderPillarGrid(pillars, insight) {
   const cells = (fn) =>
     pillars.map((p) => `<td class="${colClass(p)}">${fn(p)}</td>`).join("");
   const rows = [
-    ["十神", (p) => (p.shishen && p.shishen !== "—" ? shishenTip(p.shishen) : escapeHtml(p.shishen || "—"))],
+    ["十神", (p) => escapeHtml(p.shishen || "—")],
     [
       "天干",
       (p) =>
@@ -563,17 +616,9 @@ function renderPillarGrid(pillars, insight) {
         `<span class="zhi-cell ${wuxingClass(p.dizhi.color)}">${escapeHtml(p.dizhi.name)}</span>`,
     ],
     ["藏干", (p) => `<div class="canggan-cell">${renderCangganCell(p) || "—"}</div>`],
-    ["纳音", (p) => termTip(p.nayin || "—", NAYIN_TIP, "三命通会")],
+    ["纳音", (p) => escapeHtml(p.nayin || "—")],
     ["空亡", (p) => escapeHtml(p.xunkong || "—")],
     ["星运", (p) => escapeHtml(p.changsheng || "—")],
-    [
-      "神煞",
-      (p) => {
-        const names = byPillar[p.key] || [];
-        if (!names.length) return "—";
-        return names.map((n) => termTip(n, shenshaNote(n, insight), "三命通会")).join(" ");
-      },
-    ],
   ];
   const body = rows
     .map(
@@ -759,7 +804,9 @@ function renderSanguan(sanguan) {
 
 function renderGuanming(guanming) {
   if (!guanming?.layers?.length) return "";
-  const layers = guanming.layers.map((layer) => {
+  const layers = guanming.layers
+    .filter((layer) => layer.id !== "shensha")
+    .map((layer) => {
     const lines = (layer.lines || []).map((ln) => `<li>${escapeHtml(ln)}</li>`).join("");
     return `<div class="guanming-layer guanming-${escapeHtml(layer.id || "")}">
       <h5 class="guanming-layer-title">${escapeHtml(layer.name || "")} <span class="guanming-layer-sub">${escapeHtml(layer.subtitle || "")}</span></h5>
@@ -780,82 +827,14 @@ function renderGuanming(guanming) {
   </div>`;
 }
 
-const CALIBRATION_KEY = "wenyuan_calibration_v1";
-
-function loadCalibration(chartKey) {
-  try {
-    const all = JSON.parse(localStorage.getItem(CALIBRATION_KEY) || "{}");
-    return all[chartKey] || {};
-  } catch {
-    return {};
-  }
-}
-
-function saveCalibration(chartKey, itemId, checked) {
-  try {
-    const all = JSON.parse(localStorage.getItem(CALIBRATION_KEY) || "{}");
-    const row = all[chartKey] || {};
-    row[itemId] = checked;
-    all[chartKey] = row;
-    localStorage.setItem(CALIBRATION_KEY, JSON.stringify(all));
-  } catch { /* ignore */ }
-}
-
-const CALIBRATION_KEY = "wenyuan_calibration_v2";
-
-const CALIBRATION_GROUP_LABELS = {
-  temperament: "性情倾向（自我核对）",
-  structure: "结构象（盲派做功等）",
-  event: "人事断语",
-  timing: "应期窗口",
-  liuqin: "六亲印证",
-};
-
-function renderCalibration(insight, chartKey) {
-  const items = insight.calibration_items?.length
-    ? insight.calibration_items
-    : [];
-  if (!items.length) return "";
-  const saved = loadCalibration(chartKey);
-  const groups = {};
-  items.forEach((it) => {
-    const cat = it.category || "event";
-    if (!groups[cat]) groups[cat] = [];
-    groups[cat].push(it);
-  });
-  let html = "";
-  Object.keys(CALIBRATION_GROUP_LABELS).forEach((cat) => {
-    const list = groups[cat];
-    if (!list?.length) return;
-    const rows = list.map((it) => {
-      const checked = saved[it.id] ? " checked" : "";
-      return `<label class="calibration-item"><input type="checkbox" data-cal-id="${escapeHtml(it.id)}"${checked}> ${escapeHtml(it.label)}</label>`;
-    }).join("");
-    html += `<div class="calibration-group"><h5 class="calibration-group-title">${escapeHtml(CALIBRATION_GROUP_LABELS[cat])}</h5>${rows}</div>`;
-  });
-  const tempNote = insight.temperament?.note
-    ? `<p class="calibration-note">${escapeHtml(insight.temperament.note)}</p>`
-    : "";
-  return `<div class="calibration-panel" id="calibration-panel">
-    <h4 class="calibration-title">参与式核对</h4>
-    <p class="calibration-intro">勾选与你经历或自我感受相符的项，仅保存在本机；AI 解读第七章应与此列表一致。</p>
-    ${tempNote}
-    ${html}
-  </div>`;
-}
-
 function renderRuleDetails(insight) {
   const de = insight.de_ling || {};
   const tg = insight.tong_gen || {};
   const geju = insight.geju || {};
   const purity = geju.purity || {};
   const ys = insight.yongshen || {};
-  const sh = insight.shensha || {};
   const bodyPat = insight.pattern || {};
   const sn = insight.stem_nature || {};
-  const shenshaItems = (sh.items || []).map(
-    (i) => `<li><strong>${escapeHtml(i.name)}</strong> ${escapeHtml(i.position || "")} — ${escapeHtml(i.note || "")}</li>`
-  ).join("");
   return `
     <p>得令：${escapeHtml(de.status || "—")} · 通根：${escapeHtml(tg.summary || "—")}</p>
     ${geju.type ? `<p><strong>格局</strong> ${escapeHtml(geju.type)}（${escapeHtml(geju.origin || "")}）清纯${escapeHtml(purity.level || "—")} — ${escapeHtml(geju.note || "")}</p>` : ""}
@@ -863,30 +842,7 @@ function renderRuleDetails(insight) {
     ${ys.summary ? `<p><strong>喜用倾向</strong> ${escapeHtml(ys.summary)}</p>` : ""}
     ${sn.verse ? `<div class="ditiansui-panel"><p class="ditiansui-panel-title">滴天髓</p><p class="ditiansui-verse">${escapeHtml(sn.verse)}</p></div>` : ""}
     <p><strong>调候</strong> ${escapeHtml(insight.tiao_hou || "")}</p>
-    ${shenshaItems ? `<ul class="shensha-list">${shenshaItems}</ul>` : ""}
-    <p class="insight-note">${escapeHtml(insight.day_master_strength_note || "")}</p>
-    ${renderCitations(insight.citations)}`;
-}
-
-function renderCitations(citations) {
-  if (!citations?.length) return "";
-  const items = citations.map((c) => {
-    const chapter = c.chapter ? `<span class="citation-chapter">${escapeHtml(c.chapter)}</span>` : "";
-    const pillars = c.pillars ? `<span class="citation-pillars">例 ${escapeHtml(c.pillars)}</span> ` : "";
-    const kind = c.kind === "case" ? "命例" : (c.kind === "tiao_hou" ? "调候" : "");
-    const kindTag = kind ? `<span class="citation-kind">${kind}</span> ` : "";
-    const commentary = c.commentary ? `<p class="citation-commentary">按：${escapeHtml(c.commentary)}</p>` : "";
-    return `<li>
-      <span class="citation-source">${escapeHtml(c.source || "")}</span>${chapter ? " " + chapter : ""}
-      ${kindTag}${pillars}${escapeHtml(c.text || "")}
-      ${commentary}
-    </li>`;
-  }).join("");
-  return `
-    <div class="citations-block">
-      <h4 class="citations-title">典籍语料</h4>
-      <ul class="citations-list">${items}</ul>
-    </div>`;
+    <p class="insight-note">${escapeHtml(insight.day_master_strength_note || "")}</p>`;
 }
 
 function renderHighlightsPanel(insight) {
@@ -894,9 +850,6 @@ function renderHighlightsPanel(insight) {
     (h) => `<li class="highlight-item">${escapeHtml(h)}</li>`
   ).join("");
   const sources = (insight.sources || ["子平", "滴天髓", "穷通宝鉴"]).join(" · ");
-  const corpusTotal = insight.corpus_meta?.total;
-  const corpusNote = corpusTotal ? `<p class="corpus-meta">语料库 ${corpusTotal} 条 · 本次召回 ${(insight.citations || []).length} 条</p>` : "";
-  const topCitations = renderCitations((insight.citations || []).slice(0, 3));
   return `
     <div class="insight-stack">
       ${renderGuanming(insight.guanming)}
@@ -905,9 +858,7 @@ function renderHighlightsPanel(insight) {
         <div class="panel-card-body">
           <p class="rule-trust-note">结构层据盘上可见信息直述；具体人事以已发布断事与六亲高置信印证为准。</p>
           <p class="highlights-source">综参 ${escapeHtml(sources)}</p>
-          ${corpusNote}
           <ul class="highlights-list">${items || "<li class=\"highlight-item\">暂无摘要</li>"}</ul>
-          ${topCitations}
           <details class="details-more sub-panel-details" open>
             <summary>规则明细（体用 / 格局 / 调候）</summary>
             <div class="details-body">${renderRuleDetails(insight)}</div>
@@ -985,7 +936,7 @@ function renderChart(data) {
 
     <section class="section-block section-card" id="sec-di">
       <h2 class="section-title">基本命盘</h2>
-      ${renderPillarGrid(data.pillars || [], insight)}
+      ${renderPillarGrid(data.pillars || [])}
       ${rel ? `<div class="relation-tags">${rel}</div>` : ""}
       <details class="bazi-cards-toggle">
         <summary>卡片视图</summary>
@@ -1041,7 +992,6 @@ function renderChart(data) {
           <button type="button" class="btn btn-primary" id="btn-ask">发送</button>
         </div>
       </div>
-      <div id="calibration-root"></div>
     </section>
     </div>`;
 }
@@ -1102,11 +1052,6 @@ function buildMarkdownExport(chart, insight, analysis, history) {
     md += `\n## 过三关\n\n`;
     sg.forEach((g) => { md += `- **${g.name}** [${g.confidence}] ${g.verdict}\n`; });
   }
-  const cites = insight?.citations || [];
-  if (cites.length) {
-    md += `\n### 典籍参考\n\n`;
-    cites.forEach((c) => { md += `- 《${c.source}》${c.text}\n`; });
-  }
   md += `\n`;
   if (analysis) md += `## AI 解读\n\n${analysis}\n\n`;
   if (history?.length) {
@@ -1119,21 +1064,9 @@ function buildMarkdownExport(chart, insight, analysis, history) {
 
 function wireChartInteractions(state) {
   setupNavObserver();
+  setupChartNavA11y();
 
   wireDayunStrip(state.chart.dayun, state.chart.insight);
-
-  document.querySelectorAll(".chart-nav-btn").forEach((btn) => {
-    btn.addEventListener("click", () => {
-      const id = btn.dataset.target;
-      document.getElementById(id)?.scrollIntoView({ behavior: "smooth", block: "start" });
-      document.querySelectorAll(".chart-nav-btn").forEach((b) => {
-        const active = b === btn;
-        b.classList.toggle("active", active);
-        b.setAttribute("aria-selected", active ? "true" : "false");
-      });
-    });
-  });
-
 
   document.querySelectorAll(".section-header").forEach((btn) => {
     const bodyId = btn.dataset.target;
@@ -1214,6 +1147,14 @@ function wireChartInteractions(state) {
 
   document.getElementById("btn-analyze")?.addEventListener("click", () => runAnalyze());
 
+  const askInput = document.getElementById("ask-input");
+  askInput?.addEventListener("keydown", (e) => {
+    if (e.key === "Enter" && !e.shiftKey) {
+      e.preventDefault();
+      runAsk();
+    }
+  });
+
   async function runAsk(question) {
     const askInput = document.getElementById("ask-input");
     const askBtn = document.getElementById("btn-ask");
@@ -1281,16 +1222,6 @@ function wireChartInteractions(state) {
     });
   }
 
-  const calKey = encodeSharePayload(state.input);
-  const calRoot = document.getElementById("calibration-root");
-  if (calRoot && state.chart.insight) {
-    calRoot.innerHTML = renderCalibration(state.chart.insight, calKey);
-    calRoot.querySelectorAll("input[data-cal-id]").forEach((inp) => {
-      inp.addEventListener("change", () => {
-        saveCalibration(calKey, inp.dataset.calId, inp.checked);
-      });
-    });
-  }
 }
 
 
@@ -1298,6 +1229,29 @@ function historyLabel(chart, input) {
   const dm = chart?.meta?.day_master || "";
   const g = input?.gender === "female" ? "女" : "男";
   return `${input?.birth_date || ""} ${g} · ${dm}`;
+}
+
+function formatBirthSummary(form) {
+  const p = readBirthFromForm(form);
+  const cal = p.date_type === "lunar" ? "农历" : "公历";
+  const leap = p.is_leap_month ? " · 闰月" : "";
+  const g = p.gender === "female" ? "女" : "男";
+  return `${p.birth_date} ${p.birth_time} · ${g} · ${cal}${leap}`;
+}
+
+function syncBirthSummary(form) {
+  const el = document.getElementById("birth-summary");
+  if (!el || !form) return;
+  el.textContent = formatBirthSummary(form);
+}
+
+function wireBirthFormLive(form) {
+  if (!form) return;
+  const onChange = () => syncBirthSummary(form);
+  form.querySelectorAll("select, input").forEach((el) => {
+    el.addEventListener("change", onChange);
+  });
+  syncBirthSummary(form);
 }
 
 async function navigateWithChart(input, chart) {
@@ -1312,33 +1266,33 @@ function initIndexPage() {
   const form = document.getElementById("chart-form");
   const errEl = document.getElementById("form-error");
   const btn = document.getElementById("submit-btn");
-  const dateType = document.getElementById("date_type");
   const lunarHint = document.getElementById("lunar-hint");
   const leapGroup = document.getElementById("leap-month-group");
   const leapBanner = document.getElementById("leap-month-banner");
 
-  fillBirthYearOptions(form?.birth_year);
-  if (form?.birth_month) {
-    form.birth_month.innerHTML = Array.from({ length: 12 }, (_, i) => {
+  const yearEl = birthField(form, "birth_year");
+  const monthEl = birthField(form, "birth_month");
+  const hourEl = birthField(form, "birth_hour");
+  const minuteEl = birthField(form, "birth_minute");
+
+  fillBirthYearOptions(yearEl);
+  if (monthEl) {
+    monthEl.innerHTML = Array.from({ length: 12 }, (_, i) => {
       const v = i + 1;
       return `<option value="${v}">${v} 月</option>`;
     }).join("");
   }
-  if (form?.birth_hour) {
-    form.birth_hour.innerHTML = Array.from({ length: 24 }, (_, i) =>
+  if (hourEl) {
+    hourEl.innerHTML = Array.from({ length: 24 }, (_, i) =>
       `<option value="${i}">${pad2(i)} 时</option>`
     ).join("");
   }
-  if (form?.birth_minute) {
-    form.birth_minute.innerHTML = [0, 15, 30, 45].map((m) =>
-      `<option value="${m}">${pad2(m)} 分</option>`
-    ).join("");
-  }
+  fillBirthMinuteOptions(minuteEl);
   applyBirthToForm(form, DEFAULT_BIRTH);
   syncBirthDayOptions(form);
 
-  form?.birth_year?.addEventListener("change", () => syncBirthDayOptions(form));
-  form?.birth_month?.addEventListener("change", () => syncBirthDayOptions(form));
+  yearEl?.addEventListener("change", () => syncBirthDayOptions(form));
+  monthEl?.addEventListener("change", () => syncBirthDayOptions(form));
 
   const renderHist = () => {
     const list = loadHistory();
@@ -1356,13 +1310,19 @@ function initIndexPage() {
   renderHist();
 
   const syncLunarUi = () => {
-    const lunar = dateType?.value === "lunar";
+    const lunar = form?.querySelector('input[name="date_type"]:checked')?.value === "lunar";
     lunarHint?.classList.toggle("hidden", !lunar);
     leapGroup?.classList.toggle("hidden", !lunar);
     leapBanner?.classList.toggle("hidden", !lunar);
   };
-  dateType?.addEventListener("change", syncLunarUi);
+  form?.querySelectorAll('input[name="date_type"]').forEach((el) => {
+    el.addEventListener("change", () => {
+      syncLunarUi();
+      syncBirthSummary(form);
+    });
+  });
   syncLunarUi();
+  wireBirthFormLive(form);
 
   form?.addEventListener("submit", async (e) => {
     e.preventDefault();
@@ -1431,6 +1391,7 @@ async function initChartPage() {
   };
 
   root.innerHTML = renderChart(chart);
+  root.querySelector(".chart-page")?.classList.add("is-ready");
   wireChartInteractions(state);
 
   if (state.analysis) renderAnalysis(state.analysis);

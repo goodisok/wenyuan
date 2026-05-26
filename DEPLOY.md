@@ -1,6 +1,7 @@
 # 问元 · 云服务器部署说明
 
-> 目标环境：Ubuntu 22.04+ · 2C4G · Nginx + systemd
+> 目标环境：Ubuntu 22.04+ · 2C4G · Nginx + systemd  
+> 架构说明见 [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)
 
 ## 1. 服务器准备
 
