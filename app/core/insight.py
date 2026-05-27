@@ -7,6 +7,7 @@ from typing import Any
 
 from app.core.knowledge import get_corpus_meta, retrieve as knowledge_retrieve
 from app.core.mingli import analyze as mingli_analyze
+from app.core.reading import apply_stage_presentation, suggest_l2_questions
 
 WUXING_ORDER = ("木", "火", "土", "金", "水")
 
@@ -46,6 +47,7 @@ def build_insight(chart: dict[str, Any]) -> dict[str, Any]:
 
     insight: dict[str, Any] = {
         "kernel": ml.get("kernel", "子平综参"),
+        "method_note": ml.get("method_note", ""),
         "sources": list(ml.get("sources", [])),
         "highlights": ml.get("highlights", []),
         "day_master": meta.get("day_master", ""),
@@ -80,6 +82,8 @@ def build_insight(chart: dict[str, Any]) -> dict[str, Any]:
     citations = knowledge_retrieve(chart, insight)
     insight["citations"] = citations
     insight["corpus_meta"] = get_corpus_meta()
+    age = int(meta.get("age") or 1)
+    insight = apply_stage_presentation(insight, age)
     insight["l2_questions"] = suggest_l2_questions(insight)
     return insight
 
@@ -91,6 +95,12 @@ def public_insight(insight: dict[str, Any]) -> dict[str, Any]:
     out.pop("corpus_meta", None)
     out.pop("temperament", None)
     out.pop("calibration_items", None)
+    ml = out.get("mingli") or {}
+    if isinstance(ml, dict):
+        ml_out = dict(ml)
+        ml_out.pop("duanshi_raw", None)
+        ml_out.pop("sanguan_raw", None)
+        out["mingli"] = ml_out
     return out
 
 
@@ -100,41 +110,3 @@ def ensure_citations(chart: dict[str, Any], insight: dict[str, Any] | None) -> d
     if not ins.get("citations"):
         ins["citations"] = knowledge_retrieve(chart, ins)
     return ins
-
-
-def suggest_l2_questions(insight: dict[str, Any]) -> list[str]:
-    questions: list[str] = []
-    gm = insight.get("guanming") or {}
-    if gm.get("summary"):
-        questions.append("依观命总观，此盘体用与流通要点何在？")
-    pat = insight.get("pattern") or {}
-    if pat.get("type") and pat.get("type") != "正格":
-        questions.append(f"体用「{pat['type']}」对行事风格有何影响？")
-    ds = insight.get("duanshi") or {}
-    for item in ds.get("items") or []:
-        if item.get("topic") == "父母" and item.get("level") == "强":
-            questions.append(f"父母宫断「{item.get('verdict')}」，应期在何运？")
-            break
-    sg = insight.get("sanguan") or {}
-    for g in sg.get("gates") or []:
-        if g.get("confidence") == "高":
-            questions.append(f"六亲人事·{g.get('name')}高置信，各家信号如何互证？")
-            break
-    geju = insight.get("geju") or {}
-    if geju.get("type"):
-        questions.append(f"「{geju['type']}」对我事业与人事有何倾向？")
-    if insight.get("tiao_hou"):
-        questions.append("此盘寒暖调候上，日常宜注意什么？")
-    ys = insight.get("yongshen") or {}
-    if ys.get("summary"):
-        questions.append("喜用倾向与当前大运是否相合？")
-    cd = insight.get("current_dayun") or {}
-    if cd.get("ganzhi"):
-        questions.append(f"大运{cd['ganzhi']}阶段的重点是什么？")
-    tg = insight.get("tong_gen") or {}
-    if tg.get("summary") == "无根":
-        questions.append("日主根气较弱，行事风格有何特点？")
-    strongest = insight.get("wuxing_strongest") or []
-    if strongest:
-        questions.append(f"命局{strongest[0]}偏旺，如何调适？")
-    return questions[:5]

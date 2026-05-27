@@ -1037,6 +1037,32 @@ th { color: var(--text-muted); font-weight: 500; }
 .history-label { font-weight: 500; font-size: 0.92rem; }
 .history-meta { font-size: 0.78rem; color: var(--text-muted); white-space: nowrap; }
 
+.lifestage-panel { border-left: 3px solid var(--accent-cool); }
+.lifestage-summary {
+  font-size: 0.9rem;
+  margin-bottom: 0.35rem;
+}
+.lifestage-summary strong { color: var(--accent); }
+.focus-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  margin-top: 0.5rem;
+}
+.focus-chip {
+  padding: 0.25rem 0.6rem;
+  font-size: 0.75rem;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  background: var(--bg-elevated);
+  color: var(--text-muted);
+}
+.focus-chip-primary {
+  border-color: var(--accent-cool);
+  color: var(--accent-cool);
+  background: rgba(126, 184, 218, 0.08);
+}
+
 .l2-chips {
   display: flex;
   flex-wrap: wrap;

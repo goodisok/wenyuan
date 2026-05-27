@@ -36,4 +36,4 @@ def test_user_parents_divorce_windows_plausible(user_chart):
     assert "壬戌" in notes or "癸亥" in notes or "辛酉" in notes
     ins = user_chart["insight"]
     assert ins.get("duanshi")
-    assert any("断父母" in h for h in ins.get("highlights", []))
+    assert any("父母" in h for h in ins.get("highlights", []))

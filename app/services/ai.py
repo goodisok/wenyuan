@@ -11,39 +11,13 @@ import httpx
 
 from app.config import settings
 from app.core.ai_validate import validate_analysis
+from app.core.reading import ai_reading_brief, build_output_format
 
 Style = Literal["classic", "modern"]  # 保留 API 兼容，提示词已统一
 
 AI_STYLE_LABEL = "子平直断"
 
-OUTPUT_FORMAT = """
-你是专业子平命理师，以断事为要。综参滴天髓、穷通宝鉴、子平真诠、渊海子平、三命通会、千里命稿及问元知识库（bazi-wiki 概念与命例），
-结合规则层（观命总观、格局、断事、六亲人事多维验证、大运应期、语料）直断，不必过度委婉，不必作道德说教。
-须先依【观命总观】展开天道/地道/人道/体用/调候/流通，再论具体人事。
-规则层已过滤：仅含高置信断事与六亲高置信印证；模棱两可、单源低置信不在规则层，勿臆造。
-规则层「断事」「六亲印证」须展开；高置信须写明盲派/子平/千里各家信号。应期年份须在规则层窗口内。重要论断标注出处。Markdown 格式，按以下章节（保留 ## 标题）：
-
-## 一、命局总断
-据观命总观：格局、旺衰、体用、流通，三句话定调。
-
-## 二、父母与原生家庭
-若规则层有父母断语或过三关第一关，据其展开；否则只论年月宫位与结构，不断具体分离离异。
-
-## 三、婚姻感情
-若规则层有婚姻断语则直断；若无，只论妻宫/夫星、桃花、冲刑结构，不断婚变吉凶。
-
-## 四、事业财运
-格局喜忌与大运，断职业方向与财禄起伏（规则层无财运断语时只论结构）。
-
-## 五、健康灾厄
-五行偏枯与冲刑，断易伤之处（非医疗诊断）。
-
-## 六、大运应期
-逐步大运，断 3-5 个已应或将应之事（学业、搬迁、婚恋、家庭变故、破财升官等），给出年份；须与规则层应期窗口一致或在其范围内。
-
-文末：
-> 问元 AI 子平断事，以所给命盘与规则层为准。
-"""
+OUTPUT_FORMAT = build_output_format(None)
 
 OFF_TOPIC_HINT = "请就当前命盘提问，问元不支持脱离命盘的闲聊。"
 
@@ -122,8 +96,11 @@ class AIAnalysisService:
         if ds.get("summary"):
             lines.append(f"【断事总论】{ds['summary']}")
         for item in ds.get("items") or []:
+            verdict = item.get("display_verdict") or item.get("verdict", "")
+            tier = item.get("display_tier") or item.get("publish_tier", "")
+            tier_tag = {"assert": "直断", "hint": "结构提示", "structure": "宫位"}.get(tier, "")
             lines.append(
-                f"【断·{item.get('topic')}】{item.get('verdict')}（力度{item.get('level')}）"
+                f"【断·{item.get('topic')}·{tier_tag}】{verdict}（力度{item.get('level')}）"
             )
             for r in item.get("reasons") or []:
                 lines.append(f"  因：{r}")
@@ -141,9 +118,12 @@ class AIAnalysisService:
         if sg.get("chuan"):
             lines.append(f"【盲派穿象】{'、'.join(sg['chuan'][:6])}")
         for g in sg.get("gates") or []:
+            tier = g.get("display_tier") or g.get("publish_tier", "")
+            tier_tag = {"assert": "直断", "hint": "结构提示", "structure": "宫位"}.get(tier, "")
+            verdict = g.get("display_verdict") or g.get("verdict", "")
             lines.append(
-                f"【{g.get('name')}】{g.get('verdict')} "
-                f"（置信{g.get('confidence')}，{g.get('schools_agree')}家印证）"
+                f"【{g.get('name')}·{tier_tag}】{verdict} "
+                f"（{g.get('schools_agree')}家印证）"
             )
             for s in g.get("signals") or []:
                 lines.append(f"  · [{s.get('school')}] {s.get('text')}")
@@ -226,16 +206,18 @@ class AIAnalysisService:
     @classmethod
     def _system_prompt(cls, *, for_ask: bool = False) -> str:
         base = (
-            "你是「问元」专业命理师，以子平断事为本。须锚定命盘与规则层（含断事、过三关多维验证、大运应期），"
-            "直断父母、婚姻、财运、灾厄等具体人事，给出应期年份。可引典籍出处。"
-            "规则层已过滤：仅含高置信断事与过三关高置信项；模棱两可、单源低置信的内容不会出现在规则层，切勿臆造。"
-            "某类人事若规则层未列，对应章节从略或只论结构，不断具体吉凶。"
-            "不作脱离命盘的闲聊；不回避离异、破财、灾厄等已高置信断语。"
-            "用现代中文直断，干脆明确，不断事、不空泛。"
+            "你是「问元」资深子平命理师。读盘顺序：观全盘结构 → 直断 → 结构提示 → 大运应期。"
+            "规则层标注「直断/结构提示/宫位结构」；结构提示不断具体应期吉凶。"
+            "须锚定命盘与规则层，不得臆造未列事件或年份。"
+            "用现代中文直断，干脆明确。"
         )
         if for_ask:
             return base + " 就用户所问直断，Markdown，须有规则层与大运依据，3-8 段。"
         return base
+
+    @classmethod
+    def _output_format(cls, insight: dict[str, Any] | None) -> str:
+        return build_output_format(insight)
 
     @classmethod
     def _build_messages(
@@ -250,9 +232,14 @@ class AIAnalysisService:
         for_ask: bool = False,
     ) -> list[dict[str, str]]:
         summary = cls._format_chart_summary(chart)
-        insight_text = cls._format_insight(insight or chart.get("insight"))
+        ins = insight or chart.get("insight") or {}
+        insight_text = cls._format_insight(ins)
+        brief = ai_reading_brief(ins) if ins.get("life_stage") else ""
         now = datetime.now().strftime("%Y-%m-%d %H:%M")
-        parts = [f"当前分析时间：{now}", insight_text, f"命盘数据：\n{summary}"]
+        parts = [f"当前分析时间：{now}"]
+        if brief:
+            parts.append(brief)
+        parts.extend([insight_text, f"命盘数据：\n{summary}"])
         if analysis:
             parts.append(f"已有 L1 解读：\n{analysis}")
         if for_ask:
@@ -265,7 +252,7 @@ class AIAnalysisService:
             messages.append({"role": "user", "content": user_content})
             return messages
 
-        user_content = f"{chr(10).join(parts)}\n\n{OUTPUT_FORMAT}"
+        user_content = f"{chr(10).join(parts)}\n\n{cls._output_format(ins)}"
         return [
             {"role": "system", "content": cls._system_prompt()},
             {"role": "user", "content": user_content},

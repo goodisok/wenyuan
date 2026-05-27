@@ -5,6 +5,8 @@ const INPUT_KEY = "wenyuan_input";
 const CHART_CACHE_KEY = "wenyuan_chart_cache";
 const MAX_HISTORY = 20;
 const SHARE_VERSION = 1;
+/** Bump when chart/insight shape changes so old session entries are ignored. */
+const CHART_CACHE_SCHEMA = 4;
 const CHART_CACHE_TTL = 3600000;
 
 const AI_STYLE = "modern"; // API 兼容字段，后端提示词已统一
@@ -168,7 +170,13 @@ function loadCachedChart(shareKey) {
   try {
     const cache = JSON.parse(sessionStorage.getItem(CHART_CACHE_KEY) || "{}");
     const entry = cache[shareKey];
-    if (entry && Date.now() - entry.ts < CHART_CACHE_TTL) return entry.chart;
+    if (
+      entry
+      && entry.schema === CHART_CACHE_SCHEMA
+      && Date.now() - entry.ts < CHART_CACHE_TTL
+    ) {
+      return entry.chart;
+    }
   } catch {
     /* ignore */
   }
@@ -178,8 +186,16 @@ function loadCachedChart(shareKey) {
 function cacheChartPayload(shareKey, chart) {
   try {
     const cache = JSON.parse(sessionStorage.getItem(CHART_CACHE_KEY) || "{}");
-    cache[shareKey] = { chart, ts: Date.now() };
+    cache[shareKey] = { chart, schema: CHART_CACHE_SCHEMA, ts: Date.now() };
     sessionStorage.setItem(CHART_CACHE_KEY, JSON.stringify(cache));
+  } catch {
+    /* ignore */
+  }
+}
+
+function clearAiCache(input) {
+  try {
+    localStorage.removeItem(aiCacheKey(input));
   } catch {
     /* ignore */
   }
@@ -745,6 +761,16 @@ function renderDayunCards(dayun) {
     .join("");
 }
 
+function tierBadge(tier) {
+  const map = {
+    assert: { cls: "conf-badge-强", label: "直断" },
+    hint: { cls: "conf-badge-中", label: "结构提示" },
+    structure: { cls: "conf-badge-弱", label: "宫位" },
+  };
+  const b = map[tier] || { cls: "conf-badge-中", label: tier || "" };
+  return `<span class="conf-badge ${b.cls}">${escapeHtml(b.label)}</span>`;
+}
+
 function renderDuanshi(duanshi) {
   if (!duanshi?.items?.length) return "";
   const blocks = duanshi.items.map((item) => {
@@ -752,21 +778,23 @@ function renderDuanshi(duanshi) {
     const windows = (item.windows || []).map(
       (w) => `<li>大运 ${escapeHtml(w.dayun || "")}（${escapeHtml(w.years || "")} / ${escapeHtml(w.ages || "")}）${escapeHtml(w.note || "")}</li>`
     ).join("");
-    const level = escapeHtml(item.level || "");
-    const evidence = reasons
+    const tier = item.display_tier || item.publish_tier || "";
+    const verdict = item.display_verdict || item.verdict || "";
+    const evidence = reasons && tier === "assert"
       ? `<details class="evidence-details" open><summary class="evidence-summary">依据（为何如此断）</summary><ul class="duanshi-reasons">${reasons}</ul></details>`
       : "";
-    return `<div class="duanshi-item duanshi-level-${level}">
+    return `<div class="duanshi-item duanshi-tier-${escapeHtml(tier)}">
       <div class="duanshi-head">
         <span class="topic-badge">断·${escapeHtml(item.topic || "")}</span>
-        <span class="conf-badge conf-badge-${level}">${level}</span>
-        <span class="duanshi-verdict">${escapeHtml(item.verdict || "")}</span>
+        ${tierBadge(tier)}
+        <span class="duanshi-verdict">${escapeHtml(verdict)}</span>
       </div>
       ${evidence}
-      ${windows ? `<p class="duanshi-windows-title">应期</p><ul class="duanshi-windows">${windows}</ul>` : ""}
+      ${windows && tier === "assert" ? `<p class="duanshi-windows-title">应期</p><ul class="duanshi-windows">${windows}</ul>` : ""}
     </div>`;
   }).join("");
-  return `<div class="panel-card duanshi-panel"><div class="panel-card-header"><h4 class="panel-card-title">断事</h4></div><div class="panel-card-body"><p class="rule-trust-note">以下为人事断语，须结合上方观命总观；仅发布高置信项。</p>${blocks}</div></div>`;
+  const note = duanshi.publish_note ? `<p class="rule-trust-note">${escapeHtml(duanshi.publish_note)}</p>` : "";
+  return `<div class="panel-card duanshi-panel"><div class="panel-card-header"><h4 class="panel-card-title">断事</h4></div><div class="panel-card-body">${note}${blocks}</div></div>`;
 }
 
 function renderSanguan(sanguan) {
@@ -775,24 +803,25 @@ function renderSanguan(sanguan) {
     ? `<p class="sanguan-chuan">盲派穿象：${escapeHtml(sanguan.chuan.join("、"))}</p>`
     : "";
   const blocks = sanguan.gates.map((g) => {
+    const tier = g.display_tier || g.publish_tier || "";
+    const verdict = g.display_verdict || g.verdict || "";
     const signals = (g.signals || []).map(
       (s) => `<li><span class="sanguan-school">${escapeHtml(s.school || "")}</span> ${escapeHtml(s.text || "")}</li>`
     ).join("");
     const windows = (g.windows || []).map(
       (w) => `<li>大运 ${escapeHtml(w.dayun || "")}（${escapeHtml(w.years || "")}）${escapeHtml(w.note || "")}</li>`
     ).join("");
-    const conf = escapeHtml(g.confidence || "");
-    const evidence = signals
+    const evidence = signals && tier === "assert"
       ? `<details class="evidence-details" open><summary class="evidence-summary">各家印证</summary><ul class="sanguan-signals">${signals}</ul></details>`
       : "";
-    return `<div class="sanguan-gate sanguan-conf-${conf}">
+    return `<div class="sanguan-gate sanguan-tier-${escapeHtml(tier)}">
       <div class="sanguan-head">
         <span class="topic-badge">${escapeHtml(g.name || "")}</span>
-        <span class="conf-badge conf-badge-${conf}">${conf} · ${g.schools_agree || 0}家</span>
-        <span class="sanguan-verdict">${escapeHtml(g.verdict || "")}</span>
+        ${tierBadge(tier)}
+        <span class="sanguan-verdict">${escapeHtml(verdict)}</span>
       </div>
       ${evidence}
-      ${windows ? `<p class="sanguan-windows-title">应期</p><ul class="sanguan-windows">${windows}</ul>` : ""}
+      ${windows && tier === "assert" ? `<p class="sanguan-windows-title">应期</p><ul class="sanguan-windows">${windows}</ul>` : ""}
     </div>`;
   }).join("");
   const summary = sanguan.summary ? `<p class="sanguan-summary">${escapeHtml(sanguan.summary)}</p>` : "";
@@ -845,6 +874,24 @@ function renderRuleDetails(insight) {
     <p class="insight-note">${escapeHtml(insight.day_master_strength_note || "")}</p>`;
 }
 
+function renderLifeStage(lifeStage) {
+  if (!lifeStage?.focus_areas?.length) return "";
+  const chips = lifeStage.focus_areas
+    .map((f) => {
+      const pri = f.priority === "primary" ? " focus-chip-primary" : "";
+      return `<span class="focus-chip${pri}">${escapeHtml(f.label)}</span>`;
+    })
+    .join("");
+  return `<div class="panel-card lifestage-panel">
+    <div class="panel-card-header"><h4 class="panel-card-title">人生阶段 · 当前关切</h4></div>
+    <div class="panel-card-body">
+      <p class="lifestage-summary">虚岁 <strong>${escapeHtml(String(lifeStage.age ?? ""))}</strong> · ${escapeHtml(lifeStage.stage_label || "")} · 侧重 ${escapeHtml(lifeStage.focus_summary || "")}</p>
+      <p class="rule-trust-note">同一命盘结构完整计算；按年龄段调整解读侧重，童年不断婚育应期，晚年不强调学业。</p>
+      <div class="focus-chips">${chips}</div>
+    </div>
+  </div>`;
+}
+
 function renderHighlightsPanel(insight) {
   const items = (insight.highlights || []).map(
     (h) => `<li class="highlight-item">${escapeHtml(h)}</li>`
@@ -852,11 +899,12 @@ function renderHighlightsPanel(insight) {
   const sources = (insight.sources || ["子平", "滴天髓", "穷通宝鉴"]).join(" · ");
   return `
     <div class="insight-stack">
+      ${renderLifeStage(insight.life_stage)}
       ${renderGuanming(insight.guanming)}
       <div class="panel-card highlights-panel">
         <div class="panel-card-header"><h3 class="panel-card-title">命局要点</h3></div>
         <div class="panel-card-body">
-          <p class="rule-trust-note">结构层据盘上可见信息直述；具体人事以已发布断事与六亲高置信印证为准。</p>
+          <p class="rule-trust-note">结构层据盘上可见信息直述；断事分「直断 / 结构提示 / 宫位」，与当前人生阶段一致。</p>
           <p class="highlights-source">综参 ${escapeHtml(sources)}</p>
           <ul class="highlights-list">${items || "<li class=\"highlight-item\">暂无摘要</li>"}</ul>
           <details class="details-more sub-panel-details" open>
@@ -1257,6 +1305,8 @@ function wireBirthFormLive(form) {
 async function navigateWithChart(input, chart) {
   sessionStorage.setItem(STORAGE_KEY, JSON.stringify(chart));
   sessionStorage.setItem(INPUT_KEY, JSON.stringify(input));
+  cacheChartPayload(encodeSharePayload(input), chart);
+  clearAiCache(input);
   saveHistory(input, historyLabel(chart, input));
   const url = getShareUrl(input);
   location.href = url;
@@ -1349,6 +1399,7 @@ async function initChartPage() {
   const loading = document.getElementById("chart-loading");
   const params = new URLSearchParams(location.search);
   const share = params.get("s");
+  const forceFresh = params.get("fresh") === "1";
 
   let input = null;
   let chart = null;
@@ -1356,7 +1407,7 @@ async function initChartPage() {
   try {
     if (share) {
       input = decodeSharePayload(share);
-      chart = loadCachedChart(share);
+      chart = forceFresh ? null : loadCachedChart(share);
       if (!chart) {
         loading?.setAttribute("aria-busy", "true");
         const res = await API.chart(input);
@@ -1378,6 +1429,11 @@ async function initChartPage() {
 
   loading?.classList.add("hidden");
   loading?.setAttribute("aria-busy", "false");
+  if (forceFresh && share) {
+    const u = new URL(location.href);
+    u.searchParams.delete("fresh");
+    history.replaceState(null, "", u.pathname + u.search);
+  }
   sessionStorage.setItem(STORAGE_KEY, JSON.stringify(chart));
   if (input) sessionStorage.setItem(INPUT_KEY, JSON.stringify(input));
 

@@ -21,7 +21,7 @@ from app.core.yongshen import analyze as yongshen_analyze
 from app.core.ziping import analyze as ziping_analyze
 
 KERNEL = "子平综参"
-METHOD_NOTE = "先观命盘全息（滴天髓天道地道人道），再断高置信人事；模棱两可者不上断"
+METHOD_NOTE = "三阶读盘：结构全观 → 直断/结构提示分级 → 按人生阶段侧重呈现"
 SOURCES = [
     "子平", "滴天髓", "穷通宝鉴", "子平真诠", "渊海子平",
     "三命通会", "千里命稿", "神峰通考", "协纪辨方书",
@@ -111,15 +111,6 @@ def _plain_highlights(
         lines.append(f"神煞辅助：{names}（须合格局参看）。")
     if relations:
         lines.append(f"四柱关系：{'、'.join(relations[:5])}" + ("…" if len(relations) > 5 else ""))
-    for item in duanshi.get("items") or []:
-        lines.append(f"【断{item.get('topic')}】{item.get('verdict')}（{item.get('source')}）")
-    for g in sanguan.get("gates") or []:
-        lines.append(
-            f"【{g.get('name')}·{g.get('confidence')}置信】{g.get('verdict')} "
-            f"（{g.get('schools_agree')}家印证）"
-        )
-    if sanguan.get("chuan"):
-        lines.append(f"【盲派穿】{'、'.join(sanguan['chuan'][:4])}")
     return lines
 
 
@@ -166,7 +157,7 @@ def analyze(chart: dict[str, Any]) -> dict[str, Any]:
     )
 
     highlights = _plain_highlights(
-        meta, guanming, dts, qt, geju, yongshen, shensha, duanshi, sanguan, relations
+        meta, guanming, dts, qt, geju, yongshen, shensha, {}, {}, relations
     )
 
     return {
@@ -186,6 +177,8 @@ def analyze(chart: dict[str, Any]) -> dict[str, Any]:
         "geju": geju,
         "yongshen": yongshen,
         "shensha": shensha,
+        "duanshi_raw": duanshi_raw,
+        "sanguan_raw": sanguan_raw,
         "duanshi": duanshi,
         "sanguan": sanguan,
         "shishen_summary": shishen,

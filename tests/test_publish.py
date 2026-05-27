@@ -14,35 +14,34 @@ def user_chart():
     )
 
 
-def test_publish_duanshi_keeps_strong_only(user_chart):
+def test_publish_duanshi_tiers(user_chart):
     raw = duanshi_analyze(user_chart)
     sg = sanguan_analyze(user_chart)
     pub = publish_duanshi(raw, sg)
-    topics = {i["topic"] for i in pub["items"]}
-    assert topics == {"父母"}
-    assert all(i["level"] == "强" for i in pub["items"])
+    tiers = {i["topic"]: i["publish_tier"] for i in pub["items"]}
+    assert tiers.get("父母") == "assert"
+    assert tiers.get("婚姻") == "hint"
+    assert tiers.get("财运") == "hint"
 
 
-def test_publish_sanguan_keeps_high_only(user_chart):
+def test_publish_sanguan_tiers(user_chart):
     raw = sanguan_analyze(user_chart)
     pub = publish_sanguan(raw)
-    assert len(pub["gates"]) == 1
-    assert pub["gates"][0]["id"] == "parents"
-    assert pub["gates"][0]["confidence"] == "高"
+    assert len(pub["gates"]) >= 1
+    parents = next(g for g in pub["gates"] if g["id"] == "parents")
+    assert parents["publish_tier"] == "assert"
 
 
-def test_mingli_insight_excludes_weak_duanshi(user_chart):
+def test_mingli_insight_includes_hint_topics(user_chart):
     ml = mingli_analyze(user_chart)
     topics = {i["topic"] for i in ml["duanshi"]["items"]}
-    assert "婚姻" not in topics
-    assert "财运" not in topics
-    gate_ids = {g["id"] for g in ml["sanguan"]["gates"]}
-    assert gate_ids == {"parents"}
+    assert "父母" in topics
+    assert "婚姻" in topics
+    assert "财运" in topics
 
 
-def test_user_insight_still_has_parents(user_chart):
+def test_user_insight_has_parents_assert(user_chart):
     ins = user_chart["insight"]
-    ds = ins["duanshi"]
-    assert any(i["topic"] == "父母" for i in ds["items"])
-    sg = ins["sanguan"]
-    assert any(g["id"] == "parents" and g["confidence"] == "高" for g in sg["gates"])
+    parent = next(i for i in ins["duanshi"]["items"] if i["topic"] == "父母")
+    assert parent.get("display_tier") == "assert"
+    assert any("父母" in h for h in ins.get("highlights", []))

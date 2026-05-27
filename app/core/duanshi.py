@@ -84,12 +84,12 @@ def _find_shishen(pillars: list[dict], name: str) -> list[str]:
 
 
 def _year_month_harm(branches: dict[str, str], stems: dict[str, str]) -> list[str]:
-    """年月柱地支/天干刑冲破害。"""
+    """年月柱地支/天干刑冲破害穿。"""
     tags: list[str] = []
     yb, mb = branches.get("year", ""), branches.get("month", "")
     ys, ms = stems.get("year", ""), stems.get("month", "")
     if yb and mb:
-        for mapping in (DIZHI_CHONG, DIZHI_PO):
+        for mapping in (DIZHI_CHONG, DIZHI_PO, DIZHI_CHUAN):
             t = _pair_tag(yb, mb, mapping)
             if t:
                 tags.append(f"年月{t}")
@@ -117,10 +117,9 @@ def _branch_hits(db: str, tb: str, label: str) -> list[tuple[str, int]]:
     return hits
 
 
-def _liunian_parent_hits(
+def _liunian_hits(
     liunian: list[dict],
-    year_b: str,
-    month_b: str,
+    branches: dict[str, str],
     *,
     limit: int = 3,
 ) -> list[str]:
@@ -132,11 +131,27 @@ def _liunian_parent_hits(
         lb = gz[1]
         yr = ln.get("year")
         age = ln.get("age")
-        for label, tb in (("年", year_b), ("月", month_b)):
+        for label, tb in (
+            ("年", branches.get("year", "")),
+            ("月", branches.get("month", "")),
+            ("日", branches.get("day", "")),
+            ("时", branches.get("hour", "")),
+        ):
             for desc, weight in _branch_hits(lb, tb, label):
                 scored.append((weight, f"{yr}年(虚岁{age})流年{gz}{desc}"))
     scored.sort(key=lambda x: (-x[0], x[1]))
     return [s[1] for s in scored[:limit]]
+
+
+def _liunian_parent_hits(
+    liunian: list[dict],
+    year_b: str,
+    month_b: str,
+    *,
+    limit: int = 3,
+) -> list[str]:
+    branches = {"year": year_b, "month": month_b, "day": "", "hour": ""}
+    return _liunian_hits(liunian, branches, limit=limit)
 
 
 def _dayun_triggers(
@@ -148,8 +163,11 @@ def _dayun_triggers(
     stems = stems or {}
     year_b = branches.get("year", "")
     month_b = branches.get("month", "")
+    day_b = branches.get("day", "")
+    hour_b = branches.get("hour", "")
     year_s = stems.get("year", "")
     month_s = stems.get("month", "")
+    day_s = stems.get("day", "")
     ranked: list[tuple[int, int, dict[str, str]]] = []
 
     for d in dayun[:12]:
@@ -158,17 +176,24 @@ def _dayun_triggers(
             continue
         ds, db = dy[0], dy[1]
         note_parts: list[str] = []
+        targets: set[str] = set()
         score = 0
-        for label, tb in (("年", year_b), ("月", month_b)):
+        for label, tb in (("年", year_b), ("月", month_b), ("日", day_b), ("时", hour_b)):
+            if not tb:
+                continue
             for desc, weight in _branch_hits(db, tb, label):
                 note_parts.append(f"大运{dy}{desc}")
+                targets.add(label)
                 score += weight
-        for label, ts in (("年", year_s), ("月", month_s)):
+        for label, ts in (("年", year_s), ("月", month_s), ("日", day_s)):
+            if not ts:
+                continue
             tag = _pair_tag(ds, ts, TIANGAN_CHONG)
             if tag:
                 note_parts.append(f"大运{dy}{tag}({label}干)")
+                targets.add(label)
                 score += 2
-        liu = _liunian_parent_hits(d.get("liunian") or [], year_b, month_b)
+        liu = _liunian_hits(d.get("liunian") or [], branches)
         if liu:
             note_parts.append("流年应期：" + "；".join(liu))
             score += len(liu)
@@ -183,6 +208,7 @@ def _dayun_triggers(
                 "years": f"{d.get('start_year')}-{d.get('end_year')}",
                 "ages": f"{d.get('start_age')}-{d.get('end_age')}岁",
                 "note": "；".join(note_parts),
+                "targets": sorted(targets),
             },
         ))
 
@@ -251,7 +277,7 @@ def analyze(chart: dict[str, Any]) -> dict[str, Any]:
         verdict = "父母宫未见大破，家庭基础相对平稳"
         level = "弱"
 
-    parent_windows = [w for w in dayun_trig if "年" in w.get("note", "")]
+    parent_windows = [w for w in dayun_trig if "年" in (w.get("targets") or []) or "月" in (w.get("targets") or [])]
     items.append({
         "topic": "父母",
         "verdict": verdict,
@@ -267,7 +293,7 @@ def analyze(chart: dict[str, Any]) -> dict[str, Any]:
     day_branch = branches.get("day", "")
     if day_branch == branches.get("month"):
         marriage_score += 1
-        marriage_reasons.append("日支与月支同气，桃花/internal 感情易早定或受家庭影响")
+        marriage_reasons.append("日支与月支同气，感情易早定或受家庭影响")
     for r in relations:
         if "冲" in r and ("日" in r or "卯酉" in r):
             marriage_score += 2
@@ -282,7 +308,7 @@ def analyze(chart: dict[str, Any]) -> dict[str, Any]:
         "verdict": "婚姻易有波折、晚成或经分合" if marriage_score >= 2 else "婚姻平平稳稳为主，看大运引动",
         "level": "强" if marriage_score >= 3 else ("中" if marriage_score >= 1 else "弱"),
         "reasons": marriage_reasons or ["婚姻宫未见大冲"],
-        "windows": [w for w in dayun_trig if "日" in w.get("note", "")][:3],
+        "windows": [w for w in dayun_trig if "日" in (w.get("targets") or [])][:3],
         "source": "渊海子平",
     })
 

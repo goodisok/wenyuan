@@ -21,7 +21,7 @@
 | 就盘 L1 / L2 / L3 问答 | 脱离命盘的闲聊 |
 | 程序规则层锚定 AI | 纯 LLM 自由发挥 |
 
-完整需求与验收见 **[PRODUCT.md](PRODUCT.md)**；系统架构见 **[docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)**；UI 规范见 **[docs/DESIGN.md](docs/DESIGN.md)**。
+完整需求与验收见 **[PRODUCT.md](PRODUCT.md)**；读盘架构见 **[docs/READING.md](docs/READING.md)**；系统架构见 **[docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)**。
 
 ## 核心能力
 
@@ -134,7 +134,8 @@ node scripts/verify_birth_form.mjs   # 需 Node.js，可选
 
 | 版本 | 要点 |
 |------|------|
-| **v1.11** | 前端 UX（分段表单、Tab a11y）；移除参与式核对、典籍/神煞 UI 展示 |
+| **v1.13** | 三阶读盘：直断/结构提示分级；人生阶段降级而非删除；修复应期 |
+| **v1.12** | 人生阶段关切（已并入 v1.13 呈现层） |
 | v1.10 | 观命总观、发布过滤、BM25、AI 校验、黄金命例 |
 | v1.9.x | 高置信发布策略、移动端优化 |
 | v1.6+ | 六亲多维验证、断事层、子平综参 |

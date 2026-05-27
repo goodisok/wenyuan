@@ -4,10 +4,11 @@ from app.core.ai_validate import validate_analysis
 def test_validate_year_outside_window():
     insight = {
         "duanshi": {
-            "items": [{
-                "topic": "父母",
-                "windows": [{"years": "2002-2011"}],
-            }],
+        "items": [{
+            "topic": "父母",
+            "display_tier": "assert",
+            "windows": [{"years": "2002-2011"}],
+        }],
         },
         "sanguan": {"gates": []},
     }
