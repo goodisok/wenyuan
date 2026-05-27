@@ -1,7 +1,7 @@
 # 问元 · 系统架构（v1.11）
 
 > 本文描述**当前代码实现**的分层、数据流与模块边界。  
-> 产品需求仍以 [PRODUCT.md](../PRODUCT.md) 为源；UI 视觉见 [DESIGN.md](DESIGN.md)。
+> UI 视觉见 [DESIGN.md](DESIGN.md)；产品概览见 [README.md](../README.md)。
 
 ---
 
@@ -227,8 +227,7 @@ flowchart LR
 
 | 文档 | 用途 |
 |------|------|
-| [README.md](../README.md) | 仓库入口、快速开始 |
-| [PRODUCT.md](../PRODUCT.md) | 产品需求与验收（部分历史条目见 §0.1） |
+| [README.md](../README.md) | 仓库入口、产品概览、快速开始 |
 | [DESIGN.md](DESIGN.md) | UI/UX 规范 |
 | [DEPLOY.md](../DEPLOY.md) | 运维部署 |
 | [knowledge/ATTRIBUTION.md](../knowledge/ATTRIBUTION.md) | 语料版权与来源 |

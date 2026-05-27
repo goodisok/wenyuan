@@ -6,9 +6,7 @@ if (-not (Test-Path "$root\.git")) {
 }
 $hookDir = Join-Path $root ".git\hooks"
 New-Item -ItemType Directory -Force -Path $hookDir | Out-Null
-$hook = @"
-#!/bin/sh
-python "`$(git rev-parse --show-toplevel)/scripts/git/strip_cursor_coauthor.py" "`$1"
-"@
-Set-Content -Path (Join-Path $hookDir "prepare-commit-msg") -Value $hook -NoNewline -Encoding utf8
+$hookPath = Join-Path $hookDir "prepare-commit-msg"
+$hook = "#!/bin/sh`npython `"`$(git rev-parse --show-toplevel)/scripts/git/strip_cursor_coauthor.py`" `"`$1`"`n"
+[System.IO.File]::WriteAllText($hookPath, $hook)
 Write-Host "Installed prepare-commit-msg hook."

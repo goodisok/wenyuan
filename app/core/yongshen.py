@@ -121,5 +121,5 @@ def analyze(
         "kernel": KERNEL,
         "tendencies": tendencies,
         "summary": "；".join(summary_parts),
-        "note": "以上为喜用神倾向参考，须合大运流年，不作唯一用神定论（PRODUCT 约定）",
+        "note": "以上为喜用神倾向参考，须合大运流年，不作唯一用神定论",
     }
