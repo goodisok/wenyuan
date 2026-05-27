@@ -1111,6 +1111,10 @@ async function prepareExportCapture() {
     c.classList.add("expanded");
     c.querySelector(".liunian-badges")?.classList.remove("hidden");
   });
+  document.querySelectorAll(".ask-history").forEach((el) => {
+    el.scrollTop = 0;
+  });
+  page.classList.add("is-exporting");
   const stamp = document.createElement("div");
   stamp.className = "export-stamp";
   stamp.textContent = `问元 Wenyuan · ${new Date().toLocaleString("zh-CN")} · 仅供参考`;
@@ -1119,6 +1123,20 @@ async function prepareExportCapture() {
   await new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r)));
 
   const scale = Math.min(2, Math.max(1, 2400 / Math.max(page.scrollWidth, 1)));
+  const exportCloneFix = (doc) => {
+    doc.querySelectorAll(".ask-history").forEach((el) => {
+      el.style.maxHeight = "none";
+      el.style.overflow = "visible";
+      el.style.overflowY = "visible";
+      el.style.height = "auto";
+    });
+    doc.querySelectorAll(".ask-input-bar, .ai-panel-toolbar, #ai-empty, #ai-loading").forEach((el) => {
+      el.style.display = "none";
+    });
+    doc.querySelectorAll(".chart-topbar-actions, .chart-nav, .chart-sticky-summary, .chart-back").forEach((el) => {
+      el.style.display = "none";
+    });
+  };
   try {
     const canvas = await window.html2canvas(page, {
       backgroundColor: "#0f0e0c",
@@ -1130,11 +1148,13 @@ async function prepareExportCapture() {
       windowWidth: page.scrollWidth,
       windowHeight: page.scrollHeight,
       scrollX: 0,
-      scrollY: 0,
+      scrollY: -window.scrollY,
+      onclone: exportCloneFix,
     });
     return canvas;
   } finally {
     stamp.remove();
+    page.classList.remove("is-exporting");
     hidden.forEach(([el, disp]) => {
       el.style.display = disp;
     });

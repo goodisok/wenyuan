@@ -2001,6 +2001,19 @@ th { color: var(--text-muted); font-weight: 500; }
   cursor: pointer;
 }
 .export-option:hover { background: rgba(201, 162, 39, 0.12); color: var(--accent); }
+.chart-page.is-exporting .ask-history {
+  max-height: none !important;
+  overflow: visible !important;
+  overflow-y: visible !important;
+  height: auto !important;
+}
+.chart-page.is-exporting .ask-input-bar,
+.chart-page.is-exporting .ai-panel-toolbar,
+.chart-page.is-exporting #ai-empty,
+.chart-page.is-exporting #ai-loading {
+  display: none !important;
+}
+
 .export-stamp {
   margin-top: 1.5rem;
   padding: 0.75rem 0;
