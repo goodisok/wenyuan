@@ -1,0 +1,2 @@
+#!/bin/sh
+python "$(git rev-parse --show-toplevel)/scripts/git/strip_cursor_coauthor.py" "$1"
