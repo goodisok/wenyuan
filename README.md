@@ -154,6 +154,16 @@ node scripts/verify_birth_form.mjs   # 需 Node.js，可选
 | v1.10 | 观命总观、BM25、AI 校验、黄金命例 |
 | v1.6+ | 六亲多维验证、断事层、子平综参 |
 
+## 支持项目
+
+[wenyuan.online](https://wenyuan.online/) 上的 AI 解读与追问使用作者自购的 DeepSeek Token，无广告、无付费墙。若你觉得问元有用，欢迎自愿赞赏，用于补贴 API 与服务器成本（**非必需，不影响任何功能**）。
+
+<p align="center">
+  <img src="docs/assets/wechat-donate.jpg" alt="微信赞赏码" width="280">
+</p>
+
+<p align="center"><sub>微信扫码 · 自愿赞赏</sub></p>
+
 ## 仓库与许可
 
 - GitHub：[github.com/goodisok/wenyuan](https://github.com/goodisok/wenyuan)（MIT）  
