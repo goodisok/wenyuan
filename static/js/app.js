@@ -942,14 +942,8 @@ function renderChart(data) {
     <header class="chart-topbar">
       <a href="/" class="chart-back">← 重新排盘</a>
       <div class="chart-topbar-actions">
-        <button type="button" class="btn btn-secondary btn-sm" id="btn-copy-link">分享链接</button>
-        <div class="export-menu" id="export-menu-wrap">
-          <button type="button" class="btn btn-secondary btn-sm" id="btn-export-toggle" aria-haspopup="true" aria-expanded="false">导出 ▾</button>
-          <div class="export-dropdown hidden" id="export-dropdown" role="menu">
-            <button type="button" class="export-option" id="btn-export-png" role="menuitem">PNG 截图</button>
-            <button type="button" class="export-option" id="btn-export-pdf" role="menuitem">PDF 文档</button>
-          </div>
-        </div>
+        <button type="button" class="btn btn-secondary btn-sm" id="btn-export-png">截图</button>
+        <button type="button" class="btn btn-secondary btn-sm" id="btn-export-pdf">PDF</button>
       </div>
     </header>
     <nav class="chart-nav" id="chart-nav" role="tablist" aria-label="命盘分区">
@@ -1105,7 +1099,7 @@ async function prepareExportCapture() {
   const page = document.querySelector(".chart-page");
   if (!page) throw new Error("未找到命盘内容");
   const hidden = [];
-  const hideSel = ".chart-topbar-actions, .chart-nav, .chart-sticky-summary, .chart-back, .export-menu";
+  const hideSel = ".chart-topbar-actions, .chart-nav, .chart-sticky-summary, .chart-back";
   document.querySelectorAll(hideSel).forEach((el) => {
     hidden.push([el, el.style.display]);
     el.style.display = "none";
@@ -1188,50 +1182,25 @@ async function exportChartPdf(input) {
   showToast("PDF 已保存");
 }
 
-function wireExportMenu(state) {
-  const wrap = document.getElementById("export-menu-wrap");
-  const toggle = document.getElementById("btn-export-toggle");
-  const menu = document.getElementById("export-dropdown");
+function wireExportButtons(state) {
   const btnPng = document.getElementById("btn-export-png");
   const btnPdf = document.getElementById("btn-export-pdf");
-  if (!toggle || !menu) return;
-
-  const closeMenu = () => {
-    menu.classList.add("hidden");
-    toggle.setAttribute("aria-expanded", "false");
-  };
-  const openMenu = () => {
-    menu.classList.remove("hidden");
-    toggle.setAttribute("aria-expanded", "true");
-  };
-
-  toggle.addEventListener("click", (e) => {
-    e.stopPropagation();
-    if (menu.classList.contains("hidden")) openMenu();
-    else closeMenu();
-  });
-  document.addEventListener("click", (e) => {
-    if (!wrap?.contains(e.target)) closeMenu();
-  });
-
-  const runExport = async (fn) => {
-    closeMenu();
-    toggle.disabled = true;
-    btnPng.disabled = true;
-    btnPdf.disabled = true;
+  const runExport = async (fn, buttons) => {
+    buttons.forEach((b) => { if (b) b.disabled = true; });
     try {
       await fn();
     } catch (err) {
       showToast(err.message || "导出失败");
     } finally {
-      toggle.disabled = false;
-      btnPng.disabled = false;
-      btnPdf.disabled = false;
+      buttons.forEach((b) => { if (b) b.disabled = false; });
     }
   };
-
-  btnPng?.addEventListener("click", () => runExport(() => exportChartPng(state.input)));
-  btnPdf?.addEventListener("click", () => runExport(() => exportChartPdf(state.input)));
+  btnPng?.addEventListener("click", () =>
+    runExport(() => exportChartPng(state.input), [btnPng, btnPdf])
+  );
+  btnPdf?.addEventListener("click", () =>
+    runExport(() => exportChartPdf(state.input), [btnPng, btnPdf])
+  );
 }
 
 function wireChartInteractions(state) {
@@ -1264,22 +1233,7 @@ function wireChartInteractions(state) {
     });
   });
 
-  wireExportMenu(state);
-
-  const copyLinkBtn = document.getElementById("btn-copy-link");
-  const modal = document.getElementById("privacy-modal");
-  copyLinkBtn?.addEventListener("click", () => {
-    openModal(modal, copyLinkBtn);
-  });
-  document.getElementById("modal-confirm")?.addEventListener("click", () => {
-    navigator.clipboard.writeText(getShareUrl(state.input)).then(() => showToast("链接已复制"));
-    closeModal(modal);
-  });
-  document.getElementById("modal-cancel")?.addEventListener("click", () => closeModal(modal));
-  modal?.querySelector(".modal-backdrop")?.addEventListener("click", () => closeModal(modal));
-  document.addEventListener("keydown", (e) => {
-    if (e.key === "Escape" && modal && !modal.classList.contains("hidden")) closeModal(modal);
-  });
+  wireExportButtons(state);
 
   document.getElementById("btn-copy-analysis")?.addEventListener("click", () => {
     const text = state.analysis || "";
