@@ -156,7 +156,7 @@ node scripts/verify_birth_form.mjs   # 需 Node.js，可选
 
 ## 支持项目
 
-[wenyuan.online](https://wenyuan.online/) 上的 AI 解读与追问使用作者自购的 DeepSeek Token，无广告、无付费墙。若你觉得问元有用，欢迎自愿赞赏，用于补贴 API 与服务器成本（**非必需，不影响任何功能**）。
+[wenyuan.online](https://wenyuan.online/) 上的 AI 解读与追问使用作者自购的 DeepSeek Token，无广告、无付费墙。若你觉得问元有用，欢迎自愿赞赏，用于补贴 API 与服务器成本（**非必需，不影响任何功能**）。站点页脚也有 [支持作者](https://wenyuan.online/support) 入口。
 
 <p align="center">
   <img src="docs/assets/wechat-donate.jpg" alt="微信赞赏码" width="280">

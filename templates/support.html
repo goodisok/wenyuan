@@ -1,0 +1,20 @@
+{% extends "base.html" %}
+{% block title %}支持项目{% endblock %}
+{% block body_class %}page-legal{% endblock %}
+{% block content %}
+<div class="card">
+  <h2 class="card-title">支持项目</h2>
+  <div class="privacy-content support-content">
+    <p>
+      <a href="https://wenyuan.online/">wenyuan.online</a> 上的 AI 解读与追问使用作者自购的 DeepSeek Token，无广告、无付费墙。
+      若你觉得问元有用，欢迎自愿赞赏，用于补贴 API 与服务器成本。
+    </p>
+    <p><strong>赞赏完全自愿，不影响任何功能。</strong></p>
+    <figure class="support-qr">
+      <img src="/static/images/wechat-donate.jpg" alt="微信赞赏码" width="280" height="280" loading="lazy">
+      <figcaption>微信扫码 · 自愿赞赏</figcaption>
+    </figure>
+  </div>
+  <p class="privacy-back"><a href="/">返回首页</a></p>
+</div>
+{% endblock %}

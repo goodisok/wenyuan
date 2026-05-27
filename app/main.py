@@ -42,6 +42,11 @@ async def privacy(request: Request):
     return templates.TemplateResponse(request, "privacy.html")
 
 
+@app.get("/support", response_class=HTMLResponse)
+async def support(request: Request):
+    return templates.TemplateResponse(request, "support.html")
+
+
 @app.get("/health")
 async def health():
     return {"status": "ok", "version": __version__}
