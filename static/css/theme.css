@@ -1973,7 +1973,42 @@ th { color: var(--text-muted); font-weight: 500; }
   font-size: 0.88rem;
 }
 .chart-back:hover { color: var(--accent); text-decoration: none; }
-.chart-topbar-actions { display: flex; gap: 0.5rem; flex-wrap: wrap; }
+.chart-topbar-actions { display: flex; gap: 0.5rem; flex-wrap: wrap; align-items: center; }
+.export-menu { position: relative; }
+.export-dropdown {
+  position: absolute;
+  top: calc(100% + 0.35rem);
+  right: 0;
+  min-width: 9rem;
+  padding: 0.35rem;
+  background: var(--bg-elevated);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
+  z-index: 50;
+}
+.export-dropdown.hidden { display: none; }
+.export-option {
+  display: block;
+  width: 100%;
+  padding: 0.5rem 0.65rem;
+  text-align: left;
+  font-size: 0.84rem;
+  color: var(--text);
+  background: transparent;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+}
+.export-option:hover { background: rgba(201, 162, 39, 0.12); color: var(--accent); }
+.export-stamp {
+  margin-top: 1.5rem;
+  padding: 0.75rem 0;
+  text-align: center;
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  border-top: 1px dashed var(--border);
+}
 .btn-sm {
   padding: 0.45rem 0.85rem;
   font-size: 0.82rem;

@@ -6,7 +6,7 @@ const CHART_CACHE_KEY = "wenyuan_chart_cache";
 const MAX_HISTORY = 20;
 const SHARE_VERSION = 1;
 /** Bump when chart/insight shape changes so old session entries are ignored. */
-const CHART_CACHE_SCHEMA = 5;
+const CHART_CACHE_SCHEMA = 6;
 const CHART_CACHE_TTL = 3600000;
 
 const AI_STYLE = "modern"; // API 兼容字段，后端提示词已统一
@@ -943,7 +943,13 @@ function renderChart(data) {
       <a href="/" class="chart-back">← 重新排盘</a>
       <div class="chart-topbar-actions">
         <button type="button" class="btn btn-secondary btn-sm" id="btn-copy-link">分享链接</button>
-        <button type="button" class="btn btn-secondary btn-sm" id="btn-export-md">导出</button>
+        <div class="export-menu" id="export-menu-wrap">
+          <button type="button" class="btn btn-secondary btn-sm" id="btn-export-toggle" aria-haspopup="true" aria-expanded="false">导出 ▾</button>
+          <div class="export-dropdown hidden" id="export-dropdown" role="menu">
+            <button type="button" class="export-option" id="btn-export-png" role="menuitem">PNG 截图</button>
+            <button type="button" class="export-option" id="btn-export-pdf" role="menuitem">PDF 文档</button>
+          </div>
+        </div>
       </div>
     </header>
     <nav class="chart-nav" id="chart-nav" role="tablist" aria-label="命盘分区">
@@ -1067,24 +1073,165 @@ function appendAskMessage(role, content) {
 }
 
 
-function buildMarkdownExport(chart, insight, analysis, history) {
-  const m = chart.meta || {};
-  let md = `# 问元命盘\n\n`;
-  md += `- 阳历：${m.birth_time?.solar || ""}\n`;
-  md += `- 农历：${m.birth_time?.lunar || ""}\n`;
-  md += `- 日主：${m.day_master}（${m.day_master_wuxing}）\n\n`;
-  md += `## 四柱\n\n`;
-  (chart.pillars || []).forEach((p) => {
-    md += `- ${p.label} ${p.ganzhi} 十神${p.shishen} 长生${p.changsheng || ""} 旬空${p.xunkong || ""}\n`;
+function loadScriptOnce(src) {
+  return new Promise((resolve, reject) => {
+    if (document.querySelector(`script[data-src="${src}"]`)) {
+      resolve();
+      return;
+    }
+    const s = document.createElement("script");
+    s.src = src;
+    s.dataset.src = src;
+    s.onload = () => resolve();
+    s.onerror = () => reject(new Error(`无法加载 ${src}`));
+    document.head.appendChild(s);
   });
-  md += `\n## 大运\n\n${chart.qiyun?.description || ""}\n\n`;
-  if (analysis) md += `## AI 解读\n\n${analysis}\n\n`;
-  if (history?.length) {
-    md += `## 问答\n\n`;
-    history.forEach((h) => { md += `**${h.role}**: ${h.content}\n\n`; });
+}
+
+async function ensureExportLibs() {
+  if (window.html2canvas && window.jspdf) return;
+  const v = document.querySelector('script[src*="app.js"]')?.src.match(/[?&]v=([^&]+)/)?.[1] || "";
+  const q = v ? `?v=${v}` : "";
+  await loadScriptOnce(`/static/js/vendor/html2canvas.min.js${q}`);
+  await loadScriptOnce(`/static/js/vendor/jspdf.umd.min.js${q}`);
+}
+
+function exportBaseName(input) {
+  const d = input?.birth_date || "chart";
+  return `wenyuan-${d}`;
+}
+
+async function prepareExportCapture() {
+  const page = document.querySelector(".chart-page");
+  if (!page) throw new Error("未找到命盘内容");
+  const hidden = [];
+  const hideSel = ".chart-topbar-actions, .chart-nav, .chart-sticky-summary, .chart-back, .export-menu";
+  document.querySelectorAll(hideSel).forEach((el) => {
+    hidden.push([el, el.style.display]);
+    el.style.display = "none";
+  });
+  document.querySelectorAll("details").forEach((d) => {
+    d.open = true;
+  });
+  document.querySelectorAll(".dayun-card").forEach((c) => {
+    c.classList.add("expanded");
+    c.querySelector(".liunian-badges")?.classList.remove("hidden");
+  });
+  const stamp = document.createElement("div");
+  stamp.className = "export-stamp";
+  stamp.textContent = `问元 Wenyuan · ${new Date().toLocaleString("zh-CN")} · 仅供参考`;
+  page.appendChild(stamp);
+  window.scrollTo(0, 0);
+  await new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r)));
+
+  const scale = Math.min(2, Math.max(1, 2400 / Math.max(page.scrollWidth, 1)));
+  try {
+    const canvas = await window.html2canvas(page, {
+      backgroundColor: "#0f0e0c",
+      scale,
+      useCORS: true,
+      logging: false,
+      width: page.scrollWidth,
+      height: page.scrollHeight,
+      windowWidth: page.scrollWidth,
+      windowHeight: page.scrollHeight,
+      scrollX: 0,
+      scrollY: 0,
+    });
+    return canvas;
+  } finally {
+    stamp.remove();
+    hidden.forEach(([el, disp]) => {
+      el.style.display = disp;
+    });
   }
-  md += `\n> 由问元导出，仅供文化参考。\n`;
-  return md;
+}
+
+async function exportChartPng(input) {
+  await ensureExportLibs();
+  showToast("正在生成 PNG…");
+  const canvas = await prepareExportCapture();
+  const blob = await new Promise((resolve, reject) => {
+    canvas.toBlob((b) => (b ? resolve(b) : reject(new Error("截图失败"))), "image/png");
+  });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = `${exportBaseName(input)}.png`;
+  a.click();
+  URL.revokeObjectURL(url);
+  showToast("PNG 已保存");
+}
+
+async function exportChartPdf(input) {
+  await ensureExportLibs();
+  showToast("正在生成 PDF…");
+  const canvas = await prepareExportCapture();
+  const { jsPDF } = window.jspdf;
+  const imgData = canvas.toDataURL("image/jpeg", 0.92);
+  const pdf = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
+  const pageWidth = pdf.internal.pageSize.getWidth();
+  const pageHeight = pdf.internal.pageSize.getHeight();
+  const imgWidth = pageWidth;
+  const imgHeight = (canvas.height * imgWidth) / canvas.width;
+  let heightLeft = imgHeight;
+  let position = 0;
+  pdf.addImage(imgData, "JPEG", 0, position, imgWidth, imgHeight);
+  heightLeft -= pageHeight;
+  while (heightLeft > 0) {
+    position -= pageHeight;
+    pdf.addPage();
+    pdf.addImage(imgData, "JPEG", 0, position, imgWidth, imgHeight);
+    heightLeft -= pageHeight;
+  }
+  pdf.save(`${exportBaseName(input)}.pdf`);
+  showToast("PDF 已保存");
+}
+
+function wireExportMenu(state) {
+  const wrap = document.getElementById("export-menu-wrap");
+  const toggle = document.getElementById("btn-export-toggle");
+  const menu = document.getElementById("export-dropdown");
+  const btnPng = document.getElementById("btn-export-png");
+  const btnPdf = document.getElementById("btn-export-pdf");
+  if (!toggle || !menu) return;
+
+  const closeMenu = () => {
+    menu.classList.add("hidden");
+    toggle.setAttribute("aria-expanded", "false");
+  };
+  const openMenu = () => {
+    menu.classList.remove("hidden");
+    toggle.setAttribute("aria-expanded", "true");
+  };
+
+  toggle.addEventListener("click", (e) => {
+    e.stopPropagation();
+    if (menu.classList.contains("hidden")) openMenu();
+    else closeMenu();
+  });
+  document.addEventListener("click", (e) => {
+    if (!wrap?.contains(e.target)) closeMenu();
+  });
+
+  const runExport = async (fn) => {
+    closeMenu();
+    toggle.disabled = true;
+    btnPng.disabled = true;
+    btnPdf.disabled = true;
+    try {
+      await fn();
+    } catch (err) {
+      showToast(err.message || "导出失败");
+    } finally {
+      toggle.disabled = false;
+      btnPng.disabled = false;
+      btnPdf.disabled = false;
+    }
+  };
+
+  btnPng?.addEventListener("click", () => runExport(() => exportChartPng(state.input)));
+  btnPdf?.addEventListener("click", () => runExport(() => exportChartPdf(state.input)));
 }
 
 function wireChartInteractions(state) {
@@ -1117,15 +1264,7 @@ function wireChartInteractions(state) {
     });
   });
 
-  document.getElementById("btn-export-md")?.addEventListener("click", () => {
-    const md = buildMarkdownExport(state.chart, state.chart.insight, state.analysis || "", state.history);
-    const blob = new Blob([md], { type: "text/markdown;charset=utf-8" });
-    const a = document.createElement("a");
-    a.href = URL.createObjectURL(blob);
-    a.download = `wenyuan-${state.input?.birth_date || "chart"}.md`;
-    a.click();
-    showToast("Markdown 已导出");
-  });
+  wireExportMenu(state);
 
   const copyLinkBtn = document.getElementById("btn-copy-link");
   const modal = document.getElementById("privacy-modal");
