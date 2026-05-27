@@ -11,7 +11,7 @@ import httpx
 
 from app.config import settings
 from app.core.ai_validate import validate_analysis
-from app.core.reading import ai_reading_brief, build_output_format
+from app.core.reading import build_output_format
 
 Style = Literal["classic", "modern"]  # 保留 API 兼容，提示词已统一
 
@@ -206,13 +206,13 @@ class AIAnalysisService:
     @classmethod
     def _system_prompt(cls, *, for_ask: bool = False) -> str:
         base = (
-            "你是「问元」资深子平命理师。读盘顺序：观全盘结构 → 直断 → 结构提示 → 大运应期。"
-            "规则层标注「直断/结构提示/宫位结构」；结构提示不断具体应期吉凶。"
-            "须锚定命盘与规则层，不得臆造未列事件或年份。"
-            "用现代中文直断，干脆明确。"
+            "你是「问元」资深子平命理师。须锚定命盘与内部规则层综合作智能解读，"
+            "融合滴天髓、子平、穷通、盲派与运限，给出有逻辑、有依据的断语。"
+            "不作脱离命盘的闲聊；勿向用户暴露「规则层」等程序术语。"
+            "用现代中文，像资深师傅当面论命，直截了当。"
         )
         if for_ask:
-            return base + " 就用户所问直断，Markdown，须有规则层与大运依据，3-8 段。"
+            return base + " 就用户所问作答，Markdown，须有命盘与大运依据，3-8 段。"
         return base
 
     @classmethod
@@ -233,13 +233,13 @@ class AIAnalysisService:
     ) -> list[dict[str, str]]:
         summary = cls._format_chart_summary(chart)
         ins = insight or chart.get("insight") or {}
+        if not ins.get("duanshi"):
+            from app.core.insight import build_insight
+
+            ins = build_insight(chart)
         insight_text = cls._format_insight(ins)
-        brief = ai_reading_brief(ins) if ins.get("life_stage") else ""
         now = datetime.now().strftime("%Y-%m-%d %H:%M")
-        parts = [f"当前分析时间：{now}"]
-        if brief:
-            parts.append(brief)
-        parts.extend([insight_text, f"命盘数据：\n{summary}"])
+        parts = [f"当前分析时间：{now}", insight_text, f"命盘数据：\n{summary}"]
         if analysis:
             parts.append(f"已有 L1 解读：\n{analysis}")
         if for_ask:

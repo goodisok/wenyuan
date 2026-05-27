@@ -4,7 +4,7 @@ from fastapi import APIRouter, Request
 from fastapi.responses import JSONResponse, StreamingResponse
 
 from app.core.bazi import BaziService
-from app.core.insight import ensure_citations, public_insight
+from app.core.insight import ensure_ai_insight, public_insight
 from app.schemas import (
     AnalyzeRequest,
     AnalyzeResponse,
@@ -48,7 +48,7 @@ async def create_chart(body: ChartRequest) -> ChartResponse:
 @router.post("/analyze")
 async def analyze_chart(body: AnalyzeRequest, request: Request):
     try:
-        insight = ensure_citations(body.chart, body.insight or body.chart.get("insight"))
+        insight = ensure_ai_insight(body.chart, body.insight or body.chart.get("insight"))
         if _wants_sse(request):
             stream = AIAnalysisService.analyze_stream(body.chart, body.style, insight)
             gen = AIAnalysisService.sse_events(stream)
@@ -69,7 +69,7 @@ async def analyze_chart(body: AnalyzeRequest, request: Request):
 @router.post("/ask")
 async def ask_chart(body: AskRequest, request: Request):
     try:
-        insight = ensure_citations(body.chart, body.insight or body.chart.get("insight"))
+        insight = ensure_ai_insight(body.chart, body.insight or body.chart.get("insight"))
         if _wants_sse(request):
             stream = AIAnalysisService.ask_stream(
                 body.chart,

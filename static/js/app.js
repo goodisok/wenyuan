@@ -6,7 +6,7 @@ const CHART_CACHE_KEY = "wenyuan_chart_cache";
 const MAX_HISTORY = 20;
 const SHARE_VERSION = 1;
 /** Bump when chart/insight shape changes so old session entries are ignored. */
-const CHART_CACHE_SCHEMA = 4;
+const CHART_CACHE_SCHEMA = 5;
 const CHART_CACHE_TTL = 3600000;
 
 const AI_STYLE = "modern"; // API 兼容字段，后端提示词已统一
@@ -947,14 +947,14 @@ function renderChart(data) {
       </div>
     </header>
     <nav class="chart-nav" id="chart-nav" role="tablist" aria-label="命盘分区">
-      <button type="button" class="chart-nav-btn active" role="tab" aria-selected="true" data-target="sec-meta">基本</button>
+      <button type="button" class="chart-nav-btn" role="tab" aria-selected="false" data-target="sec-meta">基本</button>
       <button type="button" class="chart-nav-btn" role="tab" aria-selected="false" data-target="sec-di">命盘</button>
       <button type="button" class="chart-nav-btn" role="tab" aria-selected="false" data-target="sec-tian">细盘</button>
-      <button type="button" class="chart-nav-btn" role="tab" aria-selected="false" data-target="sec-ai">问 AI</button>
+      <button type="button" class="chart-nav-btn active" role="tab" aria-selected="true" data-target="sec-ai">问 AI</button>
     </nav>
     <div id="chart-sticky-summary" class="chart-sticky-summary chart-info-strip">
       <span class="sticky-ganzhi">${(data.pillars || []).map((p) => p.ganzhi).join(" ")}</span>
-      <span class="sticky-dm">${escapeHtml(m.gender_label || "")} · 日主 ${escapeHtml(m.day_master || "")} · ${escapeHtml(insight.geju?.type || insight.day_master_strength || "")}</span>
+      <span class="sticky-dm">${escapeHtml(m.gender_label || "")} · 日主 ${escapeHtml(m.day_master || "")}${m.age != null ? ` · 虚岁 ${m.age}` : ""}</span>
       <span class="sticky-birth">${escapeHtml(m.birth_time?.solar || "")}</span>
     </div>
 
@@ -971,15 +971,9 @@ function renderChart(data) {
         <div class="meta-item"><div class="label">十二长生</div><div class="value">${escapeHtml(m.day_dishi || "—")}</div></div>
       </div>
       <p class="birth-time-note">阳历 ${escapeHtml(m.birth_time?.solar || "")} · 农历 ${escapeHtml(m.birth_time?.lunar || "")}</p>
-      <div class="insight-panel">
-        <p>强弱 <strong>${insight.day_master_strength || "—"}</strong>（${insight.strength_score ?? "—"}）
-        ${insight.geju?.type ? ` · 格局 <strong>${insight.geju.type}</strong>` : ""}
-        ${insight.current_dayun ? ` · 当前大运 <strong>${insight.current_dayun.ganzhi}</strong>` : ""}</p>
-        ${insight.yongshen?.summary ? `<p class="yongshen-line">喜用：${escapeHtml(insight.yongshen.summary)}</p>` : ""}
-      </div>
       <h3 class="subsection-title">五行分析</h3>
       <div class="wuxing-chart">${renderWuxingChart(wx)}</div>
-      ${renderHighlightsPanel(insight)}
+      <p class="rule-trust-note">命理解读由 AI 综参命盘生成，请切换到「问 AI」开始。</p>
     </section>
 
     <section class="section-block section-card" id="sec-di">
@@ -1001,13 +995,13 @@ function renderChart(data) {
       ${xyBlock}
     </section>
 
-    <section class="section-block section-card section-ai ai-panel" id="sec-ai">
+    <section class="section-block section-card section-ai ai-panel active-section" id="sec-ai">
       <header class="ai-panel-head">
         <div class="ai-panel-intro">
-          <h2 class="section-title">问 · AI · 子平直断</h2>
-          <p class="ai-panel-desc">先依观命总观展开，再论已发布断事与六亲印证 · 非开放闲聊</p>
+          <h2 class="section-title">问 · AI · 命理解读</h2>
+          <p class="ai-panel-desc">AI 综参四柱、大运与各家理论，按您的年龄智能解读 · 非开放闲聊</p>
         </div>
-        <span class="analysis-style-badge style-ziping">子平直断</span>
+        <span class="analysis-style-badge style-ziping">智能解读</span>
       </header>
       <div class="ai-panel-toolbar">
         <button type="button" class="btn btn-primary" id="btn-analyze">开始解读</button>
@@ -1016,12 +1010,12 @@ function renderChart(data) {
       <div id="ai-loading" class="ai-loading hidden" aria-live="polite">
         <div class="spinner"></div>
         <p class="ai-loading-title">问元解读中</p>
-        <p class="ai-loading-desc">正在锚定观命总观与规则层…</p>
+        <p class="ai-loading-desc">正在综参命盘与运限…</p>
       </div>
       <div id="ai-error" class="alert alert-error hidden"></div>
       <div id="ai-empty" class="ai-empty-state">
         <p class="ai-empty-title">尚未解读</p>
-        <p class="ai-empty-desc">点击「开始解读」，AI 将按八个章节流式输出 L1 直断。</p>
+        <p class="ai-empty-desc">点击「开始解读」，AI 将结合您的年龄与命盘，流式生成个性化分析。</p>
       </div>
       <div id="ai-result-wrap" class="ai-result-card hidden">
         <div class="ai-result-meta">
@@ -1083,24 +1077,7 @@ function buildMarkdownExport(chart, insight, analysis, history) {
   (chart.pillars || []).forEach((p) => {
     md += `- ${p.label} ${p.ganzhi} 十神${p.shishen} 长生${p.changsheng || ""} 旬空${p.xunkong || ""}\n`;
   });
-  md += `\n## 命局要点（子平综参）\n\n`;
-  md += `- 强弱：${insight?.day_master_strength}\n`;
-  md += `- 格局：${insight?.geju?.type || ""}（${insight?.geju?.note || ""}）\n`;
-  md += `- 喜用倾向：${insight?.yongshen?.summary || ""}\n`;
-  md += `- 调候：${insight?.tiao_hou || ""}\n`;
-  md += `- 体用：${insight?.pattern?.type || ""}\n`;
-  (insight?.highlights || []).forEach((h) => { md += `- ${h}\n`; });
-  const ds = insight?.duanshi?.items || [];
-  if (ds.length) {
-    md += `\n## 断事\n\n`;
-    ds.forEach((item) => { md += `- **${item.topic}** [${item.level}] ${item.verdict}\n`; });
-  }
-  const sg = insight?.sanguan?.gates || [];
-  if (sg.length) {
-    md += `\n## 过三关\n\n`;
-    sg.forEach((g) => { md += `- **${g.name}** [${g.confidence}] ${g.verdict}\n`; });
-  }
-  md += `\n`;
+  md += `\n## 大运\n\n${chart.qiyun?.description || ""}\n\n`;
   if (analysis) md += `## AI 解读\n\n${analysis}\n\n`;
   if (history?.length) {
     md += `## 问答\n\n`;
@@ -1113,6 +1090,9 @@ function buildMarkdownExport(chart, insight, analysis, history) {
 function wireChartInteractions(state) {
   setupNavObserver();
   setupChartNavA11y();
+  requestAnimationFrame(() => {
+    document.getElementById("sec-ai")?.scrollIntoView({ block: "start" });
+  });
 
   wireDayunStrip(state.chart.dayun, state.chart.insight);
 

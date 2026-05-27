@@ -322,22 +322,52 @@ def build_l1_chapters(insight: dict[str, Any]) -> list[tuple[str, str]]:
 
 def build_output_format(insight: dict[str, Any] | None = None) -> str:
     ins = insight or {}
-    intro = (
-        "你是资深子平命理师。读盘顺序：观全盘结构 → 高置信直断 → 结构提示 → 大运应期。"
-        "规则层已标注「直断/结构提示/宫位结构」；结构提示不断具体应期吉凶。"
-        "不得臆造规则层未列的具体事件或年份。"
-    )
-    brief = ai_reading_brief(ins) if ins.get("life_stage") else ""
-    chapter_lines = [
-        f"## {title}\n{guide}" for title, guide in build_l1_chapters(ins)
-    ]
-    parts = [intro]
-    if brief:
-        parts.append(brief)
-    parts.append("Markdown 格式，按以下章节（保留 ## 标题）：")
-    parts.append("\n\n".join(chapter_lines))
-    parts.append("文末：\n> 问元 AI 子平断事，以所给命盘与规则层为准。")
-    return "\n\n".join(parts)
+    ls = ins.get("life_stage") or {}
+    age = ls.get("age", "")
+    stage = ls.get("stage_label", "")
+    focus = ls.get("focus_summary", "")
+    return f"""你是问元资深子平命理师。下方「规则层摘要」与「命盘数据」供内部分析，勿向用户提及「规则层」「直断」「结构提示」等程序术语。
+
+【命主】虚岁 {age} 岁 · {stage}
+【解读侧重】{focus or "综合命盘"}（议题须贴合当前人生阶段；与年龄无关者勿深断具体吉凶）
+
+请输出 Markdown 解读，要求：
+1. **自行组织 4–7 个 ## 章节**，勿套用固定八股模板；须自然涵盖：全盘定调、性格禀赋、当前阶段最关切的人事、大运走势与可论应期。
+2. 每段须有命理依据（十神、宫位、五行、刑冲合害、运限），忌空泛鸡汤与道德说教。
+3. 综参滴天髓体用、子平格局、穷通调候、盲派做功、运限引动；内部规则层信号可融合表述，勿逐条罗列。
+4. 童年盘勿断婚育子女具体件与年份；晚年盘勿强调学业考试。
+5. 若论应期年份，须与规则层应期窗口一致；无依据则不断年份。
+6. 语气：现代中文，直截了当，像经验丰富的命理师当面断盘。
+
+文末：
+> 以上由 AI 综参命盘生成，仅供参考。"""
+
+
+def public_l2_questions(age: int) -> list[str]:
+    """面向用户的通用追问（不引用程序断语）。"""
+    from app.core.lifestage import build_lifestage, topic_priority
+
+    ls = build_lifestage(age)
+    sid = ls["stage_id"]
+    qs: list[str] = []
+
+    def add(q: str) -> None:
+        if q and q not in qs:
+            qs.append(q)
+
+    add("请综合此盘，给我一份完整的命理解读。")
+    if topic_priority(sid, "personality") != "hidden":
+        add("我的性格禀赋与行事风格有何特点？")
+    if topic_priority(sid, "education") != "hidden" and sid in ("child", "teen", "youth"):
+        add("学业与成长方面有什么建议？")
+    if topic_priority(sid, "career_wealth") != "hidden":
+        add("事业与财运上有什么倾向？")
+    if topic_priority(sid, "relationship") != "hidden":
+        add("感情婚姻方面如何看？")
+    if topic_priority(sid, "health") != "hidden":
+        add("健康与身心需要注意什么？")
+    add(f"虚岁{age}岁，当前大运阶段重点是什么？")
+    return qs[:5]
 
 
 def suggest_l2_questions(insight: dict[str, Any]) -> list[str]:

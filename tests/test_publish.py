@@ -40,8 +40,13 @@ def test_mingli_insight_includes_hint_topics(user_chart):
     assert "财运" in topics
 
 
-def test_user_insight_has_parents_assert(user_chart):
-    ins = user_chart["insight"]
-    parent = next(i for i in ins["duanshi"]["items"] if i["topic"] == "父母")
-    assert parent.get("display_tier") == "assert"
-    assert any("父母" in h for h in ins.get("highlights", []))
+def test_user_insight_public_minimal(user_chart):
+    from app.core.insight import public_insight
+
+    full = user_chart["insight"]
+    assert any(i["topic"] == "父母" for i in full["duanshi"]["items"])
+    pub = public_insight(full)
+    assert "duanshi" not in pub
+    assert "highlights" not in pub
+    assert pub.get("l2_questions")
+    assert pub.get("current_dayun")

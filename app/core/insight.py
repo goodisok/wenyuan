@@ -89,24 +89,24 @@ def build_insight(chart: dict[str, Any]) -> dict[str, Any]:
 
 
 def public_insight(insight: dict[str, Any]) -> dict[str, Any]:
-    """Strip internal corpus payloads before exposing insight to clients."""
-    out = dict(insight)
-    out.pop("citations", None)
-    out.pop("corpus_meta", None)
-    out.pop("temperament", None)
-    out.pop("calibration_items", None)
-    ml = out.get("mingli") or {}
-    if isinstance(ml, dict):
-        ml_out = dict(ml)
-        ml_out.pop("duanshi_raw", None)
-        ml_out.pop("sanguan_raw", None)
-        out["mingli"] = ml_out
-    return out
+    """仅返回 UI 所需最小字段；规则层不暴露给客户端。"""
+    from app.core.reading import public_l2_questions
+
+    age = int(insight.get("age") or insight.get("life_stage", {}).get("age") or 1)
+    return {
+        "current_dayun": insight.get("current_dayun"),
+        "current_year_liunian": insight.get("current_year_liunian"),
+        "l2_questions": public_l2_questions(age),
+    }
+
+
+def ensure_ai_insight(chart: dict[str, Any], insight: dict[str, Any] | None = None) -> dict[str, Any]:
+    """AI 请求始终使用服务端完整规则层（客户端不传或传空）。"""
+    full = build_insight(chart)
+    full["citations"] = full.get("citations") or knowledge_retrieve(chart, full)
+    return full
 
 
 def ensure_citations(chart: dict[str, Any], insight: dict[str, Any] | None) -> dict[str, Any]:
-    """Re-attach corpus citations for server-side AI when clients omit them."""
-    ins = dict(insight or chart.get("insight") or {})
-    if not ins.get("citations"):
-        ins["citations"] = knowledge_retrieve(chart, ins)
-    return ins
+    """兼容旧调用：AI 路由请用 ensure_ai_insight。"""
+    return ensure_ai_insight(chart, insight)
