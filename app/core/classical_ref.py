@@ -68,21 +68,29 @@ def _score_similar(query_gz: str, dm: str, case: dict[str, Any]) -> int:
 def find_similar(
     chart: dict[str, Any],
     *,
-    limit: int = 3,
-    min_score: int = 15,
+    limit: int = 2,
+    min_score: int = 28,
 ) -> list[dict[str, Any]]:
     pillars = chart.get("pillars") or []
     if len(pillars) < 4:
         return []
     gz = " ".join(p["ganzhi"] for p in pillars)
     dm = chart.get("meta", {}).get("day_master", "")
+    qp = gz.split()
     ranked: list[tuple[int, dict[str, Any]]] = []
     for case in load_classical():
         if case["gz"] == gz:
             continue
         s = _score_similar(gz, dm, case)
-        if s >= min_score:
-            ranked.append((s, case))
+        if s < min_score:
+            continue
+        tp = case["gz"].split()
+        # 至少日柱相同，或四柱中至少三柱相同
+        day_match = len(qp) > 2 and len(tp) > 2 and qp[2] == tp[2]
+        overlap = len(_pillar_set(gz) & _pillar_set(case["gz"]))
+        if not day_match and overlap < 3:
+            continue
+        ranked.append((s, case))
     ranked.sort(key=lambda x: -x[0])
     return [
         {

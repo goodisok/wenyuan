@@ -50,8 +50,7 @@ async def analyze_chart(body: AnalyzeRequest, request: Request):
     try:
         insight = ensure_ai_insight(body.chart, body.insight or body.chart.get("insight"))
         if _wants_sse(request):
-            stream = AIAnalysisService.analyze_stream(body.chart, body.style, insight)
-            gen = AIAnalysisService.sse_events(stream)
+            gen = AIAnalysisService.analyze_sse(body.chart, body.style, insight)
             return StreamingResponse(gen, media_type="text/event-stream")
         text = await AIAnalysisService.analyze(body.chart, body.style, insight)
         return AnalyzeResponse(success=True, analysis=text)

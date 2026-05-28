@@ -97,34 +97,39 @@ def validate_analysis(text: str, insight: dict[str, Any] | None) -> dict[str, An
     if not text or not insight:
         return {"ok": True, "warnings": []}
     warnings: list[str] = []
-    windows = _collect_year_windows(insight)
-    citable = set(collect_citable_years(insight))
+    allowed = set(collect_allowed_years(insight))
     published = _assert_topics(insight)
+    strength = str(insight.get("day_master_strength") or "")
 
     for m in _YEAR_RE.finditer(text):
         y = int(m.group(0)[:4].replace("年", ""))
-        if not citable:
-            warnings.append(f"无可引年份却提及 {y}")
+        if not allowed:
+            warnings.append(f"无可引直断年份却提及 {y}")
             continue
-        if y not in citable:
-            warnings.append(f"提及年份 {y} 不在可引范围（直断应期或大运区间）")
+        if y not in allowed:
+            warnings.append(f"提及年份 {y} 不在直断应期窗口内")
 
-    if "婚姻" not in published and re.search(r"(离婚|婚变|克妻|克夫|再婚)", text):
+    if strength in ("平衡", "中和") and ("身强" in text or "身弱" in text):
+        warnings.append(f"规则层为{strength}，勿写身强/身弱/偏强/偏弱")
+    elif "身强" in text and "身弱" in text:
+        warnings.append("同时出现身强与身弱，表述须统一")
+
+    if "婚姻" not in published and re.search(r"(必离|必定离婚|婚变|克妻|克夫|必.*再婚)", text):
         warnings.append("规则层无婚姻直断，却出现具体婚变断辞")
     if "财运" not in published and re.search(
-        r"(破财|大发|暴富|负债|发财|大财|财富爆发|财务自由|得财|失财|财路|财源|聚财|散财)",
+        r"(必.*破财|必.*发财|必.*暴富|必.*负债|大财|财富爆发|财务自由|倾家荡产|一夜暴富)",
         text,
     ):
         warnings.append("规则层无财运直断，却出现具体财禄断辞")
     if "父母" not in published and re.search(
-        r"(父母[^。，；]{0,12}(克|害|刑|冲|早亡|缘薄|无靠|不和|偏枯)|"
-        r"(克|刑|害|冲)[^。，；]{0,6}父母|父[^。，；]{0,6}(早亡|克)|母[^。，；]{0,6}(早亡|克))",
+        r"(父母[^。，；]{0,12}(必|定|早亡|克害)|"
+        r"(克|刑|害|冲)[^。，；]{0,6}父母|父[^。，；]{0,6}(早亡|必克)|母[^。，；]{0,6}(早亡|必克))",
         text,
     ):
         warnings.append("规则层无父母直断，却出现具体父母吉凶断辞")
     for topic in ("兄弟", "子女"):
         if topic not in published and re.search(
-            rf"({topic}|兄弟姊妹).{{0,8}}(克|夭|无缘)", text
+            rf"({topic}|兄弟姊妹).{{0,8}}(必|定|克|夭|无缘)", text
         ):
             warnings.append(f"规则层无{topic}直断，却出现具体六亲断辞")
 

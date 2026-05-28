@@ -95,7 +95,10 @@ def build_insight(chart: dict[str, Any]) -> dict[str, Any]:
         insight["is_classical_fixture"] = True
     from app.core.classical_ref import find_similar
 
-    insight["classical_refs"] = find_similar(chart, limit=3)
+    if not insight.get("is_classical_fixture"):
+        insight["classical_refs"] = find_similar(chart, limit=2, min_score=28)
+    else:
+        insight["classical_refs"] = []
     return insight
 
 

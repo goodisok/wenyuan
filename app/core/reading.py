@@ -321,7 +321,7 @@ def build_l1_chapters(insight: dict[str, Any]) -> list[tuple[str, str]]:
 
 
 def build_output_format(insight: dict[str, Any] | None = None) -> str:
-    from app.core.ai_validate import collect_allowed_years, collect_citable_years
+    from app.core.ai_validate import collect_allowed_years
 
     ins = insight or {}
     ls = ins.get("life_stage") or {}
@@ -330,22 +330,29 @@ def build_output_format(insight: dict[str, Any] | None = None) -> str:
     focus = ls.get("focus_summary", "")
     geju_type = (ins.get("geju") or {}).get("type", "") or "（见规则层）"
     strength = ins.get("day_master_strength", "") or "（见规则层）"
-    allowed = collect_citable_years(ins)
-    if allowed:
-        year_line = "、".join(str(y) for y in allowed[:12])
-        if len(allowed) > 12:
+    assert_years = collect_allowed_years(ins)
+    balance_rule = ""
+    if strength in ("平衡", "中和"):
+        balance_rule = (
+            f"全文日主强弱统一用「{strength}」，禁止出现「身强」「身弱」「偏强」「偏弱」。\n"
+        )
+    if assert_years:
+        year_line = "、".join(str(y) for y in assert_years[:12])
+        if len(assert_years) > 12:
             year_line += " 等"
         year_rule = (
             f"5. **开篇首段须写明格局为「{geju_type}」、日主强弱为「{strength}」**（与规则层一致，全文勿改口）。\n"
-            f"6. 论具体公元年**仅限**：{year_line}（含大运所在年份）；其余运限用大运/流年干支描述，勿写其它年份。\n"
-            "7. 无「直断」支撑的婚变、破财、父母凶吉、兄弟子女夭克等具体断辞勿写；结构提示只论宫位十神。\n"
+            f"{balance_rule}"
+            f"6. 论具体事件应期，公元年**仅限**：{year_line}；其余运限用大运/流年干支描述。\n"
+            "7. 无「直断」项时勿断言具体婚变/破财/父母凶吉；结构提示可论十神宫位倾向。\n"
             "8. 语气：现代中文，直截了当，像经验丰富的命理师当面断盘。"
         )
     else:
         year_rule = (
-            f"5. **开篇首段须写明格局为「{geju_type}」、日主强弱为「{strength}」**（与规则层一致；若为「平衡/中和」则全文只用此二字，禁止出现「身强」「身弱」「偏强」「偏弱」）。\n"
-            "6. 规则层无高置信应期窗口：**全文勿出现任何公元年份**；运限一律用大运/流年干支。\n"
-            "7. 无「直断」支撑的婚变、破财、父母凶吉、兄弟子女夭克等具体断辞勿写。\n"
+            f"5. **开篇首段须写明格局为「{geju_type}」、日主强弱为「{strength}」**（与规则层一致）。\n"
+            f"{balance_rule}"
+            "6. 规则层无高置信应期窗口：**勿写具体事件应期的公元年**；运限一律用大运/流年干支。\n"
+            "7. 无「直断」项时勿断言具体婚变/破财/父母凶吉；结构提示可论十神宫位倾向。\n"
             "8. 语气：现代中文，直截了当，像经验丰富的命理师当面断盘。"
         )
     classic_extra = ""
