@@ -33,6 +33,16 @@ def test_validate_year_outside_window():
     assert any("1995" in w for w in vr["warnings"])
 
 
+def test_validate_birth_year_exempt():
+    insight = {
+        "duanshi": {"items": []},
+        "sanguan": {"gates": []},
+        "birth_year": 1990,
+    }
+    vr = validate_analysis("命主生于 1990 年，格局偏强。", insight)
+    assert not any("1990" in w for w in vr["warnings"])
+
+
 def test_validate_unpublished_marriage():
     insight = {"duanshi": {"items": []}, "sanguan": {"gates": []}}
     vr = validate_analysis("此命必离婚再婚。", insight)

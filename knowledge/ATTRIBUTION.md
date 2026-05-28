@@ -20,7 +20,7 @@
 |------|------|------|
 | 穷通宝鉴 | 120 | 调候（`app/core/qiongtong.py` 同步） |
 | JSON 语料 | ~62 | `knowledge/corpus/data/*.json` |
-| **[bazi-wiki](https://github.com/goodisok/bazi-wiki)** | ~34+ | 概念、实体、方法、滴天髓命例（Markdown） |
+| **[bazi-wiki](https://github.com/goodisok/bazi-wiki)** | ~40 | 概念、实体、方法、滴天髓命例（Markdown，子集入 BM25） |
 
 **bazi-wiki** 替代原 [bazi-skill](https://github.com/jinchenma94/bazi-skill) 的外部参考思路，作为问元自维护知识库，与产品同演进。
 

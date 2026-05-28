@@ -100,9 +100,14 @@ def validate_analysis(text: str, insight: dict[str, Any] | None) -> dict[str, An
     allowed = set(collect_allowed_years(insight))
     published = _assert_topics(insight)
     strength = str(insight.get("day_master_strength") or "")
+    exempt_years: set[int] = set()
+    if insight.get("birth_year"):
+        exempt_years.add(int(insight["birth_year"]))
 
     for m in _YEAR_RE.finditer(text):
         y = int(m.group(0)[:4].replace("年", ""))
+        if y in exempt_years:
+            continue
         if not allowed:
             warnings.append(f"无可引直断年份却提及 {y}")
             continue

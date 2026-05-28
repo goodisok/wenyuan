@@ -54,8 +54,8 @@ class ChartResponse(BaseModel):
 
 class AnalyzeRequest(BaseModel):
     chart: dict = Field(..., description="完整排盘结果")
-    insight: dict | None = None
-    style: Literal["classic", "modern"] = "modern"  # 兼容旧客户端，提示词已统一
+    insight: dict | None = Field(None, description="客户端 insight（服务端忽略，仅兼容旧版）")
+    style: Literal["classic", "modern"] = "modern"
 
 
 class AnalyzeResponse(BaseModel):
@@ -66,16 +66,16 @@ class AnalyzeResponse(BaseModel):
 
 class AskRequest(BaseModel):
     chart: dict = Field(..., description="完整排盘结果")
-    insight: dict | None = None
+    insight: dict | None = Field(None, description="客户端 insight（服务端忽略，仅兼容旧版）")
     analysis: str = ""
     question: str = Field(..., min_length=1, max_length=500)
     history: list[dict[str, str]] = Field(default_factory=list)
-    style: Literal["classic", "modern"] = "modern"  # 兼容旧客户端，提示词已统一
+    style: Literal["classic", "modern"] = "modern"
 
     @field_validator("history")
     @classmethod
     def validate_history(cls, v: list[dict[str, str]]) -> list[dict[str, str]]:
-        if len(v) > 200:
+        if len(v) > 100:
             raise ValueError("历史对话过长")
         for item in v:
             if item.get("role") not in ("user", "assistant") or not item.get("content"):

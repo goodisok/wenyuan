@@ -11,7 +11,9 @@
     </p>
     <p><strong>赞赏完全自愿，不影响任何功能。</strong></p>
     <figure class="support-qr">
-      <img src="/static/images/wechat-donate.jpg" alt="微信赞赏码" width="280" height="280" loading="lazy">
+      <img src="/static/images/wechat-donate.jpg" alt="微信赞赏码" width="280" height="280" loading="lazy"
+           onerror="this.hidden=true; this.parentElement.querySelector('.support-qr-fallback').hidden=false">
+      <p class="support-qr-fallback" hidden>赞赏码图片未配置。维护者可将二维码置于 <code>static/images/wechat-donate.jpg</code>。</p>
       <figcaption>微信扫码 · 自愿赞赏</figcaption>
     </figure>
   </div>

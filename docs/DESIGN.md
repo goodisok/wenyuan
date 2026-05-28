@@ -1,6 +1,6 @@
 # 问元 · 设计规范（DESIGN v2）
 
-> 与 **v1.11** 实现对齐。实现文件：`static/css/theme.css`、`templates/`、`static/js/app.js`。
+> 与当前实现（`app.__version__`）对齐。实现文件：`static/css/theme.css`、`templates/`、`static/js/app.js`。
 
 ---
 
@@ -154,7 +154,7 @@ v2 面板样式：**减少嵌套卡片**，以顶部分隔线区分（避免 car
 [Topbar]
 [Tab: 基本 | 命盘 | 细盘 | 问 AI]
 [Sticky: 四柱串 + 日主 + 阳历]
-[sec-meta: 基本信息 + 观命 + 要点 + 断事 + 六亲]
+[sec-meta: 基本信息 + 五行（规则层由 AI 解读，无程序化断语面板）]
 [sec-di: 四柱表 + 可选卡片视图]
 [sec-tian: 大运流年]
 [sec-ai: 解读 + chips + 追问]
@@ -166,11 +166,11 @@ v2 面板样式：**减少嵌套卡片**，以顶部分隔线区分（避免 car
 
 | 层级 | 触发 | 说明 |
 |------|------|------|
-| **L1** | 「开始解读」 | SSE 六章 Markdown；badge「子平直断」 |
-| **L2** | `.l2-chip` | 单次 `POST /api/ask` |
-| **L3** | 输入框 Enter 发送 | 可带 history；Shift+Enter 换行 |
+| **L1** | 「开始解读」 | SSE Markdown；流结束 `done` 含校验后最终稿 |
+| **L2** | `.l2-chip` | `POST /api/ask`（SSE 或 JSON） |
+| **L3** | 输入框 Enter | 可带 history（≤100 轮）；Shift+Enter 换行 |
 
-API 字段 `style` 保留兼容，提示词已统一。
+API 字段 `style` 保留兼容（`classic` / `modern`），服务端按命例类型选用术语。
 
 ---
 

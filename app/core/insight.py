@@ -84,7 +84,13 @@ def build_insight(chart: dict[str, Any]) -> dict[str, Any]:
     insight["citations"] = citations
     insight["corpus_meta"] = get_corpus_meta()
     age = int(meta.get("age") or 1)
+    birth_year = None
+    solar = (meta.get("birth_time") or {}).get("solar") or ""
+    if len(solar) >= 4 and solar[:4].isdigit():
+        birth_year = int(solar[:4])
     insight = apply_stage_presentation(insight, age)
+    if birth_year:
+        insight["birth_year"] = birth_year
     insight["l2_questions"] = suggest_l2_questions(insight)
     from app.core.ai_validate import collect_allowed_years, collect_dayun_years
 
@@ -103,7 +109,10 @@ def build_insight(chart: dict[str, Any]) -> dict[str, Any]:
 
 
 def public_insight(insight: dict[str, Any]) -> dict[str, Any]:
-    """仅返回 UI 所需最小字段；规则层不暴露给客户端。"""
+    """返回客户端可见的最小 insight：运限摘要 + 通用追问 chips。
+
+    完整规则层（观命、断事、典籍等）仅在服务端供 AI 使用，不返回浏览器。
+    """
     from app.core.reading import public_l2_questions
 
     age = int(insight.get("age") or insight.get("life_stage", {}).get("age") or 1)
@@ -115,10 +124,11 @@ def public_insight(insight: dict[str, Any]) -> dict[str, Any]:
 
 
 def ensure_ai_insight(chart: dict[str, Any], insight: dict[str, Any] | None = None) -> dict[str, Any]:
-    """AI 请求始终使用服务端完整规则层（客户端不传或传空）。"""
-    full = build_insight(chart)
-    full["citations"] = full.get("citations") or knowledge_retrieve(chart, full)
-    return full
+    """AI 请求始终使用服务端完整规则层。
+
+    客户端传入的 insight（public 子集）会被忽略，避免与规则层脱节。
+    """
+    return build_insight(chart)
 
 
 def ensure_citations(chart: dict[str, Any], insight: dict[str, Any] | None) -> dict[str, Any]:

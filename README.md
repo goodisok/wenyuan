@@ -1,89 +1,59 @@
 # 问元 Wenyuan
 
-探问天地人三元 — **自研**八字排盘与 AI 解读 Web 服务。
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
+[![Python](https://img.shields.io/badge/Python-3.10+-3776AB?logo=python&logoColor=white)](https://www.python.org/)
+[![Version](https://img.shields.io/badge/version-1.16.2-green)](app/__init__.py)
 
-程序负责准确排盘与多层子平规则分析；网页展示命盘结构，**AI 在服务端完整规则层与典籍检索上下文中**流式解读与就盘追问。支持公历/农历、PC 与手机、多用户并发；无账号注册，服务端不落库。
+自研八字排盘与 AI 解读 Web 服务。**程序在服务端完成排盘与多层子平规则分析**；AI 在完整规则层与典籍检索上下文中流式解读，并支持就盘追问。浏览器仅展示命盘结构与 AI 输出，规则层明细不暴露给客户端。
 
-**当前版本：** v1.15.1（以 [`/health`](https://wenyuan.online/health) 为准）
+- 在线试用：[wenyuan.online](https://wenyuan.online/) · 备用 [119.91.54.153](http://119.91.54.153/)
+- 版本以 [`/health`](http://119.91.54.153/health) 返回为准
 
-## 在线试用
+## Table of Contents
 
-| 地址 | 说明 |
-|------|------|
-| [https://wenyuan.online/](https://wenyuan.online/) | 主域名（需 ICP 备案后国内可正常访问） |
-| [http://119.91.54.153/](http://119.91.54.153/) | 备用 IP 直连 |
+- [Features](#features)
+- [Quick Start](#quick-start)
+- [Configuration](#configuration)
+- [Usage](#usage)
+- [API](#api)
+- [Development](#development)
+- [Project Structure](#project-structure)
+- [Documentation](#documentation)
+- [Deployment](#deployment)
+- [Contributing](#contributing)
+- [License](#license)
+- [Disclaimer](#disclaimer)
 
-配置服务端 `DEEPSEEK_API_KEY` 后可使用流式解读与就盘追问；`AI_ENABLED=false` 可全站关闭 AI。
+## Features
 
-## 这是什么
+### Chart & rules (server-side)
 
-| 是 | 不是 |
-|----|------|
-| 公网命盘 + 服务端统一 AI | 在线算命社区 |
-| 程序排盘 + 规则层锚定 AI | 纯 LLM 自由发挥 |
-| 就盘 L1 解读 / L2 追问 / L3 自由问答 | 脱离命盘的闲聊 |
-| 无账号、无云端命盘库 | 用户自带 API Key |
-| 文化参考与自我觉察 | 医疗 / 投资 / 决策依据 |
+- 公历 / 农历排盘，精确到分钟；四柱、藏干、十神、纳音、旬空、长生、大运、流年、小运
+- 服务端多层子平规则：滴天髓、子平格局、穷通调候、观命总观、断事、六亲、三关等
+- 三阶读盘（直断 / 结构提示 / 阶段侧重）；程序分级后注入 AI 上下文
+- 古典案例 RAG + BM25 典籍检索（仅服务端）
 
-## 使用流程
+### AI interpretation
 
-1. **输入生辰** — 公历或农历（可勾选闰月），精确到分钟  
-2. **浏览命盘** — 基本 · 命盘 · 细盘（四柱、五行、大运流年）  
-3. **问 AI** — 流式解读 → 预设追问 chips → 就盘自由问答  
-4. **导出** — 顶栏「截图」「PDF」保存当前命盘页（含完整追问记录）
+- **L1** 流式命盘解读 — `POST /api/analyze`（SSE 或 JSON）
+- **L2** 预设追问 chips — `POST /api/ask`
+- **L3** 就盘自由问答，可带会话 history（SSE 或 JSON）
+- L1/L2/L3 流式结束后：`ai_validate` 校验，必要时静默修订，`done` 事件返回最终稿
 
-分享链接 `/chart?s=…` 仅编码生辰参数（不含排盘结果）；复制前会提示隐私。本机可查看最近 20 条排盘记录（localStorage）。
+### Web & privacy
 
-## 核心能力
+- 无账号、无服务端命盘库；分享链接仅编码生辰参数
+- 当前命盘与 AI 缓存在 **sessionStorage**；最近 20 条排盘在 **localStorage**
+- 命盘页截图 / PDF 导出（含完整追问记录）
 
-### 排盘（天元 · 地元 · 人元）
+## Quick Start
 
-四柱（藏干、十神、纳音、旬空、长生）、起运、大运、流年、小运；胎元、命宫、身宫；刑冲合害；五行统计。
+### Prerequisites
 
-### 规则层 · 子平综参（服务端）
+- Python 3.10+
+- （可选）Node.js 18+ — 前端表单冒烟测试
 
-滴天髓、子平格局、穷通调候、观命总观、断事、六亲多维验证等，在服务端全量计算；**三阶读盘**（直断 / 结构提示 / 阶段侧重）由 `reading.py` 编排，高置信内容才进入 AI 上下文。
-
-| 对用户 | 对 AI（服务端） |
-|--------|-----------------|
-| 命盘与运限数据 | 完整 `build_insight()` |
-| 当前大运 / 流年摘要 | 观命、断事、三关、典籍 citations |
-| L2 预设追问 chips | 按年龄与命盘动态生成 |
-
-网页 **不展示** 程序化断语面板（v1.14 起）；规则层仅服务端供 AI 智能解读，避免界面与 AI 两套表述。
-
-### AI · 问
-
-- **L1** — `POST /api/analyze`：SSE 流式解读，章节按年龄与命盘组织  
-- **L2** — 解读下方 chips → `POST /api/ask`  
-- **L3** — 输入框就盘追问，可带会话 history（SSE）
-
-## 架构概览
-
-```
-生辰 → BaziService 排盘
-     → mingli / reading 规则层（全量计算 + 分级呈现）
-     → build_insight + BM25 典籍检索
-     → public_insight（最小字段）→ 前端
-     → ensure_ai_insight（完整规则层）→ DeepSeek 流式解读 / 追问
-```
-
-- 读盘分层：[docs/READING.md](docs/READING.md)  
-- 系统模块：[docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)  
-- UI 规范：[docs/DESIGN.md](docs/DESIGN.md)  
-- 部署运维：[DEPLOY.md](DEPLOY.md)
-
-## 技术栈
-
-| 层 | 选型 |
-|----|------|
-| 后端 | FastAPI · Pydantic · httpx · lunar-python |
-| AI | DeepSeek Chat Completions（SSE） |
-| 前端 | Jinja2 · 原生 JS · CSS（无 React 构建链） |
-| 知识 | JSON 语料 · bazi-wiki · BM25 检索 |
-| 部署 | Nginx · systemd · Let's Encrypt |
-
-## 快速开始
+### Install & run
 
 **Windows：**
 
@@ -94,84 +64,133 @@ start.bat
 **手动：**
 
 ```bash
+git clone https://github.com/goodisok/wenyuan.git
+cd wenyuan
+
 python -m venv venv
 venv\Scripts\activate          # Windows
 # source venv/bin/activate     # Linux / macOS
+
 pip install -r requirements.txt
-copy .env.example .env         # 填入 DEEPSEEK_API_KEY
+copy .env.example .env         # Windows: cp .env.example .env
 python run.py
 ```
 
-- 主页：http://localhost:8000  
-- API 文档：http://localhost:8000/docs  
+| URL | Description |
+|-----|-------------|
+| http://localhost:8000 | Web UI |
+| http://localhost:8000/docs | OpenAPI |
+| http://localhost:8000/health | Version check |
 
-公网部署见 [DEPLOY.md](DEPLOY.md)。
+## Configuration
 
-## 项目结构
+Copy `.env.example` to `.env`:
+
+| Variable | Required | Description |
+|----------|----------|-------------|
+| `DEEPSEEK_API_KEY` | For AI | DeepSeek API key |
+| `DEEPSEEK_MODEL` | No | Default `deepseek-v4-pro` |
+| `DEEPSEEK_BASE_URL` | No | Default `https://api.deepseek.com/v1` |
+| `AI_ENABLED` | No | `false` → analyze/ask 返回 503 |
+| `APP_HOST` / `APP_PORT` / `APP_DEBUG` | No | 见 `.env.example` |
+
+无 `DEEPSEEK_API_KEY` 时排盘可用，AI 不可用。
+
+## Usage
+
+1. 输入生辰（公历/农历、可选闰月）与性别
+2. 浏览 **基本 / 命盘 / 细盘** Tab
+3. 在 **问 AI** 开始流式解读 → 追问 chips → 自由问答
+4. 顶栏截图 / PDF 导出
 
 ```
-wenyuan/
-├── app/
-│   ├── main.py              # 页面路由、健康检查
-│   ├── api/routes.py        # /api/chart · analyze · ask
-│   ├── core/                # 排盘、规则层、读盘、发布过滤
-│   └── services/ai.py       # DeepSeek 提示词与 SSE
-├── knowledge/               # 典籍 JSON、bazi-wiki、BM25
-├── templates/               # index · chart · privacy
-├── static/                  # theme.css · app.js · 导出库
-├── tests/                   # pytest + 黄金命例
-├── docs/
-│   ├── ARCHITECTURE.md      # 系统架构
-│   ├── READING.md           # 三阶读盘
-│   └── DESIGN.md            # UI/UX 规范
-├── DEPLOY.md                # 部署说明
-└── run.py
+生辰 → BaziService 排盘 → build_insight（规则层 + 检索 + RAG）
+     → public_insight（运限 + 通用 chips）→ 浏览器
+     → ensure_ai_insight（完整规则层）→ DeepSeek 流式 → 校验/修订
 ```
 
-## API 示例
+## API
 
 ```bash
 curl -X POST http://localhost:8000/api/chart \
   -H "Content-Type: application/json" \
-  -d "{\"date_type\":\"solar\",\"birth_date\":\"1990-05-15\",\"birth_time\":\"12:30\",\"gender\":\"male\",\"is_leap_month\":false}"
+  -d '{"date_type":"solar","birth_date":"1990-05-15","birth_time":"12:30","gender":"male","is_leap_month":false}'
 ```
 
-## 测试
+| Endpoint | Method | Description |
+|----------|--------|-------------|
+| `/api/chart` | POST | 排盘 JSON（insight 为 public 子集） |
+| `/api/analyze` | POST | AI 解读（SSE 或 JSON） |
+| `/api/ask` | POST | 追问（SSE 或 JSON） |
+| `/health` | GET | `{"status":"ok","version":"…"}` |
+
+请求体中的 `insight` 字段由服务端忽略，始终以服务端重算为准。
+
+完整 schema：http://localhost:8000/docs
+
+## Development
 
 ```bash
-python -m pytest tests/
-npm install                              # 首次需安装 jsdom（生辰表单冒烟）
-npm run test:birth-form                  # 或单独跑
+python -m pytest tests/ -q
+npm install && npm run test:birth-form
+python scripts/run_flywheel.py
+python scripts/regression_rules.py
+python scripts/regression_ai.py
 ```
 
-## 版本摘要
+Baselines：`reports/baseline_*_v*.json` · 古典 AI 套件：`data/ai_regression_suite.json`（50 例）
 
-| 版本 | 要点 |
-|------|------|
-| **v1.15.1** | AI 提示词改回如实断语，移除报喜式禁用与后处理洗稿 |
-| **v1.15.0** | 特格/流月应期/神煞精简；质量验证脚本 |
-| **v1.14.3** | 导出截图/PDF 时完整包含追问记录 |
-| **v1.14.2** | 顶栏「截图 / PDF」双按钮 |
-| **v1.14** | 移除程序化断事 UI；规则层仅服务端供 AI |
-| **v1.13** | 三阶读盘：直断 / 结构提示 / 人生阶段 |
-| v1.10 | 观命总观、BM25、AI 校验、黄金命例 |
-| v1.6+ | 六亲多维验证、断事层、子平综参 |
+## Project Structure
 
-## 支持项目
+```
+wenyuan/
+├── app/
+│   ├── main.py, config.py, schemas.py
+│   ├── api/routes.py
+│   ├── core/          # 排盘、规则、读盘、校验、RAG
+│   └── services/ai.py
+├── knowledge/         # 语料、wiki、BM25
+├── data/              # 回归套件
+├── scripts/           # 部署、飞轮、回归
+├── templates/ static/ tests/ docs/
+└── run.py
+```
 
-[wenyuan.online](https://wenyuan.online/) 上的 AI 解读与追问使用作者自购的 DeepSeek Token，无广告、无付费墙。若你觉得问元有用，欢迎自愿赞赏，用于补贴 API 与服务器成本（**非必需，不影响任何功能**）。站点页脚也有 [支持作者](https://wenyuan.online/support) 入口。
+## Documentation
 
-<p align="center">
-  <img src="docs/assets/wechat-donate.jpg" alt="微信赞赏码" width="280">
-</p>
+| Document | Description |
+|----------|-------------|
+| [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) | 系统架构与数据流 |
+| [docs/READING.md](docs/READING.md) | 三阶读盘 |
+| [docs/DESIGN.md](docs/DESIGN.md) | UI/UX |
+| [DEPLOY.md](DEPLOY.md) | 部署运维 |
+| [knowledge/ATTRIBUTION.md](knowledge/ATTRIBUTION.md) | 语料版权 |
 
-<p align="center"><sub>微信扫码 · 自愿赞赏</sub></p>
+## Deployment
 
-## 仓库与许可
+```bash
+python scripts/deploy_remote.py YOUR_HOST YOUR_PASSWORD
+python scripts/verify_live.py
+```
 
-- GitHub：[github.com/goodisok/wenyuan](https://github.com/goodisok/wenyuan)（MIT）  
-- 语料说明：[knowledge/ATTRIBUTION.md](knowledge/ATTRIBUTION.md)  
-- 更新 wiki 语料：`python scripts/sync_wiki.py`  
-- 安装 git hook（去除 Cursor co-author）：`powershell -ExecutionPolicy Bypass -File scripts/install_git_hooks.ps1`
+详见 [DEPLOY.md](DEPLOY.md)。
 
-免责声明：输出仅供文化参考，不构成人生决策依据。详见 [隐私说明](https://wenyuan.online/privacy)。
+## Contributing
+
+1. `python -m pytest tests/ -q`
+2. `python scripts/regression_rules.py`
+3. 若改 AI 提示词：`python scripts/regression_ai.py`
+
+Issues / PR：[github.com/goodisok/wenyuan](https://github.com/goodisok/wenyuan)
+
+## License
+
+[MIT](LICENSE) © 2026 [goodisok](https://github.com/goodisok)
+
+## Disclaimer
+
+输出仅供文化参考与自我觉察，不构成医疗、投资或人生决策依据。见 [隐私说明](https://wenyuan.online/privacy)。
+
+---
+
+**支持：** 站点 AI 使用作者自购 Token，无广告无付费墙。自愿赞赏见 [支持页](https://wenyuan.online/support)（需将 `static/images/wechat-donate.jpg` 置于仓库方可显示二维码）。

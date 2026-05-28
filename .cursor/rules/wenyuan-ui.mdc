@@ -23,57 +23,38 @@ alwaysApply: false
 - 文字：`--text` / `--text-muted`
 - 强调：`--accent` / `--accent-dim` / `--accent-cool` / `--accent-warm`
 - 五行：`--wood` `--fire` `--earth` `--metal` `--water`
-- 圆角：`--radius`（12px）；间距：4px 倍数
 
 ## 组件类名（复用，勿发明平行体系）
 
 | 用途 | 类名 |
 |------|------|
-| 页面卡片 | `.card` `.panel-card` + `.panel-card-header` / `.panel-card-body` |
+| 页面卡片 | `.card` `.panel-card` |
 | 主按钮 | `.btn.btn-primary` |
-| 次按钮 | `.btn.btn-secondary` |
-| 徽章 | `.badge` `.topic-badge` `.conf-badge` |
-| 表单 | `.form-group` `.form-row` `.form-tip` |
-| 命盘分区 | `.section-block` `.section-title` `.chart-nav` |
-| 断事/三关 | `.duanshi-panel` `.sanguan-panel` `.insight-stack` |
-| 空/错/加载 | `.ai-empty` `.alert-error` `.chart-skeleton` `.spinner` |
+| 命盘分区 | `.section-block` `.chart-nav` |
+| AI 区 | `.ai-empty-state` `.l2-chip` |
+| 空/错/加载 | `.alert-error` `.chart-skeleton` `.spinner` |
 
 ## 页面 IA
 
 ### 首页 `/`
 
-1. Hero（价值主张 + 三步流程）
-2. 排盘表单（主 CTA）
-3. 能力亮点（规则层 / 断事 / AI）
-4. 最近排盘（localStorage）
+Hero → 排盘表单 → 能力亮点 → 最近排盘（localStorage）
 
 ### 命盘 `/chart`
 
-1. 顶栏：返回 + 分享/导出
-2.  sticky：四柱摘要 + 分区 Tab
-3. 概览 → 四柱 → 运势 → 本命 → 问 AI（单一「开始解读」）
+1. 顶栏：返回 + 截图/PDF
+2. Sticky：四柱摘要 + Tab
+3. **基本** → **命盘** → **细盘** → **问 AI**
+4. 规则层不在浏览器展示程序化面板（v1.14+）；解读走 AI Tab
 
 ## 文案调性
 
-- 产品化、直接：「开始排盘」「开始解读」「子平直断」
-- 避免：「仅供娱乐」「算命平台」口吻；避免古典/现代双风格选项
-- AI 区说明：锚定本盘、非闲聊、L3 轮次上限
-
-## 无障碍
-
-- 主 landmark：`<main id="main-content">`
-- 模态：`role="dialog"` `aria-modal` Esc 关闭
-- Tab 导航：`role="tablist"` / `aria-selected`
-- 按钮：`focus-visible` 轮廓；`prefers-reduced-motion` 已支持
-
-## 移动端
-
-- 四柱横向滑动；大运卡片；底部 ask 栏 sticky + safe-area
-- 主按钮在表单区 `width: 100%`，工具栏内 `width: auto`
+- 产品化、直接：「开始排盘」「开始解读」
+- 避免：「仅供娱乐」「算命平台」口吻
+- AI 区：锚定本盘、非闲聊；history 服务端上限 100 轮
 
 ## 反模式
 
+- 不要恢复浏览器端观命/断事/三关面板（除非同步扩展 `public_insight` API）
 - 不要拆出第二个 CSS 文件（除非用户明确要求）
-- 不要用 emoji 充当图标
-- 不要恢复「古典风格 / 现代风格」双按钮
-- 不要在 `renderChart` 外重复绑定 `#btn-copy-link` 等同 id
+- 不要在 `renderChart` 外重复绑定同 id 事件

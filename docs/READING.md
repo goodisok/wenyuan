@@ -29,11 +29,11 @@
 
 ### 呈现 tier
 
-| tier | 含义 | UI | AI |
-|------|------|-----|-----|
-| **assert** | 直断 |  verdict + 依据 + 应期 | 可断吉凶与年份 |
-| **hint** | 结构提示 | 宫位/十神倾向 | 不断应期 |
-| **structure** | 阶段降级 | 仅宫位结构 | 只论结构 |
+| tier | 含义 | 浏览器 UI（v1.14+） | AI |
+|------|------|---------------------|-----|
+| **assert** | 直断 | 不展示面板，由 AI 表述 | 可断吉凶与应期 |
+| **hint** | 结构提示 | 同上 | 可论十神宫位倾向 |
+| **structure** | 阶段降级 | 同上 | 只论结构 |
 | **hidden** | 不展示 | — | — |
 
 ### 人生阶段
@@ -51,8 +51,8 @@ BirthInput → BaziService.build_chart
           → mingli.analyze (结构 + duanshi_raw/sanguan_raw + tiered publish)
           → build_insight
           → apply_stage_presentation (life_stage + highlights 重建)
-          → public_insight → 前端 / API
-          → AI (build_output_format + ai_reading_brief)
+          → public_insight → 前端（仅运限 + 通用 chips）
+          → ensure_ai_insight → AI（ai_reading_brief + build_output_format）
 ```
 
 ---

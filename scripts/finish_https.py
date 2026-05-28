@@ -1,18 +1,27 @@
-"""Re-apply SSL nginx when Let's Encrypt cert already exists."""
+"""Re-apply SSL nginx when Let's Encrypt cert already exists.
+
+Usage: python finish_https.py HOST PASSWORD
+"""
 from __future__ import annotations
+
+import sys
 
 import paramiko
 from nginx_config import DOMAIN, nginx_config
 
-HOST = "119.91.54.153"
 USER = "ubuntu"
-PASSWORD = "Goodisok123"
 
 
 def main() -> None:
+    if len(sys.argv) < 3:
+        print("Usage: python finish_https.py HOST PASSWORD", file=sys.stderr)
+        raise SystemExit(2)
+    host = sys.argv[1]
+    password = sys.argv[2]
+
     client = paramiko.SSHClient()
     client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
-    client.connect(HOST, username=USER, password=PASSWORD, timeout=60)
+    client.connect(host, username=USER, password=password, timeout=60)
 
     def run(cmd: str, timeout: int = 600) -> str:
         print(">>>", cmd[:120])
@@ -34,7 +43,7 @@ def main() -> None:
         "certbot-nginx/certbot_nginx/_internal/tls_configs/options-ssl-nginx.conf "
         "-o /etc/letsencrypt/options-ssl-nginx.conf"
     )
-    conf = nginx_config(ssl=True, host=HOST)
+    conf = nginx_config(ssl=True, host=host)
     run(f"cat > /tmp/wenyuan.nginx <<'EOF'\n{conf}\nEOF")
     run("sudo mv /tmp/wenyuan.nginx /etc/nginx/sites-available/wenyuan")
     run("sudo nginx -t")

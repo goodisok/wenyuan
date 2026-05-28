@@ -14,7 +14,8 @@
     <h3>我们如何存储</h3>
     <ul>
       <li><strong>服务端不持久化</strong>您的生辰或命盘结果，无用户账号与云端命盘库。</li>
-      <li>最近排盘记录与 AI 缓存保存在您<strong>本机浏览器</strong>（localStorage），可随时清除浏览器数据删除。</li>
+      <li>当前命盘与 AI 解读缓存在您<strong>本机浏览器 sessionStorage</strong>（关闭标签页后清除）。</li>
+      <li>最近 20 条排盘摘要保存在 <strong>localStorage</strong>（<code>wenyuan_history</code>），可随时清除浏览器数据删除。</li>
       <li>AI 解读请求会发送至 DeepSeek API 处理，请同时参阅 DeepSeek 的隐私政策。</li>
     </ul>
     <h3>日志</h3>

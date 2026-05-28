@@ -41,6 +41,8 @@ python setup_https.py 119.91.54.153 YOUR_PASSWORD admin@wenyuan.online
 
 证书自动续期由 `certbot.timer` 负责。后续 `deploy_remote.py` 会检测证书并保留 HTTPS 配置。
 
+> **§6 手动 Certbot** 为备用方案；优先使用本节 `setup_https.py`。
+
 ## 2. 部署代码
 
 **方式 A：本机 SFTP 上传（推荐，绕过 GitHub 超时）**
@@ -133,9 +135,9 @@ sudo rm -f /etc/nginx/sites-enabled/default
 sudo nginx -t && sudo systemctl restart nginx
 ```
 
-## 6. HTTPS（可选）
+## 6. HTTPS（备用 · 手动 Certbot）
 
-使用 Certbot：
+若未使用 §1.2 的 `setup_https.py`，可手动：
 
 ```bash
 sudo apt install certbot python3-certbot-nginx
@@ -146,7 +148,7 @@ sudo certbot --nginx -d your.domain.com
 
 ```bash
 curl http://127.0.0.1:8000/health
-# {"status":"ok","version":"1.0.0"}
+# {"status":"ok","version":"<app.__version__>"}
 ```
 
 浏览器访问 `http://YOUR_IP/`，走通：排盘 → 分享链接 → L1 解读 → L2/L3 追问。

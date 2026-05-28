@@ -373,36 +373,41 @@ async function consumeSSE(res, onChunk) {
   let full = "";
   let error = null;
 
+  function handleBlock(block) {
+    const lines = block.split("\n");
+    let event = "message";
+    let data = "";
+    for (const line of lines) {
+      if (line.startsWith("event: ")) event = line.slice(7).trim();
+      if (line.startsWith("data: ")) data = line.slice(6);
+    }
+    if (!data) return;
+    try {
+      const parsed = JSON.parse(data);
+      if (event === "chunk" && parsed.text) {
+        full += parsed.text;
+        if (onChunk) onChunk(full, parsed.text);
+      } else if (event === "done") {
+        full = parsed.analysis || parsed.answer || full;
+        if (onChunk) onChunk(full, "");
+      } else if (event === "error") {
+        error = parsed.error || "流式请求失败";
+      }
+    } catch {
+      /* ignore */
+    }
+  }
+
   while (true) {
     const { done, value } = await reader.read();
     if (done) break;
     buffer += decoder.decode(value, { stream: true });
     const parts = buffer.split("\n\n");
     buffer = parts.pop() || "";
-    for (const block of parts) {
-      const lines = block.split("\n");
-      let event = "message";
-      let data = "";
-      for (const line of lines) {
-        if (line.startsWith("event: ")) event = line.slice(7).trim();
-        if (line.startsWith("data: ")) data = line.slice(6);
-      }
-      if (!data) continue;
-      try {
-        const parsed = JSON.parse(data);
-        if (event === "chunk" && parsed.text) {
-          full += parsed.text;
-          onChunk(full, parsed.text);
-        } else if (event === "done") {
-          full = parsed.analysis || parsed.answer || full;
-        } else if (event === "error") {
-          error = parsed.error || "流式请求失败";
-        }
-      } catch {
-        /* ignore */
-      }
-    }
+    for (const block of parts) handleBlock(block);
   }
+  buffer += decoder.decode();
+  if (buffer.trim()) handleBlock(buffer);
   if (error) throw new Error(error);
   return full;
 }
@@ -424,6 +429,10 @@ const API = {
         headers: { "Content-Type": "application/json", Accept: "text/event-stream" },
         body: JSON.stringify(body),
       });
+      if (res.status === 503) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.error || "AI 暂时关闭");
+      }
       if (!res.ok) {
         const err = await res.json().catch(() => ({}));
         throw new Error(err.error || `请求失败 (${res.status})`);
@@ -759,163 +768,6 @@ function renderDayunCards(dayun) {
       </div>`
     )
     .join("");
-}
-
-function tierBadge(tier) {
-  const map = {
-    assert: { cls: "conf-badge-强", label: "直断" },
-    hint: { cls: "conf-badge-中", label: "结构提示" },
-    structure: { cls: "conf-badge-弱", label: "宫位" },
-  };
-  const b = map[tier] || { cls: "conf-badge-中", label: tier || "" };
-  return `<span class="conf-badge ${b.cls}">${escapeHtml(b.label)}</span>`;
-}
-
-function renderDuanshi(duanshi) {
-  if (!duanshi?.items?.length) return "";
-  const blocks = duanshi.items.map((item) => {
-    const reasons = (item.reasons || []).map((r) => `<li>${escapeHtml(r)}</li>`).join("");
-    const windows = (item.windows || []).map(
-      (w) => `<li>大运 ${escapeHtml(w.dayun || "")}（${escapeHtml(w.years || "")} / ${escapeHtml(w.ages || "")}）${escapeHtml(w.note || "")}</li>`
-    ).join("");
-    const tier = item.display_tier || item.publish_tier || "";
-    const verdict = item.display_verdict || item.verdict || "";
-    const evidence = reasons && tier === "assert"
-      ? `<details class="evidence-details" open><summary class="evidence-summary">依据（为何如此断）</summary><ul class="duanshi-reasons">${reasons}</ul></details>`
-      : "";
-    return `<div class="duanshi-item duanshi-tier-${escapeHtml(tier)}">
-      <div class="duanshi-head">
-        <span class="topic-badge">断·${escapeHtml(item.topic || "")}</span>
-        ${tierBadge(tier)}
-        <span class="duanshi-verdict">${escapeHtml(verdict)}</span>
-      </div>
-      ${evidence}
-      ${windows && tier === "assert" ? `<p class="duanshi-windows-title">应期</p><ul class="duanshi-windows">${windows}</ul>` : ""}
-    </div>`;
-  }).join("");
-  const note = duanshi.publish_note ? `<p class="rule-trust-note">${escapeHtml(duanshi.publish_note)}</p>` : "";
-  return `<div class="panel-card duanshi-panel"><div class="panel-card-header"><h4 class="panel-card-title">断事</h4></div><div class="panel-card-body">${note}${blocks}</div></div>`;
-}
-
-function renderSanguan(sanguan) {
-  if (!sanguan?.gates?.length) return "";
-  const chuan = (sanguan.chuan || []).length
-    ? `<p class="sanguan-chuan">盲派穿象：${escapeHtml(sanguan.chuan.join("、"))}</p>`
-    : "";
-  const blocks = sanguan.gates.map((g) => {
-    const tier = g.display_tier || g.publish_tier || "";
-    const verdict = g.display_verdict || g.verdict || "";
-    const signals = (g.signals || []).map(
-      (s) => `<li><span class="sanguan-school">${escapeHtml(s.school || "")}</span> ${escapeHtml(s.text || "")}</li>`
-    ).join("");
-    const windows = (g.windows || []).map(
-      (w) => `<li>大运 ${escapeHtml(w.dayun || "")}（${escapeHtml(w.years || "")}）${escapeHtml(w.note || "")}</li>`
-    ).join("");
-    const evidence = signals && tier === "assert"
-      ? `<details class="evidence-details" open><summary class="evidence-summary">各家印证</summary><ul class="sanguan-signals">${signals}</ul></details>`
-      : "";
-    return `<div class="sanguan-gate sanguan-tier-${escapeHtml(tier)}">
-      <div class="sanguan-head">
-        <span class="topic-badge">${escapeHtml(g.name || "")}</span>
-        ${tierBadge(tier)}
-        <span class="sanguan-verdict">${escapeHtml(verdict)}</span>
-      </div>
-      ${evidence}
-      ${windows && tier === "assert" ? `<p class="sanguan-windows-title">应期</p><ul class="sanguan-windows">${windows}</ul>` : ""}
-    </div>`;
-  }).join("");
-  const summary = sanguan.summary ? `<p class="sanguan-summary">${escapeHtml(sanguan.summary)}</p>` : "";
-  const note = sanguan.publish_note
-    ? `<p class="sanguan-publish-note">${escapeHtml(sanguan.publish_note)}</p>`
-    : "";
-  return `<div class="panel-card sanguan-panel"><div class="panel-card-header"><h4 class="panel-card-title">六亲人事 · 多维验证</h4></div><div class="panel-card-body"><p class="sanguan-role-note">在观命总观之后，对父母 / 兄弟 / 子女等作盲派、子平、千里交叉印证；仅展示高置信关。</p>${note}${summary}${chuan}${blocks}</div></div>`;
-}
-
-function renderGuanming(guanming) {
-  if (!guanming?.layers?.length) return "";
-  const layers = guanming.layers
-    .filter((layer) => layer.id !== "shensha")
-    .map((layer) => {
-    const lines = (layer.lines || []).map((ln) => `<li>${escapeHtml(ln)}</li>`).join("");
-    return `<div class="guanming-layer guanming-${escapeHtml(layer.id || "")}">
-      <h5 class="guanming-layer-title">${escapeHtml(layer.name || "")} <span class="guanming-layer-sub">${escapeHtml(layer.subtitle || "")}</span></h5>
-      <ul class="guanming-layer-lines">${lines}</ul>
-    </div>`;
-  }).join("");
-  const verse = guanming.verse
-    ? `<blockquote class="guanming-verse">${escapeHtml(guanming.verse)}</blockquote>`
-    : "";
-  return `<div class="panel-card guanming-panel">
-    <div class="panel-card-header"><h4 class="panel-card-title">观命总观 · 滴天髓</h4></div>
-    <div class="panel-card-body">
-      <p class="guanming-summary">${escapeHtml(guanming.summary || "")}</p>
-      <p class="guanming-method">${escapeHtml(guanming.method || "")}</p>
-      ${verse}
-      <div class="guanming-layers">${layers}</div>
-    </div>
-  </div>`;
-}
-
-function renderRuleDetails(insight) {
-  const de = insight.de_ling || {};
-  const tg = insight.tong_gen || {};
-  const geju = insight.geju || {};
-  const purity = geju.purity || {};
-  const ys = insight.yongshen || {};
-  const bodyPat = insight.pattern || {};
-  const sn = insight.stem_nature || {};
-  return `
-    <p>得令：${escapeHtml(de.status || "—")} · 通根：${escapeHtml(tg.summary || "—")}</p>
-    ${geju.type ? `<p><strong>格局</strong> ${escapeHtml(geju.type)}（${escapeHtml(geju.origin || "")}）清纯${escapeHtml(purity.level || "—")} — ${escapeHtml(geju.note || "")}</p>` : ""}
-    ${bodyPat.type ? `<p><strong>体用</strong> ${escapeHtml(bodyPat.type)} — ${escapeHtml(bodyPat.note || "")}</p>` : ""}
-    ${ys.summary ? `<p><strong>喜用倾向</strong> ${escapeHtml(ys.summary)}</p>` : ""}
-    ${sn.verse ? `<div class="ditiansui-panel"><p class="ditiansui-panel-title">滴天髓</p><p class="ditiansui-verse">${escapeHtml(sn.verse)}</p></div>` : ""}
-    <p><strong>调候</strong> ${escapeHtml(insight.tiao_hou || "")}</p>
-    <p class="insight-note">${escapeHtml(insight.day_master_strength_note || "")}</p>`;
-}
-
-function renderLifeStage(lifeStage) {
-  if (!lifeStage?.focus_areas?.length) return "";
-  const chips = lifeStage.focus_areas
-    .map((f) => {
-      const pri = f.priority === "primary" ? " focus-chip-primary" : "";
-      return `<span class="focus-chip${pri}">${escapeHtml(f.label)}</span>`;
-    })
-    .join("");
-  return `<div class="panel-card lifestage-panel">
-    <div class="panel-card-header"><h4 class="panel-card-title">人生阶段 · 当前关切</h4></div>
-    <div class="panel-card-body">
-      <p class="lifestage-summary">虚岁 <strong>${escapeHtml(String(lifeStage.age ?? ""))}</strong> · ${escapeHtml(lifeStage.stage_label || "")} · 侧重 ${escapeHtml(lifeStage.focus_summary || "")}</p>
-      <p class="rule-trust-note">同一命盘结构完整计算；按年龄段调整解读侧重，童年不断婚育应期，晚年不强调学业。</p>
-      <div class="focus-chips">${chips}</div>
-    </div>
-  </div>`;
-}
-
-function renderHighlightsPanel(insight) {
-  const items = (insight.highlights || []).map(
-    (h) => `<li class="highlight-item">${escapeHtml(h)}</li>`
-  ).join("");
-  const sources = (insight.sources || ["子平", "滴天髓", "穷通宝鉴"]).join(" · ");
-  return `
-    <div class="insight-stack">
-      ${renderLifeStage(insight.life_stage)}
-      ${renderGuanming(insight.guanming)}
-      <div class="panel-card highlights-panel">
-        <div class="panel-card-header"><h3 class="panel-card-title">命局要点</h3></div>
-        <div class="panel-card-body">
-          <p class="rule-trust-note">结构层据盘上可见信息直述；断事分「直断 / 结构提示 / 宫位」，与当前人生阶段一致。</p>
-          <p class="highlights-source">综参 ${escapeHtml(sources)}</p>
-          <ul class="highlights-list">${items || "<li class=\"highlight-item\">暂无摘要</li>"}</ul>
-          <details class="details-more sub-panel-details" open>
-            <summary>规则明细（体用 / 格局 / 调候）</summary>
-            <div class="details-body">${renderRuleDetails(insight)}</div>
-          </details>
-        </div>
-      </div>
-      ${renderDuanshi(insight.duanshi)}
-      ${renderSanguan(insight.sanguan)}
-    </div>`;
 }
 
 function renderChart(data) {

@@ -17,8 +17,6 @@ Style = Literal["classic", "modern"]  # classic=古典命例(传统术语), mode
 
 AI_STYLE_LABEL = "子平直断"
 
-OUTPUT_FORMAT = build_output_format(None)
-
 OFF_TOPIC_HINT = "请就当前命盘提问，问元不支持脱离命盘的闲聊。"
 
 
@@ -299,8 +297,11 @@ class AIAnalysisService:
 
             ins = build_insight(chart)
         insight_text = cls._format_insight(ins)
+        from app.core.reading import ai_reading_brief
+
+        reading_guide = ai_reading_brief(ins)
         now = datetime.now().strftime("%Y-%m-%d %H:%M")
-        parts = [f"当前分析时间：{now}", insight_text, f"命盘数据：\n{summary}"]
+        parts = [f"当前分析时间：{now}", reading_guide, insight_text, f"命盘数据：\n{summary}"]
         if analysis:
             parts.append(f"已有 L1 解读：\n{analysis}")
         if for_ask:
@@ -464,6 +465,37 @@ class AIAnalysisService:
         return cls.sse_events(stream(), finalize=finalize)
 
     @classmethod
+    def ask_sse(
+        cls,
+        chart: dict[str, Any],
+        question: str,
+        style: Style = "modern",
+        insight: dict[str, Any] | None = None,
+        analysis: str = "",
+        history: list[dict[str, str]] | None = None,
+    ):
+        cls.ensure_available()
+        if not chart.get("pillars"):
+            raise ValueError("命盘数据无效")
+        q = question.strip()
+        if not q:
+            raise ValueError("请输入问题")
+        messages = cls._build_messages(
+            chart, insight, style,
+            analysis=analysis, question=q, history=history, for_ask=True,
+        )
+        ins = insight or chart.get("insight")
+
+        async def finalize(text: str) -> str:
+            return await cls._finalize_analysis(messages, text, ins)
+
+        async def stream() -> AsyncIterator[str]:
+            async for chunk in cls._stream_completion(messages):
+                yield chunk
+
+        return cls.sse_events_ask(stream(), finalize=finalize)
+
+    @classmethod
     async def ask(
         cls,
         chart: dict[str, Any],
@@ -483,7 +515,8 @@ class AIAnalysisService:
             chart, insight, style,
             analysis=analysis, question=q, history=history, for_ask=True,
         )
-        return await cls._complete_once(messages)
+        ins = insight or chart.get("insight")
+        return await cls._finalize_analysis(messages, await cls._complete_once(messages, temperature=0.54), ins)
 
     @classmethod
     async def ask_stream(
@@ -533,7 +566,11 @@ class AIAnalysisService:
         return _gen()
 
     @staticmethod
-    def sse_events_ask(stream: AsyncIterator[str]) -> AsyncIterator[str]:
+    def sse_events_ask(
+        stream: AsyncIterator[str],
+        *,
+        finalize=None,
+    ) -> AsyncIterator[str]:
         async def _gen() -> AsyncIterator[str]:
             full: list[str] = []
             try:
@@ -541,7 +578,10 @@ class AIAnalysisService:
                     full.append(text)
                     payload = json.dumps({"text": text}, ensure_ascii=False)
                     yield f"event: chunk\ndata: {payload}\n\n"
-                done = json.dumps({"answer": "".join(full)}, ensure_ascii=False)
+                text = "".join(full)
+                if finalize is not None:
+                    text = await finalize(text)
+                done = json.dumps({"answer": text}, ensure_ascii=False)
                 yield f"event: done\ndata: {done}\n\n"
             except Exception as exc:
                 err = json.dumps({"error": str(exc)}, ensure_ascii=False)
