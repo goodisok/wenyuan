@@ -7,10 +7,13 @@
   3. 多轮迭代测试
 """
 import sys, json, os, time, datetime
-sys.path.insert(0, "/home/lcg/wenyuan")
+from pathlib import Path
+
+ROOT = Path(__file__).resolve().parents[1]
+sys.path.insert(0, str(ROOT))
 import httpx
 
-BASE_URL = "http://localhost:8000"
+BASE_URL = "http://127.0.0.1:8000"
 
 # ============================================================
 # 测试集：公众人物（需已知八字和人生结果用于评估）

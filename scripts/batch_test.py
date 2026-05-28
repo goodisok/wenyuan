@@ -1,9 +1,11 @@
 # -*- coding: utf-8 -*-
 """批量测试 - 分人执行，结果写文件"""
 import sys, json, os, time, httpx
+from pathlib import Path
 
-sys.path.insert(0, "/home/lcg/wenyuan")
-BASE = 'http://localhost:8000'
+ROOT = Path(__file__).resolve().parents[1]
+sys.path.insert(0, str(ROOT))
+BASE = "http://127.0.0.1:8000"
 
 TEST_CASES = [
     ("马云", 1964, 9, 10, "male", "阿里创始人，首富级"),

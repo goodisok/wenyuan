@@ -444,16 +444,17 @@ class AIAnalysisService:
         return content.strip()
 
     @classmethod
-    @classmethod
     def _append_validation_note(cls, text: str, insight: dict[str, Any] | None) -> str:
         # 后处理过滤器：替换禁用短语
-        import re
-        banned = [
+        wealth_banned = [
             "非大富大贵", "不是大富大贵", "不算大富", "平凡之命",
             "暴发户", "中等偏上", "平庸之命",
         ]
-        for phrase in banned:
+        gender_banned = ["克夫", "旺夫", "妇道", "婬贱", "水性杨花"]
+        for phrase in wealth_banned:
             text = text.replace(phrase, "格局有为之命")
+        for phrase in gender_banned:
+            text = text.replace(phrase, "")
         
         # 检查经典引用，如果完全缺失则注入
         classics = ["滴天髓", "穷通宝鉴", "三命通会", "子平真诠", "渊海子平", "神峰通考"]
@@ -484,7 +485,7 @@ class AIAnalysisService:
     async def analyze(
         cls,
         chart: dict[str, Any],
-        style: Style = "classic",
+        style: Style = "modern",
         insight: dict[str, Any] | None = None,
     ) -> str:
         cls.ensure_available()
@@ -497,7 +498,7 @@ class AIAnalysisService:
     async def analyze_stream(
         cls,
         chart: dict[str, Any],
-        style: Style = "classic",
+        style: Style = "modern",
         insight: dict[str, Any] | None = None,
     ) -> AsyncIterator[str]:
         cls.ensure_available()
@@ -517,7 +518,7 @@ class AIAnalysisService:
         cls,
         chart: dict[str, Any],
         question: str,
-        style: Style = "classic",
+        style: Style = "modern",
         insight: dict[str, Any] | None = None,
         analysis: str = "",
         history: list[dict[str, str]] | None = None,
@@ -539,7 +540,7 @@ class AIAnalysisService:
         cls,
         chart: dict[str, Any],
         question: str,
-        style: Style = "classic",
+        style: Style = "modern",
         insight: dict[str, Any] | None = None,
         analysis: str = "",
         history: list[dict[str, str]] | None = None,
