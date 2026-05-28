@@ -1,0 +1,12 @@
+{
+  "name": "wenyuan",
+  "private": true,
+  "type": "module",
+  "description": "Dev dependencies for frontend smoke tests",
+  "scripts": {
+    "test:birth-form": "node scripts/verify_birth_form.mjs"
+  },
+  "devDependencies": {
+    "jsdom": "^26.1.0"
+  }
+}

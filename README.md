@@ -140,7 +140,8 @@ curl -X POST http://localhost:8000/api/chart \
 
 ```bash
 python -m pytest tests/
-node scripts/verify_birth_form.mjs   # 需 Node.js，可选
+npm install                              # 首次需安装 jsdom（生辰表单冒烟）
+npm run test:birth-form                  # 或单独跑
 ```
 
 ## 版本摘要

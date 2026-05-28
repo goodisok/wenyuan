@@ -15,6 +15,7 @@ build/
 *.egg-info/
 .DS_Store
 Thumbs.db
+node_modules/
 test_reports/
 test_results_final.json
 scripts/random_sampling_test.py
