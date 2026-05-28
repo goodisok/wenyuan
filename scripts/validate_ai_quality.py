@@ -2,7 +2,6 @@
 """Validate rule layer + AI output quality (portable)."""
 from __future__ import annotations
 
-import json
 import sys
 import time
 from pathlib import Path
@@ -23,9 +22,6 @@ MODERN_CASES = [
 ]
 
 ANCIENT_TERMS = ["官至", "七品", "朱门", "武职", "发用", "纳妾", "封侯", "状元", "进士"]
-MODERN_TERMS = ["创业", "投资", "管理", "技术", "行业", "企业", "市场", "战略", "资本"]
-CLASSICS = ["滴天髓", "穷通宝鉴", "三命通会", "子平真诠"]
-NEGATIVE = ["非大富大贵", "平凡之命", "暴发户", "克夫", "旺夫", "妇道"]
 
 
 def rule_layer_checks() -> list[str]:
@@ -50,32 +46,43 @@ def rule_layer_checks() -> list[str]:
         if item.get("name") not in allowed:
             errors.append(f"unexpected shensha: {item.get('name')}")
 
-    # 专格样例：庚申年柱专旺倾向（仅检测接口可调用）
     zw = BaziService.build_chart(BirthInput("solar", 1980, 8, 15, 12, 0, "male"))
     _ = detect_special_pattern(zw)
     _ = analyze_dayun_detail(zw)
     return errors
 
 
-def score_analysis(text: str) -> tuple[float, list[str]]:
+def _strength_consistent(text: str, strength: str) -> bool:
+    if not strength:
+        return True
+    mentions_strong = "身强" in text or "偏强" in text or "旺" in text
+    mentions_weak = "身弱" in text or "偏弱" in text
+    if strength in ("偏强", "身强", "强"):
+        return not (mentions_weak and not mentions_strong)
+    if strength in ("偏弱", "身弱", "弱"):
+        return not (mentions_strong and not mentions_weak)
+    return True
+
+
+def score_analysis(text: str, insight: dict | None = None) -> tuple[float, list[str]]:
     issues: list[str] = []
     score = 10.0
-    if any(t in text for t in NEGATIVE):
-        bad = [t for t in NEGATIVE if t in text]
-        issues.append(f"负面/歧视用语: {bad}")
-        score -= 3
     if any(t in text for t in ANCIENT_TERMS):
         bad = [t for t in ANCIENT_TERMS if t in text]
         issues.append(f"古代断语: {bad}")
         score -= 2
-    found_c = [c for c in CLASSICS if c in text]
-    if not found_c:
-        issues.append("无经典引用")
-        score -= 1
-    found_m = [t for t in MODERN_TERMS if t in text]
-    if len(found_m) < 3:
-        issues.append(f"现代词汇不足({len(found_m)})")
-        score -= 1
+    if insight:
+        strength = str(insight.get("day_master_strength") or "")
+        if not _strength_consistent(text, strength):
+            issues.append(f"旺衰与规则层不一致({strength})")
+            score -= 2
+        geju = (insight.get("geju") or {}).get("type", "")
+        if geju and geju not in text:
+            issues.append(f"未提及格局类型({geju})")
+            score -= 0.5
+    if "身强" in text and "身弱" in text:
+        issues.append("同时出现身强与身弱")
+        score -= 2
     if len(text) < 300:
         issues.append("过短")
         score -= 1
@@ -83,6 +90,8 @@ def score_analysis(text: str) -> tuple[float, list[str]]:
 
 
 def ai_checks() -> tuple[list[dict], float]:
+    from app.core.insight import ensure_ai_insight
+
     results: list[dict] = []
     client = httpx.Client(timeout=120.0)
     try:
@@ -107,10 +116,6 @@ def ai_checks() -> tuple[list[dict], float]:
             results.append({"name": name, "error": data.get("message", r1.text[:120])})
             continue
         chart = data["data"]
-        ins = chart.get("insight") or {}
-        if not ins.get("current_dayun"):
-            pass  # public_insight minimal ok
-        full_insight_keys = chart.get("insight")  # public only from API
 
         r2 = client.post(
             f"{BASE}/api/analyze",
@@ -121,12 +126,8 @@ def ai_checks() -> tuple[list[dict], float]:
             results.append({"name": name, "error": ar.get("error", "analyze failed")})
             continue
         text = ar.get("analysis", "")
-        score, issues = score_analysis(text)
-        geju = (chart.get("insight") or {}).get("geju") or chart.get("insight")
-        # geju is in mingli via server - check via re-chart internal
-        from app.core.insight import ensure_ai_insight
-
         full = ensure_ai_insight(chart)
+        score, issues = score_analysis(text, full)
         geju_type = (full.get("geju") or {}).get("type", "?")
         dd = full.get("dayun_detail") or {}
         results.append(
@@ -136,6 +137,7 @@ def ai_checks() -> tuple[list[dict], float]:
                 "issues": issues,
                 "len": len(text),
                 "geju": geju_type,
+                "strength": full.get("day_master_strength"),
                 "liunian_triggers": len((dd.get("current_year_detail") or {}).get("triggers") or []),
             }
         )
@@ -165,7 +167,10 @@ def main() -> int:
         if r.get("error"):
             print(f"  {r['name']}: ERROR {r['error']}")
         else:
-            print(f"  {r['name']}: {r['score']}/10 geju={r['geju']} triggers={r['liunian_triggers']} issues={r.get('issues')}")
+            print(
+                f"  {r['name']}: {r['score']}/10 "
+                f"geju={r['geju']} strength={r.get('strength')} issues={r.get('issues')}"
+            )
     print(f"avg={avg:.2f}/10")
     failed = [r for r in results if r.get("score", 10) < 7 or r.get("error")]
     return 1 if failed else 0

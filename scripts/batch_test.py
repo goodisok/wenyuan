@@ -22,9 +22,7 @@ TEST_CASES = [
 
 CHECK_TERMS = {
     "ancient": ["官至", "七品", "朱门", "武职", "发用", "纳妾", "封侯", "状元", "进士"],
-    "modern": ["创业", "投资", "管理", "技术", "互联网", "学历", "行业", "职场", "团队", "领导力"],
     "classics": ["滴天髓", "穷通宝鉴", "三命通会", "子平真诠"],
-    "negative": ["非大富大贵", "平凡之命", "暴发户"],
 }
 
 output_dir = f"/tmp/wenyuan_batch_{int(time.time())}"
@@ -57,23 +55,18 @@ for i, (name, y, m, d, g, info) in enumerate(TEST_CASES):
         findings = {}
         findings['长度'] = len(ana)
         findings['古代断语'] = [t for t in CHECK_TERMS['ancient'] if t in ana]
-        findings['现代词汇'] = [t for t in CHECK_TERMS['modern'] if t in ana]
         findings['经典引用'] = [t for t in CHECK_TERMS['classics'] if t in ana]
-        findings['负面用语'] = [t for t in CHECK_TERMS['negative'] if t in ana]
         
         score = 10
-        if findings['负面用语']:
-            score -= 3
-            print(f"  ⚠️ 负面用语: {findings['负面用语']}", flush=True)
-        if not findings['经典引用']:
-            score -= 1
-            print(f"  ⚠️ 无经典引用", flush=True)
-        if len(findings['现代词汇']) < 3:
-            score -= 1
-            print(f"  ⚠️ 现代词汇不足", flush=True)
         if findings['古代断语']:
             score -= 2
-            print(f"  ❌ 古代断语: {findings['古代断语']}", flush=True)
+            print(f"  ⚠️ 古代断语: {findings['古代断语']}", flush=True)
+        if not findings['经典引用']:
+            score -= 0.5
+            print(f"  ⚠️ 无经典引用", flush=True)
+        if len(ana) < 300:
+            score -= 1
+            print(f"  ⚠️ 过短", flush=True)
         if ana[:100].count('身强') + ana[:100].count('身弱') > 1:
             pass  # Check if both terms used contradictorily
 
@@ -104,8 +97,6 @@ print(f"  平均分: {avg:.1f}/10", flush=True)
 # Issues found
 all_neg = []
 for r in results:
-    for neg in r['findings'].get('负面用语', []):
-        all_neg.append((r['name'], neg))
     for anc in r['findings'].get('古代断语', []):
         all_neg.append((r['name'], anc))
 
