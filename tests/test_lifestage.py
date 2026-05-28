@@ -49,5 +49,5 @@ def test_public_l2_generic() -> None:
 def test_output_format_ai_centric() -> None:
     ls = build_lifestage(34)
     text = build_output_format({"life_stage": ls})
-    assert "自行组织" in text
+    assert "全盘定调" in text
     assert "直断" not in text or "程序术语" in text

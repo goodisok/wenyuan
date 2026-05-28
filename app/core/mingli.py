@@ -111,6 +111,21 @@ def _plain_highlights(
     if shensha.get("items"):
         names = "、".join(i["name"] for i in shensha["items"][:4])
         lines.append(f"神煞备注（不作分析依据）：{names}。")
+    for item in (duanshi.get("items") or []):
+        tier = item.get("display_tier") or item.get("publish_tier", "")
+        if tier != "assert":
+            continue
+        topic = item.get("topic", "")
+        verdict = item.get("display_verdict") or item.get("verdict", "")
+        if topic and verdict:
+            lines.append(f"【直断·{topic}】{verdict}")
+    for g in (sanguan.get("gates") or []):
+        if (g.get("display_tier") or g.get("publish_tier")) != "assert":
+            continue
+        name = g.get("name", "")
+        verdict = g.get("display_verdict") or g.get("verdict", "")
+        if name and verdict:
+            lines.append(f"【直断·{name}】{verdict}")
     if relations:
         lines.append(f"四柱关系：{'、'.join(relations[:5])}" + ("…" if len(relations) > 5 else ""))
     return lines
@@ -164,7 +179,7 @@ def analyze(chart: dict[str, Any]) -> dict[str, Any]:
     )
 
     highlights = _plain_highlights(
-        meta, guanming, dts, qt, geju, yongshen, shensha, {}, {}, relations
+        meta, guanming, dts, qt, geju, yongshen, shensha, duanshi, sanguan, relations
     )
 
     # 大运流年细化

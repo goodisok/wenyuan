@@ -86,6 +86,16 @@ def build_insight(chart: dict[str, Any]) -> dict[str, Any]:
     age = int(meta.get("age") or 1)
     insight = apply_stage_presentation(insight, age)
     insight["l2_questions"] = suggest_l2_questions(insight)
+    from app.core.ai_validate import collect_allowed_years, collect_dayun_years
+
+    insight["citable_years"] = sorted(
+        set(collect_allowed_years(insight)) | set(collect_dayun_years(chart))
+    )
+    if meta.get("source") == "gz_fixture":
+        insight["is_classical_fixture"] = True
+    from app.core.classical_ref import find_similar
+
+    insight["classical_refs"] = find_similar(chart, limit=3)
     return insight
 
 

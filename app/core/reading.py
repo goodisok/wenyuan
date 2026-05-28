@@ -321,23 +321,53 @@ def build_l1_chapters(insight: dict[str, Any]) -> list[tuple[str, str]]:
 
 
 def build_output_format(insight: dict[str, Any] | None = None) -> str:
+    from app.core.ai_validate import collect_allowed_years, collect_citable_years
+
     ins = insight or {}
     ls = ins.get("life_stage") or {}
     age = ls.get("age", "")
     stage = ls.get("stage_label", "")
     focus = ls.get("focus_summary", "")
+    geju_type = (ins.get("geju") or {}).get("type", "") or "（见规则层）"
+    strength = ins.get("day_master_strength", "") or "（见规则层）"
+    allowed = collect_citable_years(ins)
+    if allowed:
+        year_line = "、".join(str(y) for y in allowed[:12])
+        if len(allowed) > 12:
+            year_line += " 等"
+        year_rule = (
+            f"5. **开篇首段须写明格局为「{geju_type}」、日主强弱为「{strength}」**（与规则层一致，全文勿改口）。\n"
+            f"6. 论具体公元年**仅限**：{year_line}（含大运所在年份）；其余运限用大运/流年干支描述，勿写其它年份。\n"
+            "7. 无「直断」支撑的婚变、破财、父母凶吉、兄弟子女夭克等具体断辞勿写；结构提示只论宫位十神。\n"
+            "8. 语气：现代中文，直截了当，像经验丰富的命理师当面断盘。"
+        )
+    else:
+        year_rule = (
+            f"5. **开篇首段须写明格局为「{geju_type}」、日主强弱为「{strength}」**（与规则层一致；若为「平衡/中和」则全文只用此二字，禁止出现「身强」「身弱」「偏强」「偏弱」）。\n"
+            "6. 规则层无高置信应期窗口：**全文勿出现任何公元年份**；运限一律用大运/流年干支。\n"
+            "7. 无「直断」支撑的婚变、破财、父母凶吉、兄弟子女夭克等具体断辞勿写。\n"
+            "8. 语气：现代中文，直截了当，像经验丰富的命理师当面断盘。"
+        )
+    classic_extra = ""
+    if ins.get("is_classical_fixture"):
+        classic_extra = (
+            "（本造为古籍四柱命例：宜用传统术语，"
+            "父母/财禄无直断时只述宫位，不断具体吉凶件。）\n"
+        )
     return f"""你是问元资深子平命理师。下方「规则层摘要」与「命盘数据」供内部分析，勿向用户提及「规则层」「直断」「结构提示」等程序术语。
-
+{classic_extra}
 【命主】虚岁 {age} 岁 · {stage}
 【解读侧重】{focus or "综合命盘"}（议题须贴合当前人生阶段；与年龄无关者勿深断具体吉凶）
 
-请输出 Markdown 解读，要求：
-1. **自行组织 4–7 个 ## 章节**，勿套用固定八股模板；须自然涵盖：全盘定调、性格禀赋、当前阶段最关切的人事、大运走势与可论应期。
-2. 每段须有命理依据（十神、宫位、五行、刑冲合害、运限），忌空泛鸡汤与道德说教。
-3. 综参滴天髓体用、子平格局、穷通调候、盲派做功、运限引动；内部规则层信号可融合表述，勿逐条罗列。
-4. 童年盘勿断婚育子女具体件与年份；晚年盘勿强调学业考试。
-5. 若论应期年份，须与规则层应期窗口一致；无依据则不断年份。
-6. 语气：现代中文，直截了当，像经验丰富的命理师当面断盘。
+请输出 Markdown 解读，**建议章节顺序**（可微调标题）：
+## 全盘定调 → ## 体用调候 → ## 性情结构 → ## 六亲人事 → ## 大运运限 → （仅有直断时）## 应期提示
+
+要求：
+1. 每章须有命理依据（十神、宫位、五行、刑冲合害、运限），忌空泛鸡汤。
+2. 综参规则层摘要、典籍语料与相似古籍命例；相似例仅作参证，勿照抄。
+3. 相似古籍与典籍引用须与当前格局/日主相关，无关勿凑数。
+4. 童年盘勿断婚育子女具体件；晚年盘勿强调学业考试。
+{year_rule}
 
 文末：
 > 以上由 AI 综参命盘生成，仅供参考。"""

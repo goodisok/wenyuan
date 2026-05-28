@@ -1,0 +1,455 @@
+{
+  "description": "AI regression: book-verified four pillars only (from test_suite_v4.classical)",
+  "cases": [
+    {
+      "id": "cls_001",
+      "bucket": "classical",
+      "name": "滴天髓阐-辛卯丁酉庚午丙子",
+      "source": "滴天髓阐微",
+      "gz": "辛卯 丁酉 庚午 丙子",
+      "dm": "庚",
+      "gender": "male"
+    },
+    {
+      "id": "cls_002",
+      "bucket": "classical",
+      "name": "滴天髓阐-丙申乙未癸巳壬辰",
+      "source": "滴天髓阐微",
+      "gz": "丙申 乙未 癸巳 壬辰",
+      "dm": "癸",
+      "gender": "male"
+    },
+    {
+      "id": "cls_003",
+      "bucket": "classical",
+      "name": "滴天髓阐-庚寅己丑戊子丁亥",
+      "source": "滴天髓阐微",
+      "gz": "庚寅 己丑 戊子 丁亥",
+      "dm": "戊",
+      "gender": "male"
+    },
+    {
+      "id": "cls_004",
+      "bucket": "classical",
+      "name": "滴天髓阐-庚申庚辰戊辰戊午",
+      "source": "滴天髓阐微",
+      "gz": "庚申 庚辰 戊辰 戊午",
+      "dm": "戊",
+      "gender": "male"
+    },
+    {
+      "id": "cls_005",
+      "bucket": "classical",
+      "name": "滴天髓阐-辛酉辛丑己酉丙寅",
+      "source": "滴天髓阐微",
+      "gz": "辛酉 辛丑 己酉 丙寅",
+      "dm": "己",
+      "gender": "male"
+    },
+    {
+      "id": "cls_006",
+      "bucket": "classical",
+      "name": "滴天髓阐-壬辰壬寅甲寅庚午",
+      "source": "滴天髓阐微",
+      "gz": "壬辰 壬寅 甲寅 庚午",
+      "dm": "甲",
+      "gender": "male"
+    },
+    {
+      "id": "cls_007",
+      "bucket": "classical",
+      "name": "滴天髓阐-癸酉甲子癸亥辛酉",
+      "source": "滴天髓阐微",
+      "gz": "癸酉 甲子 癸亥 辛酉",
+      "dm": "癸",
+      "gender": "male"
+    },
+    {
+      "id": "cls_008",
+      "bucket": "classical",
+      "name": "滴天髓阐-癸亥壬戌辛酉庚申",
+      "source": "滴天髓阐微",
+      "gz": "癸亥 壬戌 辛酉 庚申",
+      "dm": "辛",
+      "gender": "male"
+    },
+    {
+      "id": "cls_009",
+      "bucket": "classical",
+      "name": "滴天髓阐-己未戊午丁巳丙辰",
+      "source": "滴天髓阐微",
+      "gz": "己未 戊午 丁巳 丙辰",
+      "dm": "丁",
+      "gender": "male"
+    },
+    {
+      "id": "cls_010",
+      "bucket": "classical",
+      "name": "滴天髓阐-丁亥庚戌甲辰壬申",
+      "source": "滴天髓阐微",
+      "gz": "丁亥 庚戌 甲辰 壬申",
+      "dm": "甲",
+      "gender": "male"
+    },
+    {
+      "id": "cls_011",
+      "bucket": "classical",
+      "name": "滴天髓阐-己酉戊申丁未丙午",
+      "source": "滴天髓阐微",
+      "gz": "己酉 戊申 丁未 丙午",
+      "dm": "丁",
+      "gender": "male"
+    },
+    {
+      "id": "cls_012",
+      "bucket": "classical",
+      "name": "滴天髓阐-乙巳甲辰癸卯壬寅",
+      "source": "滴天髓阐微",
+      "gz": "乙巳 甲辰 癸卯 壬寅",
+      "dm": "癸",
+      "gender": "male"
+    },
+    {
+      "id": "cls_013",
+      "bucket": "classical",
+      "name": "滴天髓阐-乙亥庚辰甲戌壬申",
+      "source": "滴天髓阐微",
+      "gz": "乙亥 庚辰 甲戌 壬申",
+      "dm": "甲",
+      "gender": "male"
+    },
+    {
+      "id": "cls_014",
+      "bucket": "classical",
+      "name": "滴天髓阐-己卯戊寅丁丑丙子",
+      "source": "滴天髓阐微",
+      "gz": "己卯 戊寅 丁丑 丙子",
+      "dm": "丁",
+      "gender": "male"
+    },
+    {
+      "id": "cls_015",
+      "bucket": "classical",
+      "name": "滴天髓阐-乙亥甲戌癸酉壬申",
+      "source": "滴天髓阐微",
+      "gz": "乙亥 甲戌 癸酉 壬申",
+      "dm": "癸",
+      "gender": "male"
+    },
+    {
+      "id": "cls_016",
+      "bucket": "classical",
+      "name": "滴天髓阐-甲子戊辰庚申壬午",
+      "source": "滴天髓阐微",
+      "gz": "甲子 戊辰 庚申 壬午",
+      "dm": "庚",
+      "gender": "male"
+    },
+    {
+      "id": "cls_017",
+      "bucket": "classical",
+      "name": "滴天髓阐-丙子己亥乙丑壬午",
+      "source": "滴天髓阐微",
+      "gz": "丙子 己亥 乙丑 壬午",
+      "dm": "乙",
+      "gender": "male"
+    },
+    {
+      "id": "cls_018",
+      "bucket": "classical",
+      "name": "滴天髓阐-甲寅壬申癸巳癸亥",
+      "source": "滴天髓阐微",
+      "gz": "甲寅 壬申 癸巳 癸亥",
+      "dm": "癸",
+      "gender": "male"
+    },
+    {
+      "id": "cls_019",
+      "bucket": "classical",
+      "name": "滴天髓阐-癸酉甲戌己亥丙子",
+      "source": "滴天髓阐微",
+      "gz": "癸酉 甲戌 己亥 丙子",
+      "dm": "己",
+      "gender": "male"
+    },
+    {
+      "id": "cls_020",
+      "bucket": "classical",
+      "name": "滴天髓阐-癸巳癸亥甲寅壬申",
+      "source": "滴天髓阐微",
+      "gz": "癸巳 癸亥 甲寅 壬申",
+      "dm": "甲",
+      "gender": "male"
+    },
+    {
+      "id": "cls_021",
+      "bucket": "classical",
+      "name": "滴天髓阐-壬戌辛酉庚申己未",
+      "source": "滴天髓阐微",
+      "gz": "壬戌 辛酉 庚申 己未",
+      "dm": "庚",
+      "gender": "male"
+    },
+    {
+      "id": "cls_022",
+      "bucket": "classical",
+      "name": "滴天髓阐-辛卯丁酉戊子戊午",
+      "source": "滴天髓阐微",
+      "gz": "辛卯 丁酉 戊子 戊午",
+      "dm": "戊",
+      "gender": "male"
+    },
+    {
+      "id": "cls_023",
+      "bucket": "classical",
+      "name": "滴天髓阐-丙申乙未甲午癸巳",
+      "source": "滴天髓阐微",
+      "gz": "丙申 乙未 甲午 癸巳",
+      "dm": "甲",
+      "gender": "male"
+    },
+    {
+      "id": "cls_024",
+      "bucket": "classical",
+      "name": "滴天髓阐-辛未辛丑戊辰壬戌",
+      "source": "滴天髓阐微",
+      "gz": "辛未 辛丑 戊辰 壬戌",
+      "dm": "戊",
+      "gender": "male"
+    },
+    {
+      "id": "cls_025",
+      "bucket": "classical",
+      "name": "滴天髓阐-庚子己亥戊戌丁酉",
+      "source": "滴天髓阐微",
+      "gz": "庚子 己亥 戊戌 丁酉",
+      "dm": "戊",
+      "gender": "male"
+    },
+    {
+      "id": "cls_026",
+      "bucket": "classical",
+      "name": "滴天髓阐-戊辰壬戌辛未己丑",
+      "source": "滴天髓阐微",
+      "gz": "戊辰 壬戌 辛未 己丑",
+      "dm": "辛",
+      "gender": "male"
+    },
+    {
+      "id": "cls_027",
+      "bucket": "classical",
+      "name": "滴天髓阐-丙子辛卯壬子癸卯",
+      "source": "滴天髓阐微",
+      "gz": "丙子 辛卯 壬子 癸卯",
+      "dm": "壬",
+      "gender": "male"
+    },
+    {
+      "id": "cls_028",
+      "bucket": "classical",
+      "name": "滴天髓阐-辛未乙未庚辰丁亥",
+      "source": "滴天髓阐微",
+      "gz": "辛未 乙未 庚辰 丁亥",
+      "dm": "庚",
+      "gender": "male"
+    },
+    {
+      "id": "cls_029",
+      "bucket": "classical",
+      "name": "滴天髓阐-甲午癸巳壬辰辛卯",
+      "source": "滴天髓阐微",
+      "gz": "甲午 癸巳 壬辰 辛卯",
+      "dm": "壬",
+      "gender": "male"
+    },
+    {
+      "id": "cls_030",
+      "bucket": "classical",
+      "name": "滴天髓阐-辛丑乙未庚辰丁丑",
+      "source": "滴天髓阐微",
+      "gz": "辛丑 乙未 庚辰 丁丑",
+      "dm": "庚",
+      "gender": "male"
+    },
+    {
+      "id": "cls_031",
+      "bucket": "classical",
+      "name": "滴天髓阐-庚戌乙酉甲寅庚午",
+      "source": "滴天髓阐微",
+      "gz": "庚戌 乙酉 甲寅 庚午",
+      "dm": "甲",
+      "gender": "male"
+    },
+    {
+      "id": "cls_032",
+      "bucket": "classical",
+      "name": "滴天髓阐-丁巳癸丑丁卯丙午",
+      "source": "滴天髓阐微",
+      "gz": "丁巳 癸丑 丁卯 丙午",
+      "dm": "丁",
+      "gender": "male"
+    },
+    {
+      "id": "cls_033",
+      "bucket": "classical",
+      "name": "滴天髓阐-壬子辛亥庚戌己酉",
+      "source": "滴天髓阐微",
+      "gz": "壬子 辛亥 庚戌 己酉",
+      "dm": "庚",
+      "gender": "male"
+    },
+    {
+      "id": "cls_034",
+      "bucket": "classical",
+      "name": "滴天髓阐-庚寅辛巳丙寅辛卯",
+      "source": "滴天髓阐微",
+      "gz": "庚寅 辛巳 丙寅 辛卯",
+      "dm": "丙",
+      "gender": "male"
+    },
+    {
+      "id": "cls_035",
+      "bucket": "classical",
+      "name": "滴天髓阐-戊辰辛酉丙午癸巳",
+      "source": "滴天髓阐微",
+      "gz": "戊辰 辛酉 丙午 癸巳",
+      "dm": "丙",
+      "gender": "male"
+    },
+    {
+      "id": "cls_036",
+      "bucket": "classical",
+      "name": "滴天髓阐-庚寅壬午丁卯癸卯",
+      "source": "滴天髓阐微",
+      "gz": "庚寅 壬午 丁卯 癸卯",
+      "dm": "丁",
+      "gender": "male"
+    },
+    {
+      "id": "cls_037",
+      "bucket": "classical",
+      "name": "滴天髓阐-丙子己亥乙亥丙子",
+      "source": "滴天髓阐微",
+      "gz": "丙子 己亥 乙亥 丙子",
+      "dm": "乙",
+      "gender": "male"
+    },
+    {
+      "id": "cls_038",
+      "bucket": "classical",
+      "name": "滴天髓阐-戊午乙卯癸卯癸亥",
+      "source": "滴天髓阐微",
+      "gz": "戊午 乙卯 癸卯 癸亥",
+      "dm": "癸",
+      "gender": "male"
+    },
+    {
+      "id": "cls_039",
+      "bucket": "classical",
+      "name": "滴天髓阐-己亥丁卯庚申庚辰",
+      "source": "滴天髓阐微",
+      "gz": "己亥 丁卯 庚申 庚辰",
+      "dm": "庚",
+      "gender": "male"
+    },
+    {
+      "id": "cls_040",
+      "bucket": "classical",
+      "name": "滴天髓阐-丙寅乙丑甲子癸亥",
+      "source": "滴天髓阐微",
+      "gz": "丙寅 乙丑 甲子 癸亥",
+      "dm": "甲",
+      "gender": "male"
+    },
+    {
+      "id": "cls_041",
+      "bucket": "classical",
+      "name": "滴天髓阐-己酉丁卯庚辰甲申",
+      "source": "滴天髓阐微",
+      "gz": "己酉 丁卯 庚辰 甲申",
+      "dm": "庚",
+      "gender": "male"
+    },
+    {
+      "id": "cls_042",
+      "bucket": "classical",
+      "name": "滴天髓阐-庚申壬午辛酉癸巳",
+      "source": "滴天髓阐微",
+      "gz": "庚申 壬午 辛酉 癸巳",
+      "dm": "辛",
+      "gender": "male"
+    },
+    {
+      "id": "cls_043",
+      "bucket": "classical",
+      "name": "滴天髓阐-庚申壬午辛酉甲午",
+      "source": "滴天髓阐微",
+      "gz": "庚申 壬午 辛酉 甲午",
+      "dm": "辛",
+      "gender": "male"
+    },
+    {
+      "id": "cls_044",
+      "bucket": "classical",
+      "name": "滴天髓阐-甲申甲戌甲寅甲戌",
+      "source": "滴天髓阐微",
+      "gz": "甲申 甲戌 甲寅 甲戌",
+      "dm": "甲",
+      "gender": "male"
+    },
+    {
+      "id": "cls_045",
+      "bucket": "classical",
+      "name": "滴天髓阐-戊子戊午戊戌戊午",
+      "source": "滴天髓阐微",
+      "gz": "戊子 戊午 戊戌 戊午",
+      "dm": "戊",
+      "gender": "male"
+    },
+    {
+      "id": "cls_046",
+      "bucket": "classical",
+      "name": "滴天髓阐-戊申戊午戊戌戊午",
+      "source": "滴天髓阐微",
+      "gz": "戊申 戊午 戊戌 戊午",
+      "dm": "戊",
+      "gender": "male"
+    },
+    {
+      "id": "cls_047",
+      "bucket": "classical",
+      "name": "滴天髓阐-辛卯庚寅甲辰丙寅",
+      "source": "滴天髓阐微",
+      "gz": "辛卯 庚寅 甲辰 丙寅",
+      "dm": "甲",
+      "gender": "male"
+    },
+    {
+      "id": "cls_048",
+      "bucket": "classical",
+      "name": "滴天髓阐-己丑戊子丁亥丙戌",
+      "source": "滴天髓阐微",
+      "gz": "己丑 戊子 丁亥 丙戌",
+      "dm": "丁",
+      "gender": "male"
+    },
+    {
+      "id": "cls_049",
+      "bucket": "classical",
+      "name": "滴天髓阐-甲寅丁卯辛巳壬午",
+      "source": "滴天髓阐微",
+      "gz": "甲寅 丁卯 辛巳 壬午",
+      "dm": "辛",
+      "gender": "male"
+    },
+    {
+      "id": "cls_050",
+      "bucket": "classical",
+      "name": "滴天髓阐-癸巳丙辰丙午庚寅",
+      "source": "滴天髓阐微",
+      "gz": "癸巳 丙辰 丙午 庚寅",
+      "dm": "丙",
+      "gender": "male"
+    }
+  ]
+}

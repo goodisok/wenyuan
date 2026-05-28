@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""Validate rule layer + AI output quality (portable)."""
+"""Validate rule layer + AI output quality (classical gz cases only)."""
 from __future__ import annotations
 
 import sys
@@ -13,15 +13,11 @@ sys.path.insert(0, str(ROOT))
 
 BASE = "http://127.0.0.1:8000"
 
-MODERN_CASES = [
-    ("马云", 1964, 9, 10, "male"),
-    ("马化腾", 1971, 10, 29, "male"),
-    ("董明珠", 1954, 8, 10, "female"),
-    ("任正非", 1944, 10, 25, "male"),
-    ("雷军", 1969, 12, 16, "male"),
-]
+from scripts.regression_ai import load_ai_suite
+from scripts.regression_common import build_chart_from_gz, gender_to_code, score_ai_analysis
 
-ANCIENT_TERMS = ["官至", "七品", "朱门", "武职", "发用", "纳妾", "封侯", "状元", "进士"]
+# Quick sample: first 5 book-verified classical cases
+AI_SAMPLE = load_ai_suite()[:5]
 
 
 def rule_layer_checks() -> list[str]:
@@ -52,43 +48,6 @@ def rule_layer_checks() -> list[str]:
     return errors
 
 
-def _strength_consistent(text: str, strength: str) -> bool:
-    if not strength:
-        return True
-    mentions_strong = "身强" in text or "偏强" in text or "旺" in text
-    mentions_weak = "身弱" in text or "偏弱" in text
-    if strength in ("偏强", "身强", "强"):
-        return not (mentions_weak and not mentions_strong)
-    if strength in ("偏弱", "身弱", "弱"):
-        return not (mentions_strong and not mentions_weak)
-    return True
-
-
-def score_analysis(text: str, insight: dict | None = None) -> tuple[float, list[str]]:
-    issues: list[str] = []
-    score = 10.0
-    if any(t in text for t in ANCIENT_TERMS):
-        bad = [t for t in ANCIENT_TERMS if t in text]
-        issues.append(f"古代断语: {bad}")
-        score -= 2
-    if insight:
-        strength = str(insight.get("day_master_strength") or "")
-        if not _strength_consistent(text, strength):
-            issues.append(f"旺衰与规则层不一致({strength})")
-            score -= 2
-        geju = (insight.get("geju") or {}).get("type", "")
-        if geju and geju not in text:
-            issues.append(f"未提及格局类型({geju})")
-            score -= 0.5
-    if "身强" in text and "身弱" in text:
-        issues.append("同时出现身强与身弱")
-        score -= 2
-    if len(text) < 300:
-        issues.append("过短")
-        score -= 1
-    return max(score, 0), issues
-
-
 def ai_checks() -> tuple[list[dict], float]:
     from app.core.insight import ensure_ai_insight
 
@@ -101,25 +60,16 @@ def ai_checks() -> tuple[list[dict], float]:
     except httpx.ConnectError as e:
         raise RuntimeError(f"server not running at {BASE}") from e
 
-    for name, y, m, d, gender in MODERN_CASES:
-        r1 = client.post(
-            f"{BASE}/api/chart",
-            json={
-                "date_type": "solar",
-                "birth_date": f"{y}-{m:02d}-{d:02d}",
-                "birth_time": "12:00",
-                "gender": gender,
-            },
+    for case in AI_SAMPLE:
+        name = case.get("name", case.get("id", "?"))
+        chart = build_chart_from_gz(
+            case["gz"],
+            gender_to_code(case.get("gender", "male")),
+            day_master=case.get("dm"),
         )
-        data = r1.json()
-        if not data.get("success"):
-            results.append({"name": name, "error": data.get("message", r1.text[:120])})
-            continue
-        chart = data["data"]
-
         r2 = client.post(
             f"{BASE}/api/analyze",
-            json={"chart": chart, "style": "modern"},
+            json={"chart": chart, "style": "classic"},
         )
         ar = r2.json()
         if not ar.get("success"):
@@ -127,7 +77,7 @@ def ai_checks() -> tuple[list[dict], float]:
             continue
         text = ar.get("analysis", "")
         full = ensure_ai_insight(chart)
-        score, issues = score_analysis(text, full)
+        score, issues = score_ai_analysis(text, full, style="classic")
         geju_type = (full.get("geju") or {}).get("type", "?")
         dd = full.get("dayun_detail") or {}
         results.append(
@@ -157,7 +107,7 @@ def main() -> int:
         return 1
     print("OK")
 
-    print("\n=== AI quality (sample) ===")
+    print("\n=== AI quality (classical sample) ===")
     try:
         results, avg = ai_checks()
     except RuntimeError as e:

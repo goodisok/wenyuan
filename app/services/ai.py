@@ -170,6 +170,11 @@ class AIAnalysisService:
                 if c.get("commentary"):
                     body += f" 按：{c['commentary']}"
                 lines.append(f"{prefix}{body}")
+        from app.core.classical_ref import format_for_ai
+
+        cref = format_for_ai(insight.get("classical_refs") or [])
+        if cref:
+            lines.append(cref)
         return "\n".join(lines)
 
     @classmethod
@@ -224,12 +229,14 @@ class AIAnalysisService:
         return (
             "【断语原则】\n"
             "1. 以命盘与下方规则层摘要为唯一依据，该高则高、该平则平、该凶则凶，不讨好、不粉饰。\n"
-            "2. 身强身弱、格局类型、喜用倾向须与规则层一致；有矛盾时服从规则层数值与标签。\n"
-            "3. 断事仅在高置信「直断」项上可断吉凶与应期；「结构提示」只论宫位十神倾向，不断具体年份。\n"
-            "4. 无规则层支撑的具体年份、婚变、破财、官非等，不要编造；不确定处直说「盘面未见高置信应期」。\n"
-            "5. 格局清纯、偏枯、中和、从格、假格等如实表述，可谈局限、波折、晚成、起伏。\n"
-            "6. 引用典籍须与当前格局/日主/调候相关，写出具体原文或要义即可，无关引用不要凑数。\n"
-            "7. 不作脱离命盘的闲聊；勿向用户暴露「规则层」等程序术语。\n"
+            "2. 开篇须点明规则层格局全称与日主强弱标签；全文强弱表述须统一，"
+            "规则层为「平衡/中和」时只用这两字，禁止再写「身强」「身弱」「偏强」「偏弱」。\n"
+            "3. 断事仅在高置信「直断」项上可断吉凶；「结构提示」只论宫位十神倾向，不断具体吉凶件。\n"
+            "4. 具体公元年：仅可引用用户消息中「可引具体年份」列表内的年份；无列表则全文禁止出现四位数年份，"
+            "大运流年改用干支（如「庚寅大运」「丙午流年」）。\n"
+            "5. 无直断支撑的「破财、暴富、负债、离婚、克妻、父母早亡」等勿写；财运/父母/婚姻无直断时只谈结构倾向。\n"
+            "6. 格局清纯、偏枯、中和、从格、假格等如实表述，可谈局限、波折、晚成、起伏。\n"
+            "7. 引用典籍须与当前格局/日主/调候相关；不作脱离命盘的闲聊。\n"
         )
 
     @classmethod
@@ -251,6 +258,8 @@ class AIAnalysisService:
                 f"{cite}"
                 "【古典语境】可用官贵、商贾、文途、武职等传统表述；大运用干支与运限描述。\n"
                 "可与任铁樵等原评对照，但须用自身逻辑论证，勿照抄。\n"
+                "论父母、兄弟、子女、财运：无「直断」时只谈年月柱十神结构，"
+                "勿写父母克害、早亡、破财、大发等具体吉凶件。\n"
             )
         else:
             base = (
@@ -322,11 +331,11 @@ class AIAnalysisService:
         payload = {
             "model": settings.deepseek_model,
             "messages": messages,
-            "temperature": 0.55,
+            "temperature": 0.48,
             "max_tokens": 4096,
             "stream": True,
         }
-        async with httpx.AsyncClient(timeout=120.0) as client:
+        async with httpx.AsyncClient(timeout=180.0) as client:
             async with client.stream("POST", url, json=payload, headers=cls._headers()) as resp:
                 if resp.status_code != 200:
                     body = await resp.aread()
@@ -352,10 +361,10 @@ class AIAnalysisService:
         payload = {
             "model": settings.deepseek_model,
             "messages": messages,
-            "temperature": 0.55,
+            "temperature": 0.48,
             "max_tokens": 4096,
         }
-        async with httpx.AsyncClient(timeout=120.0) as client:
+        async with httpx.AsyncClient(timeout=180.0) as client:
             resp = await client.post(url, json=payload, headers=cls._headers())
             if resp.status_code != 200:
                 raise RuntimeError(f"AI 接口错误 {resp.status_code}: {resp.text[:200]}")
@@ -367,6 +376,28 @@ class AIAnalysisService:
         if not content:
             raise RuntimeError("AI 返回内容为空")
         return content.strip()
+
+    @classmethod
+    async def _complete_with_revision(
+        cls,
+        messages: list[dict[str, str]],
+        insight: dict[str, Any] | None,
+    ) -> str:
+        text = await cls._complete_once(messages)
+        vr = validate_analysis(text, insight)
+        warnings = vr.get("warnings") or []
+        if not warnings:
+            return text
+        fix = (
+            "请修订上一稿，必须消除以下问题（保留正确命理结构）：\n"
+            + "\n".join(f"- {w}" for w in warnings)
+            + "\n勿添加规则层未支撑的具体父母/财禄/婚变吉凶或列表外年份。"
+        )
+        revised_messages = messages + [
+            {"role": "assistant", "content": text},
+            {"role": "user", "content": fix},
+        ]
+        return await cls._complete_once(revised_messages)
 
     @classmethod
     def _append_validation_note(cls, text: str, insight: dict[str, Any] | None) -> str:
@@ -386,7 +417,7 @@ class AIAnalysisService:
         cls.ensure_available()
         messages = cls._build_messages(chart, insight, style)
         ins = insight or chart.get("insight")
-        text = await cls._complete_once(messages)
+        text = await cls._complete_with_revision(messages, ins)
         return cls._append_validation_note(text, ins)
 
     @classmethod

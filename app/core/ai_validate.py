@@ -15,6 +15,35 @@ _GATE_TOPIC = {
 }
 
 
+def collect_dayun_years(chart: dict[str, Any]) -> list[int]:
+    years: set[int] = set()
+    for dy in chart.get("dayun") or []:
+        start = int(dy.get("start_year") or 0)
+        end = int(dy.get("end_year") or 0)
+        if start and end >= start:
+            years.update(range(start, end + 1))
+    return sorted(years)
+
+
+def collect_citable_years(insight: dict[str, Any], chart: dict[str, Any] | None = None) -> list[int]:
+    """直断应期 ∪ 大运区间 — 供提示词与校验共用。"""
+    if insight.get("citable_years") and chart is None:
+        return list(insight["citable_years"])
+    years = set(collect_allowed_years(insight))
+    if chart is not None:
+        years.update(collect_dayun_years(chart))
+    return sorted(years)
+
+
+def collect_allowed_years(insight: dict[str, Any]) -> list[int]:
+    """直断应期窗口内的公元年份（供 AI 提示词锚定）。"""
+    years: set[int] = set()
+    for lo, hi in _collect_year_windows(insight):
+        for y in range(lo, hi + 1):
+            years.add(y)
+    return sorted(years)
+
+
 def _collect_year_windows(insight: dict[str, Any]) -> list[tuple[int, int]]:
     windows: list[tuple[int, int]] = []
     ds = insight.get("duanshi") or {}
@@ -23,11 +52,11 @@ def _collect_year_windows(insight: dict[str, Any]) -> list[tuple[int, int]]:
             continue
         for w in item.get("windows") or []:
             years = str(w.get("years", ""))
-            m = re.search(r"(19|20)\d{2}\s*[-–—~至到]\s*(19|20)\d{2}", years)
+            m = re.search(r"((?:19|20)\d{2})\s*[-–—~至到]\s*((?:19|20)\d{2})", years)
             if m:
                 windows.append((int(m.group(1)), int(m.group(2))))
                 continue
-            m2 = re.search(r"(19|20)\d{2}", years)
+            m2 = re.search(r"(?:19|20)\d{2}", years)
             if m2:
                 y = int(m2.group(0))
                 windows.append((y, y))
@@ -37,9 +66,14 @@ def _collect_year_windows(insight: dict[str, Any]) -> list[tuple[int, int]]:
             continue
         for w in g.get("windows") or []:
             years = str(w.get("years", ""))
-            m = re.search(r"(19|20)\d{2}\s*[-–—~至到]\s*(19|20)\d{2}", years)
+            m = re.search(r"((?:19|20)\d{2})\s*[-–—~至到]\s*((?:19|20)\d{2})", years)
             if m:
                 windows.append((int(m.group(1)), int(m.group(2))))
+                continue
+            m2 = re.search(r"(?:19|20)\d{2}", years)
+            if m2:
+                y = int(m2.group(0))
+                windows.append((y, y))
     return windows
 
 
@@ -64,20 +98,29 @@ def validate_analysis(text: str, insight: dict[str, Any] | None) -> dict[str, An
         return {"ok": True, "warnings": []}
     warnings: list[str] = []
     windows = _collect_year_windows(insight)
+    citable = set(collect_citable_years(insight))
     published = _assert_topics(insight)
 
     for m in _YEAR_RE.finditer(text):
         y = int(m.group(0)[:4].replace("年", ""))
-        if not windows:
+        if not citable:
+            warnings.append(f"无可引年份却提及 {y}")
             continue
-        if not any(lo <= y <= hi for lo, hi in windows):
-            warnings.append(f"提及年份 {y} 不在规则层直断应期窗口内")
+        if y not in citable:
+            warnings.append(f"提及年份 {y} 不在可引范围（直断应期或大运区间）")
 
     if "婚姻" not in published and re.search(r"(离婚|婚变|克妻|克夫|再婚)", text):
         warnings.append("规则层无婚姻直断，却出现具体婚变断辞")
-    if "财运" not in published and re.search(r"(破财|大发|暴富|负债)", text):
+    if "财运" not in published and re.search(
+        r"(破财|大发|暴富|负债|发财|大财|财富爆发|财务自由|得财|失财|财路|财源|聚财|散财)",
+        text,
+    ):
         warnings.append("规则层无财运直断，却出现具体财禄断辞")
-    if "父母" not in published and re.search(r"(父母.*(离异|分离|早亡|克))", text):
+    if "父母" not in published and re.search(
+        r"(父母[^。，；]{0,12}(克|害|刑|冲|早亡|缘薄|无靠|不和|偏枯)|"
+        r"(克|刑|害|冲)[^。，；]{0,6}父母|父[^。，；]{0,6}(早亡|克)|母[^。，；]{0,6}(早亡|克))",
+        text,
+    ):
         warnings.append("规则层无父母直断，却出现具体父母吉凶断辞")
     for topic in ("兄弟", "子女"):
         if topic not in published and re.search(

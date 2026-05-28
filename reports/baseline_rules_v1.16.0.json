@@ -1,0 +1,17 @@
+{
+  "kind": "rules",
+  "version": "1.16.0",
+  "generated_at": "2026-05-28T06:41:54+00:00",
+  "suite": "data/test_suite_v4.json",
+  "subset": "classical",
+  "total": 831,
+  "passed": 831,
+  "failed": 0,
+  "pass_rate": 1.0,
+  "metrics": {
+    "geju_present_rate": 1.0,
+    "renping_align_rate": 0.6692,
+    "renping_scored": 263
+  },
+  "failures": []
+}

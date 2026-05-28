@@ -225,7 +225,8 @@ def analyze_dayun_detail(chart: dict[str, Any]) -> dict[str, Any]:
     """
     dayun_list = chart.get("dayun", [])
     if not dayun_list:
-        return {"kernel": KERNEL, "dayun_details": [], "current_year_detail": {}}
+        current_detail = analyze_liunian(chart, datetime.now().year)
+        return {"kernel": KERNEL, "dayun_details": [], "current_year_detail": current_detail}
     
     result = []
     for dy in dayun_list:
