@@ -15,3 +15,16 @@ build/
 *.egg-info/
 .DS_Store
 Thumbs.db
+test_reports/
+test_results_final.json
+scripts/random_sampling_test.py
+scripts/random_sampling_v2.py
+scripts/experiment.py
+scripts/compare_ai.py
+scripts/bazi_celeb.py
+scripts/v2_verify.py
+scripts/quick_test.py
+data/mingli_database.json
+data/test_results.json
+data/test_suite.json
+data/test_suite_v3.json

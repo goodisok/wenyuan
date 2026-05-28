@@ -166,9 +166,9 @@ def build_guanming(
         names = "、".join(i["name"] for i in ss_items[:5])
         layers.append({
             "id": "shensha",
-            "name": "神煞辅助",
-            "subtitle": "参格局，不独断",
-            "lines": [f"{names} — {shensha.get('note', '')[:80]}"],
+            "name": "神煞备注（不作分析依据）",
+            "subtitle": "应以五行生克格局旺衰为本",
+            "lines": [f"{names} — 传统备注，不作分析依据。"],
         })
 
     dayun_lines: list[str] = []

@@ -1,40 +1,56 @@
 # -*- coding: utf-8 -*-
-"""三命通会 · 常用神煞（辅助参考，不作单论）。"""
+"""
+神煞（精简版）· 仅保留有五行原理支撑的三种
+
+命理断事应以五行生克制化、格局旺衰、刑冲合害为根本，
+神煞仅作传统备注，不作为分析依据。
+
+保留原则：
+- 禄神：十二长生"临官"之位，本质是五行旺衰
+- 将星：三合局中字，地支结构推导
+- 驿马：三合局对冲位，地支结构推导
+
+其余神煞（天乙贵人、文昌、桃花、华盖、天月德、红艳、亡神等）
+均为经验归纳，无底层五行逻辑，已移除。
+"""
 from __future__ import annotations
 
 from typing import Any
 
 KERNEL = "三命通会"
 
-# 天乙贵人：日干查地支
-TIANYI: dict[str, tuple[str, ...]] = {
-    "甲": ("丑", "未"), "戊": ("丑", "未"), "庚": ("丑", "未"),
-    "乙": ("子", "申"), "己": ("子", "申"),
-    "丙": ("亥", "酉"), "丁": ("亥", "酉"),
-    "壬": ("卯", "巳"), "癸": ("卯", "巳"),
-    "辛": ("寅", "午"),
+# ── 禄神（日干查地支）：十二长生"临官"位 ──
+LUSHEN: dict[str, str] = {
+    "甲": "寅", "乙": "卯", "丙": "巳", "丁": "午", "戊": "巳",
+    "己": "午", "庚": "申", "辛": "酉", "壬": "亥", "癸": "子",
 }
 
-# 文昌：日干查地支
-WENCHANG: dict[str, str] = {
-    "甲": "巳", "乙": "午", "丙": "申", "丁": "酉", "戊": "申",
-    "己": "酉", "庚": "亥", "辛": "子", "壬": "寅", "癸": "卯",
+# ── 将星（年支或日支查）：三合局中字 ──
+JIANGXING: dict[str, str] = {
+    "寅": "午", "午": "午", "戌": "午",
+    "申": "子", "子": "子", "辰": "子",
+    "巳": "酉", "酉": "酉", "丑": "酉",
+    "亥": "卯", "卯": "卯", "未": "卯",
 }
 
-# 驿马、桃花、华盖：以年支或日支查
-YIMA = {"申": "寅", "子": "寅", "辰": "寅", "寅": "申", "午": "申", "戌": "申",
-        "巳": "亥", "酉": "亥", "丑": "亥", "亥": "巳", "卯": "巳", "未": "巳"}
-TAOHUA = {"申": "酉", "子": "酉", "辰": "酉", "寅": "卯", "午": "卯", "戌": "卯",
-          "巳": "午", "酉": "午", "丑": "午", "亥": "子", "卯": "子", "未": "子"}
-HUAGAI = {"申": "辰", "子": "辰", "辰": "辰", "寅": "戌", "午": "戌", "戌": "戌",
-          "巳": "丑", "酉": "丑", "丑": "丑", "亥": "未", "卯": "未", "未": "未"}
+# ── 驿马（年支或日支查）：三合局对冲位 ──
+YIMA: dict[str, str] = {
+    "申": "寅", "子": "寅", "辰": "寅",
+    "寅": "申", "午": "申", "戌": "申",
+    "巳": "亥", "酉": "亥", "丑": "亥",
+    "亥": "巳", "卯": "巳", "未": "巳",
+}
 
-SHENSHA_DESC: dict[str, str] = {
-    "天乙贵人": "逢凶化吉，贵人相助（三命通会）",
-    "文昌": "聪明好学，文才出众（三命通会）",
-    "驿马": "主动迁移，奔波变动（三命通会）",
-    "桃花": "异性缘、才艺人缘（三命通会）",
-    "华盖": "孤高学术、宗教艺术（三命通会）",
+SHENSHA_NOTE: dict[str, str] = {
+    "禄神": "临官之位，五行旺地；主福禄所归（十二长生）",
+    "将星": "三合中字，气势集中；主领导有势（三命通会）",
+    "驿马": "三合对冲，主动之象；主奔波变动（三命通会）",
+}
+
+SHENSHA_MODERN: dict[str, str] = {
+    "禄神": "稳定收入、职业福禄",
+    "将星": "管理能力、领导潜力",
+    "驿马": "出差调动、人生变动",
 }
 
 
@@ -57,83 +73,66 @@ def analyze(chart: dict[str, Any]) -> dict[str, Any]:
     pillars = chart.get("pillars", [])
     day_stem = meta.get("day_master", "")
     if not day_stem or len(pillars) < 4:
-        return {"kernel": KERNEL, "items": [], "summary": ""}
+        return {"kernel": KERNEL, "items": [], "summary": "", "count": 0,
+                "note": "神煞为传统备注，不作分析依据。应以五行生克制化、格局旺衰为根本判断。"}
 
     day_branch = pillars[2]["dizhi"]["name"]
     year_branch = pillars[0]["dizhi"]["name"]
     branches = _branches(chart)
+
     items: list[dict[str, str]] = []
 
-    for pos in TIANYI.get(day_stem, ()):
-        hits = _find_in_branches(pos, branches)
+    # ── 禄神（日干查地支）──
+    ls = LUSHEN.get(day_stem, "")
+    if ls:
+        hits = _find_in_branches(ls, branches)
         if hits:
             items.append({
-                "name": "天乙贵人",
+                "name": "禄神",
                 "position": "、".join(hits),
-                "note": SHENSHA_DESC["天乙贵人"],
+                "note": SHENSHA_NOTE["禄神"],
+                "modern": SHENSHA_MODERN["禄神"],
+            })
+
+    # ── 将星（日支优先，年支备选）──
+    for base_name, base_branch in (("日支", day_branch), ("年支", year_branch)):
+        jx = JIANGXING.get(base_branch, "")
+        if jx and _find_in_branches(jx, branches):
+            items.append({
+                "name": "将星",
+                "position": f"以{base_name}查遇{jx}",
+                "note": SHENSHA_NOTE["将星"],
+                "modern": SHENSHA_MODERN["将星"],
             })
             break
 
-    wc = WENCHANG.get(day_stem, "")
-    if wc:
-        hits = _find_in_branches(wc, branches)
-        if hits:
-            items.append({
-                "name": "文昌",
-                "position": "、".join(hits),
-                "note": SHENSHA_DESC["文昌"],
-            })
-
+    # ── 驿马（日支优先，年支备选）──
     for base_name, base_branch in (("日支", day_branch), ("年支", year_branch)):
         ym = YIMA.get(base_branch, "")
         if ym and _find_in_branches(ym, branches):
             items.append({
                 "name": "驿马",
                 "position": f"以{base_name}查遇{ym}",
-                "note": SHENSHA_DESC["驿马"],
+                "note": SHENSHA_NOTE["驿马"],
+                "modern": SHENSHA_MODERN["驿马"],
             })
             break
 
-    for base_name, base_branch in (("日支", day_branch), ("年支", year_branch)):
-        th = TAOHUA.get(base_branch, "")
-        if th and _find_in_branches(th, branches):
-            items.append({
-                "name": "桃花",
-                "position": f"以{base_name}查遇{th}",
-                "note": SHENSHA_DESC["桃花"],
-            })
-            break
-
-    for base_name, base_branch in (("日支", day_branch), ("年支", year_branch)):
-        hg = HUAGAI.get(base_branch, "")
-        if hg and _find_in_branches(hg, branches):
-            items.append({
-                "name": "华盖",
-                "position": f"以{base_name}查遇{hg}",
-                "note": SHENSHA_DESC["华盖"],
-            })
-            break
-
-    seen: set[str] = set()
-    unique: list[dict[str, str]] = []
-    for it in items:
-        if it["name"] in seen:
-            continue
-        seen.add(it["name"])
-        unique.append(it)
-
-    summary = "、".join(i["name"] for i in unique) if unique else "未显常用神煞"
+    summary = "、".join(i["name"] for i in items) if items else "未显"
+    
     by_pillar: dict[str, list[str]] = {k: [] for k in ("year", "month", "day", "hour")}
     label_to_key = {"年柱": "year", "月柱": "month", "日柱": "day", "时柱": "hour"}
-    for it in unique:
+    for it in items:
         pos = it.get("position", "")
         for label, key in label_to_key.items():
             if label in pos and it["name"] not in by_pillar[key]:
                 by_pillar[key].append(it["name"])
+
     return {
         "kernel": KERNEL,
-        "items": unique,
+        "items": items,
         "by_pillar": by_pillar,
         "summary": summary,
-        "note": "神煞为辅助，须配合格局旺衰综合判断（协纪辨方书）",
+        "count": len(items),
+        "note": "神煞为传统备注，不作分析依据。应以五行生克制化、格局旺衰为根本判断。",
     }

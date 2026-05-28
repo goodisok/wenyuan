@@ -72,6 +72,7 @@ def build_insight(chart: dict[str, Any]) -> dict[str, Any]:
         "sanguan": ml.get("sanguan"),
         "guanming": ml.get("guanming"),
         "shishen_summary": ml.get("shishen_summary"),
+        "dayun_detail": ml.get("dayun_detail"),
         "changsheng_map": ml.get("changsheng_map"),
         "pattern": ml.get("pattern"),
         "mingli": ml,

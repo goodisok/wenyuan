@@ -19,6 +19,8 @@ from app.core.qiongtong import lookup as qiongtong_lookup
 from app.core.shensha import analyze as shensha_analyze
 from app.core.yongshen import analyze as yongshen_analyze
 from app.core.ziping import analyze as ziping_analyze
+from app.core.tege import detect_special_pattern as tege_analyze
+from app.core.liunian_detail import analyze_dayun_detail, analyze_liunian
 
 KERNEL = "子平综参"
 METHOD_NOTE = "三阶读盘：结构全观 → 直断/结构提示分级 → 按人生阶段侧重呈现"
@@ -108,7 +110,7 @@ def _plain_highlights(
         lines.append(f"体用倾向：{body_pat['type']} — {body_pat.get('note', '')}")
     if shensha.get("items"):
         names = "、".join(i["name"] for i in shensha["items"][:4])
-        lines.append(f"神煞辅助：{names}（须合格局参看）。")
+        lines.append(f"神煞备注（不作分析依据）：{names}。")
     if relations:
         lines.append(f"四柱关系：{'、'.join(relations[:5])}" + ("…" if len(relations) > 5 else ""))
     return lines
@@ -122,7 +124,12 @@ def analyze(chart: dict[str, Any]) -> dict[str, Any]:
 
     dts = ditiansui_analyze(chart)
     qt = qiongtong_lookup(day_stem, month_branch)
-    geju = ziping_analyze(chart)
+    # 特格检测（专旺/从/化气）优先于八正格
+    tege_result = tege_analyze(chart)
+    if tege_result is not None:
+        geju = tege_result
+    else:
+        geju = ziping_analyze(chart)
     shensha = shensha_analyze(chart)
     duanshi_raw = duanshi_analyze(chart)
     sanguan_raw = sanguan_analyze(chart)
@@ -160,6 +167,9 @@ def analyze(chart: dict[str, Any]) -> dict[str, Any]:
         meta, guanming, dts, qt, geju, yongshen, shensha, {}, {}, relations
     )
 
+    # 大运流年细化
+    dayun_detail = analyze_dayun_detail(chart)
+
     return {
         "kernel": KERNEL,
         "method_note": METHOD_NOTE,
@@ -185,5 +195,6 @@ def analyze(chart: dict[str, Any]) -> dict[str, Any]:
         "pattern": dts.get("pattern"),
         "changsheng_map": dts.get("changsheng_map"),
         "highlights": highlights,
+        "dayun_detail": dayun_detail,
         "sources": list(SOURCES),
     }
